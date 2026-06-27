@@ -16,7 +16,7 @@
   if (!requireAuth()) { /* redirect */ }
 
   const me = getCurrentUser();
-  let activeTab = 'timeline';
+  let activeTab = 'posts';
 
   function setTab(tab) { activeTab = tab; render(); }
 
@@ -53,6 +53,44 @@
     </div>`;
   }
 
+  function deleteMyPost(postId) {
+    if (!confirm('この投稿を削除しますか？')) return;
+    const posts = getPosts().filter(p => p.id !== postId);
+    savePosts(posts);
+    showToast('投稿を削除しました');
+    render();
+  }
+
+  function buildMyPostGrid(posts) {
+    if (!posts.length) return '<p class="empty-msg">まだ投稿がありません</p>';
+    return `<div class="post-grid">${posts.map(p => {
+      const thumb = p.images && p.images.length ? p.images[0] : 'https://via.placeholder.com/400x300?text=No+Image';
+      const likeCount = getLikeCount(p.id);
+      const commentCount = getCommentCount(p.id);
+      return `<div class="post-card mypost-card">
+        <div class="post-card-image" onclick="location.href='post-detail.html?id=${p.id}'" style="cursor:pointer">
+          <img src="${thumb}" alt="${p.title}" loading="lazy">
+          ${categoryBadge(p.category)}
+          <div class="mypost-actions">
+            <a href="post-edit.html?id=${p.id}" class="mypost-action-btn" title="編集" onclick="event.stopPropagation()">✏️</a>
+            <button class="mypost-action-btn mypost-delete-btn" title="削除" onclick="event.stopPropagation();deleteMyPost('${p.id}')">🗑️</button>
+          </div>
+        </div>
+        <div class="post-card-body" onclick="location.href='post-detail.html?id=${p.id}'" style="cursor:pointer">
+          <h3 class="post-card-title">${p.title}</h3>
+          <div class="post-card-meta">
+            <span class="area-tag">📍 ${p.areaTag}</span>
+          </div>
+          <div class="post-card-footer">
+            <span>👍 ${likeCount}</span>
+            <span>💬 ${commentCount}</span>
+            <span class="post-card-date">${formatDate(p.createdAt)}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
   function render() {
     const score = calcTabiScore(me.id);
     const scoreInfo = getScoreLabel(score);
@@ -81,7 +119,7 @@
     const mainHtml = `
       <div class="mypage-banner">
         <div class="mypage-banner-left">🔒 <strong>管理画面</strong> — この画面はあなただけに見えます</div>
-        <a href="profile.html?id=${me.id}" class="mypage-banner-link">🌐 公開プロフィールを見る →</a>
+        <a href="profile.html?id=${me.id}" class="mypage-banner-link">🌐 公開プロフィールを見る</a>
       </div>
 
       <div class="mypage-header">
@@ -114,29 +152,25 @@
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-            <a href="profile.html?id=${me.id}" class="btn btn-outline btn-sm">プロフィールを見る</a>
-            <a href="settings.html" class="btn btn-ghost btn-sm">設定</a>
+            <a href="settings.html" class="btn btn-ghost btn-sm">✏️ プロフィール編集</a>
           </div>
         </div>
       </div>
 
       <div class="tabs">
-        <button class="tab-btn ${activeTab === 'timeline' ? 'active' : ''}" onclick="setTab('timeline')">タイムライン</button>
         <button class="tab-btn ${activeTab === 'posts' ? 'active' : ''}" onclick="setTab('posts')">フォロー中の投稿</button>
         <button class="tab-btn ${activeTab === 'wishlist' ? 'active' : ''}" onclick="setTab('wishlist')">🔖 行きたい</button>
         <button class="tab-btn ${activeTab === 'visited' ? 'active' : ''}" onclick="setTab('visited')">✅ 訪問済み</button>
         <button class="tab-btn ${activeTab === 'myposts' ? 'active' : ''}" onclick="setTab('myposts')">✈️ 自分の投稿</button>
       </div>
 
-      ${activeTab === 'timeline'
-        ? (activities.length ? `<div class="activity-list">${activities.map(buildActivityItem).join('')}</div>` : emptyFollow)
-        : activeTab === 'posts'
+      ${activeTab === 'posts'
         ? (followPosts.length ? buildPostGrid(followPosts) : emptyFollow)
         : activeTab === 'wishlist'
         ? (wishlistPosts.length ? buildPostGrid(wishlistPosts) : emptyWishlist)
         : activeTab === 'visited'
         ? (visitedPosts.length ? buildPostGrid(visitedPosts) : '<div class="empty-msg" style="padding:48px 0"><p style="font-size:2rem;margin-bottom:12px">✅</p><p>訪問済みのスポットがありません</p></div>')
-        : (myPosts.length ? buildPostGrid(myPosts) : '<p class="empty-msg">まだ投稿がありません</p>')}`;
+        : buildMyPostGrid(myPosts)}`;
 
     document.getElementById('app').innerHTML = buildLayout('mypage', mainHtml);
   }

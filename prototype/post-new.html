@@ -74,6 +74,12 @@
     document.getElementById('pin-clear').style.display = 'none';
   }
 
+  function updateCounter(inputId, countId) {
+    const el = document.getElementById(inputId);
+    const cnt = document.getElementById(countId);
+    if (el && cnt) cnt.textContent = el.value.length;
+  }
+
   function handleSubmit() {
     const title = document.getElementById('title').value.trim();
     const body = document.getElementById('body').value.trim();
@@ -110,12 +116,12 @@
 
   function render() {
     const mainHtml = `
-      <a href="index.html" class="back-btn">← 戻る</a>
-      <div class="page-header"><h1 class="page-title">✏️ 旅スポットを投稿</h1></div>
+<div class="page-header"><h1 class="page-title">✏️ 旅スポットを投稿</h1></div>
       <div class="post-form">
         <div class="form-group">
           <label class="form-label">タイトル <span style="color:var(--danger)">*</span></label>
-          <input id="title" type="text" class="form-control" placeholder="例：嵐山の竹林と渡月橋">
+          <input id="title" type="text" class="form-control" placeholder="例：嵐山の竹林と渡月橋" maxlength="40" oninput="updateCounter('title','title-count')">
+          <span class="char-counter"><span id="title-count">0</span> / 40 文字</span>
         </div>
         <div class="form-group">
           <label class="form-label">本文 <span style="color:var(--danger)">*</span></label>

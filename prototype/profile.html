@@ -80,8 +80,8 @@
     const scoreInfo = getScoreLabel(score);
 
     const mainHtml = `
-      <a href="javascript:history.back()" class="back-btn">← 戻る</a>
-      <div class="profile-header">
+      <div class="profile-header" style="position:relative">
+        ${isMe ? `<a href="mypage.html" class="btn btn-outline btn-sm profile-mypage-btn">📋 管理画面を見る</a>` : ''}
         <img src="${targetUser.avatar}" alt="${targetUser.name}" class="avatar-xl">
         <div class="profile-info">
           <h1 class="profile-name">${targetUser.name}</h1>
@@ -103,9 +103,9 @@
               <div class="stat-label">フォロー中</div>
             </div>
           </div>
-          <div style="margin-top:12px;display:flex;gap:8px">
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
             ${isMe
-              ? `<a href="settings.html" class="btn btn-outline btn-sm">プロフィールを編集</a>`
+              ? `<a href="settings.html" class="btn btn-ghost btn-sm">✏️ プロフィール編集</a>`
               : me ? `<button class="btn btn-sm ${following ? 'btn-ghost' : 'btn-primary'}" onclick="handleFollow()">${following ? 'フォロー中' : 'フォローする'}</button>` : ''
             }
           </div>

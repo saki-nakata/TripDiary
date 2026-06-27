@@ -4,11 +4,13 @@
 
 function buildSidebar(activePage) {
   const user = getCurrentUser();
+  const unreadCount = user ? getUnreadNotifCount(user.id) : 0;
   const navItems = [
     { href: 'index.html', icon: '🏠', label: 'ホーム', key: 'home' },
     { href: 'search.html', icon: '🔍', label: '検索', key: 'search' },
     { href: 'post-new.html', icon: '✏️', label: '投稿する', key: 'new', authRequired: true },
     { divider: true, authRequired: true },
+    { href: 'notification.html', icon: '🔔', label: '通知', key: 'notification', authRequired: true, badge: unreadCount },
     { href: 'mypage.html', icon: '📋', label: '管理画面', key: 'mypage', authRequired: true },
     { href: `profile.html?id=${user?.id}`, icon: '🌐', label: '公開プロフィール', key: 'profile', authRequired: true },
   ];
@@ -17,21 +19,22 @@ function buildSidebar(activePage) {
     if (item.authRequired && !user) return '';
     if (item.divider) return `<div class="nav-divider"></div>`;
     const active = activePage === item.key ? 'active' : '';
+    const badge = item.badge ? `<span class="nav-badge">${item.badge}</span>` : '';
     return `<a href="${item.href}" class="nav-item ${active}">
-      <span class="nav-icon">${item.icon}</span>
+      <span class="nav-icon" style="position:relative">${item.icon}${badge}</span>
       <span class="nav-label">${item.label}</span>
     </a>`;
   }).join('');
 
   const userSection = user
     ? `<div class="sidebar-user">
-        <div class="sidebar-user-info">
+        <button class="sidebar-user-trigger" onclick="toggleUserDropdown(event)" aria-label="メニューを開く">
           <img src="${user.avatar}" alt="${user.name}" class="avatar-sm">
           <span class="sidebar-user-name">${user.name}</span>
-        </div>
-        <div class="sidebar-user-actions">
-          <a href="settings.html" class="sidebar-user-link">⚙️ 設定</a>
-          <button onclick="logout()" class="sidebar-logout">ログアウト</button>
+        </button>
+        <div class="sidebar-user-dropdown" id="userDropdown">
+          <a href="settings.html" class="sidebar-dropdown-item">✏️ プロフィール編集</a>
+          <button onclick="logout()" class="sidebar-dropdown-item sidebar-dropdown-logout">ログアウト</button>
         </div>
       </div>`
     : `<div class="sidebar-auth">
@@ -48,26 +51,40 @@ function buildSidebar(activePage) {
 
 function buildBottomNav(activePage) {
   const user = getCurrentUser();
+  const unread = user ? getUnreadNotifCount(user.id) : 0;
   const items = [
     { href: 'index.html', icon: '🏠', label: 'ホーム', key: 'home' },
     { href: 'search.html', icon: '🔍', label: '検索', key: 'search' },
     { href: 'post-new.html', icon: '✏️', label: '投稿', key: 'new', authRequired: true },
     user
-      ? { href: 'mypage.html', icon: '👤', label: 'マイページ', key: 'mypage' }
+      ? { href: 'notification.html', icon: '🔔', label: '通知', key: 'notification', badge: unread }
       : { href: 'login.html', icon: '🔑', label: 'ログイン', key: 'login' },
   ];
 
   const html = items.map(item => {
     if (item.authRequired && !user) return '';
     const active = activePage === item.key ? 'active' : '';
+    const badge = item.badge ? `<span class="bottom-nav-badge">${item.badge}</span>` : '';
     return `<a href="${item.href}" class="bottom-nav-item ${active}">
-      <span>${item.icon}</span>
+      <span style="position:relative;display:inline-block">${item.icon}${badge}</span>
       <span>${item.label}</span>
     </a>`;
   }).join('');
 
   return `<nav class="bottom-nav">${html}</nav>`;
 }
+
+function toggleUserDropdown(e) {
+  e.stopPropagation();
+  const dropdown = document.getElementById('userDropdown');
+  if (!dropdown) return;
+  dropdown.classList.toggle('open');
+}
+
+document.addEventListener('click', function() {
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+});
 
 function buildPostCard(post) {
   const user = getUserById(post.userId);

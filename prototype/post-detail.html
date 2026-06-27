@@ -60,7 +60,14 @@
     cs.push({ id: 'c' + generateId(), postId: post.id, userId: me.id, body, createdAt: new Date().toISOString() });
     saveComments(cs);
     document.getElementById('comment-input').value = '';
+    document.getElementById('comment-count').textContent = '0';
     document.getElementById('comments-list').innerHTML = renderComments();
+  }
+
+  function updateCommentCounter() {
+    const el = document.getElementById('comment-input');
+    const cnt = document.getElementById('comment-count');
+    if (el && cnt) cnt.textContent = el.value.length;
   }
 
   function updateActions() {
@@ -192,12 +199,14 @@
     const commentFormHtml = me ? `
       <div class="comment-form">
         <img src="${me.avatar}" alt="${me.name}" class="avatar-xs" style="margin-top:4px">
-        <textarea id="comment-input" class="form-control" placeholder="コメントを入力…" rows="2"></textarea>
+        <div style="flex:1">
+          <textarea id="comment-input" class="form-control" placeholder="コメントを入力…" rows="2" maxlength="2000" oninput="updateCommentCounter()"></textarea>
+          <span class="char-counter"><span id="comment-count">0</span> / 2000 文字</span>
+        </div>
         <button class="btn btn-primary btn-sm" onclick="postComment()">投稿</button>
       </div>` : `<p style="font-size:.88rem;color:var(--text-muted);margin-bottom:16px;"><a href="login.html" style="color:var(--primary)">ログイン</a>するとコメントできます</p>`;
 
     const mainHtml = `
-      <a href="javascript:history.back()" class="back-btn">← 戻る</a>
       <div class="post-detail-header">
         <div class="post-detail-meta" style="margin-bottom:10px">
           ${categoryBadge(post.category)}
@@ -234,6 +243,18 @@
       <p class="post-body">${post.body}</p>
 
       ${post.lat && post.lng ? `<div id="map" class="map-container"></div>` : ''}
+
+      ${(() => {
+        const related = getPosts()
+          .filter(p => p.id !== post.id && p.areaTag === post.areaTag)
+          .sort((a, b) => getLikeCount(b.id) - getLikeCount(a.id))
+          .slice(0, 3);
+        if (!related.length) return '';
+        return `<div class="related-section">
+          <h2 class="related-title">📍 ${post.areaTag} の関連スポット</h2>
+          ${buildPostGrid(related)}
+        </div>`;
+      })()}
 
       <div class="comments-section">
         <h2 class="comments-title">💬 コメント (${getCommentCount(post.id)})</h2>

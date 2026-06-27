@@ -49,6 +49,49 @@ function signup(name, email, password) {
   return newUser;
 }
 
+function buildNotifications(userId) {
+  const myPosts = getPosts().filter(p => p.userId === userId);
+  const myPostIds = myPosts.map(p => p.id);
+  const notifs = [];
+
+  getLikes()
+    .filter(l => myPostIds.includes(l.postId) && l.userId !== userId)
+    .forEach(l => {
+      const post = myPosts.find(p => p.id === l.postId);
+      notifs.push({ id: `like-${l.userId}-${l.postId}`, type: 'like', fromUserId: l.userId, post, date: l.createdAt || '' });
+    });
+
+  getComments()
+    .filter(c => myPostIds.includes(c.postId) && c.userId !== userId)
+    .forEach(c => {
+      const post = myPosts.find(p => p.id === c.postId);
+      notifs.push({ id: `comment-${c.id}`, type: 'comment', fromUserId: c.userId, post, body: c.body, date: c.createdAt });
+    });
+
+  getFollows()
+    .filter(f => f.followingId === userId)
+    .forEach(f => {
+      notifs.push({ id: `follow-${f.followerId}`, type: 'follow', fromUserId: f.followerId, date: f.createdAt || '' });
+    });
+
+  return notifs.sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+function getReadNotifIds() {
+  const raw = localStorage.getItem('td_read_notifs');
+  return raw ? JSON.parse(raw) : [];
+}
+
+function markAllNotifsRead(userId) {
+  const ids = buildNotifications(userId).map(n => n.id);
+  localStorage.setItem('td_read_notifs', JSON.stringify(ids));
+}
+
+function getUnreadNotifCount(userId) {
+  const read = getReadNotifIds();
+  return buildNotifications(userId).filter(n => !read.includes(n.id)).length;
+}
+
 function refreshCurrentUser() {
   const cur = getCurrentUser();
   if (!cur) return;

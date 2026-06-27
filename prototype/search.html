@@ -15,8 +15,9 @@
   initData();
 
   const params = new URLSearchParams(location.search);
-  let activeTab = params.get('tab') || 'all';
+  let activeTab = params.get('tab') || 'spots';
   let query = '';
+  let sortOrder = 'latest';
 
   function handleFollow(uid, btn) {
     const me = getCurrentUser();
@@ -51,43 +52,43 @@
   }
 
   function buildRankingList() {
-    const me = getCurrentUser();
-    const users = getUsers().sort((a, b) => calcTabiScore(b.id) - calcTabiScore(a.id));
-    return `<div class="user-list">${users.map((u, i) => {
-      const following = me ? isFollowing(me.id, u.id) : false;
-      const score = calcTabiScore(u.id);
-      const info = getScoreLabel(score);
-      const postCount = getPosts().filter(p => p.userId === u.id).length;
-      return `<div class="user-item">
-        <div class="rank-badge rank-${i + 1}">${i + 1}</div>
-        <a href="profile.html?id=${u.id}"><img src="${u.avatar}" alt="${u.name}" class="avatar"></a>
-        <div class="user-item-info">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <a href="profile.html?id=${u.id}" class="user-item-name">${u.name}</a>
-            <span class="score-chip" style="background:${info.color}">✈️ ${score} pts · ${info.label}</span>
-          </div>
-          <p class="user-item-bio">${u.bio || ''}</p>
-          <p style="font-size:.78rem;color:var(--text-muted);margin-top:2px">${postCount}件の投稿 · フォロワー ${getFollowerCount(u.id)}人</p>
+    const posts = [...getPosts()].sort((a, b) => getLikeCount(b.id) - getLikeCount(a.id));
+    const rankColors = ['#f59e0b', '#9ca3af', '#b45309'];
+    return `<div class="spot-ranking-list">${posts.map((p, i) => {
+      const user = getUserById(p.userId);
+      const thumb = p.images && p.images.length ? p.images[0] : '';
+      const likes = getLikeCount(p.id);
+      const color = rankColors[i] || '#6b7280';
+      return `<a href="post-detail.html?id=${p.id}" class="spot-ranking-item">
+        <div class="spot-rank-badge" style="background:${color}">${i + 1}</div>
+        ${thumb ? `<div class="spot-rank-thumb" style="background-image:url('${thumb}')"></div>` : ''}
+        <div class="spot-rank-info">
+          <p class="spot-rank-title">${p.title}</p>
+          <p class="spot-rank-meta">📍 ${p.areaTag} &nbsp;·&nbsp; 👍 ${likes} &nbsp;·&nbsp; ${user ? user.name : ''}</p>
         </div>
-        ${me && me.id !== u.id ? `<button class="btn btn-sm ${following ? 'btn-ghost' : 'btn-primary'}" onclick="handleFollow('${u.id}', this)">${following ? 'フォロー中' : 'フォロー'}</button>` : ''}
-      </div>`;
+      </a>`;
     }).join('')}</div>`;
   }
 
   function setTab(tab) { activeTab = tab; render(); }
+  function setSort(s) { sortOrder = s; render(); }
 
   function render(q = query) {
     query = q;
     const allPosts = getPosts();
     const allUsers = getUsers();
 
-    const matchedPosts = q
+    const filtered = q
       ? allPosts.filter(p =>
           p.title.includes(q) ||
           p.body.includes(q) ||
           p.areaTag.includes(q) ||
           p.category.includes(q))
-      : allPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      : [...allPosts];
+
+    const matchedPosts = sortOrder === 'popular'
+      ? filtered.sort((a, b) => getLikeCount(b.id) - getLikeCount(a.id))
+      : filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     const matchedUsers = q
       ? allUsers.filter(u => u.name.includes(q) || (u.bio || '').includes(q))
@@ -112,13 +113,17 @@
           oninput="render(this.value)">
       </div>
       <div class="tabs">
-        <button class="tab-btn ${activeTab === 'all' ? 'active' : ''}" onclick="setTab('all')">すべて</button>
         <button class="tab-btn ${activeTab === 'spots' ? 'active' : ''}" onclick="setTab('spots')">旅スポット</button>
         <button class="tab-btn ${activeTab === 'users' ? 'active' : ''}" onclick="setTab('users')">ユーザー</button>
-        <button class="tab-btn ${activeTab === 'ranking' ? 'active' : ''}" onclick="setTab('ranking')">🏆 ランキング</button>
+        <button class="tab-btn ${activeTab === 'ranking' ? 'active' : ''}" onclick="setTab('ranking')">🏆 人気スポット</button>
       </div>
-      ${activeTab === 'all' ? allResults : ''}
-      ${activeTab === 'spots' ? (matchedPosts.length ? buildPostGrid(matchedPosts) : '<p class="empty-msg">スポットが見つかりません</p>') : ''}
+      ${activeTab === 'spots' ? `
+        <div class="sort-bar">
+          <button class="sort-btn ${sortOrder === 'latest' ? 'active' : ''}" onclick="setSort('latest')">新着順</button>
+          <button class="sort-btn ${sortOrder === 'popular' ? 'active' : ''}" onclick="setSort('popular')">人気順</button>
+        </div>
+        ${matchedPosts.length ? buildPostGrid(matchedPosts) : '<p class="empty-msg">スポットが見つかりません</p>'}
+      ` : ''}
       ${activeTab === 'users' ? buildUserResults(matchedUsers) : ''}
       ${activeTab === 'ranking' ? buildRankingList() : ''}`;
 

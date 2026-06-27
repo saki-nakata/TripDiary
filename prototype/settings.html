@@ -17,6 +17,12 @@
 
   let newAvatarData = null;
 
+  function updateCounter(inputId, countId) {
+    const el = document.getElementById(inputId);
+    const cnt = document.getElementById(countId);
+    if (el && cnt) cnt.textContent = el.value.length;
+  }
+
   function handleAvatarChange(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -40,7 +46,7 @@
     saveUsers(users);
     setCurrentUser(users[idx]);
     showToast('プロフィールを更新しました');
-    setTimeout(() => render(), 300);
+    setTimeout(() => location.href = `profile.html?id=${users[idx].id}`, 800);
   }
 
   function render() {
@@ -48,7 +54,7 @@
 
     const mainHtml = `
       <div class="page-header">
-        <h1 class="page-title">⚙️ プロフィール設定</h1>
+        <h1 class="page-title">✏️ プロフィール編集</h1>
       </div>
       <div class="settings-card">
         <div class="settings-avatar-wrap">
@@ -63,7 +69,8 @@
         </div>
         <div class="form-group">
           <label class="form-label">名前 <span style="color:var(--danger)">*</span></label>
-          <input id="name" type="text" class="form-control" value="${me.name}">
+          <input id="name" type="text" class="form-control" maxlength="50" value="${me.name}" oninput="updateCounter('name','name-count')">
+          <span class="char-counter"><span id="name-count">${(me.name || '').length}</span> / 50 文字</span>
         </div>
         <div class="form-group">
           <label class="form-label">メールアドレス</label>
@@ -71,16 +78,12 @@
         </div>
         <div class="form-group">
           <label class="form-label">自己紹介</label>
-          <textarea id="bio" class="form-control" rows="4" placeholder="旅の趣味や好きな場所を教えてください">${me.bio || ''}</textarea>
+          <textarea id="bio" class="form-control" rows="4" placeholder="旅の趣味や好きな場所を教えてください" maxlength="200" oninput="updateCounter('bio','bio-count')">${me.bio || ''}</textarea>
+          <span class="char-counter"><span id="bio-count">${(me.bio || '').length}</span> / 200 文字</span>
         </div>
         <div style="display:flex;gap:10px;margin-top:8px">
           <button class="btn btn-primary" onclick="handleSave()">保存する</button>
           <a href="profile.html?id=${me.id}" class="btn btn-ghost">キャンセル</a>
-        </div>
-        <hr class="divider">
-        <div>
-          <h3 style="font-size:.95rem;font-weight:700;margin-bottom:8px;color:var(--danger)">アカウント操作</h3>
-          <button class="btn btn-danger btn-sm" onclick="logout()">ログアウト</button>
         </div>
       </div>`;
 

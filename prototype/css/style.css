@@ -94,32 +94,53 @@ button { cursor: pointer; font-family: inherit; }
   margin-top: auto;
   border-top: 1px solid var(--border);
   padding-top: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  position: relative;
 }
-.sidebar-user-info {
+.sidebar-user-trigger {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 4px 8px;
-}
-.sidebar-user-name { font-size: 0.9rem; font-weight: 600; }
-.sidebar-user-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 8px;
-}
-.sidebar-logout {
+  padding: 6px 8px;
+  width: 100%;
   background: none;
   border: none;
-  font-size: .82rem;
-  color: var(--text-muted);
-  padding: 0;
+  border-radius: 10px;
   cursor: pointer;
+  text-align: left;
+  transition: background .15s;
 }
-.sidebar-logout:hover { color: var(--danger); }
+.sidebar-user-trigger:hover { background: var(--bg); }
+.sidebar-user-name { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+.sidebar-user-dropdown {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  overflow: hidden;
+  z-index: 100;
+}
+.sidebar-user-dropdown.open { display: block; }
+.sidebar-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 11px 16px;
+  font-size: .9rem;
+  color: var(--text);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .12s;
+}
+.sidebar-dropdown-item:hover { background: var(--bg); }
+.sidebar-dropdown-logout { color: var(--danger); border-top: 1px solid var(--border); }
+.sidebar-dropdown-logout:hover { background: #fff5f5; }
 .nav-item-sm {
   font-size: 0.85rem;
   color: var(--text-muted);
@@ -161,8 +182,8 @@ button { cursor: pointer; font-family: inherit; }
 .btn-outline:hover { background: #eff6ff; }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-danger:hover { background: #dc2626; }
-.btn-ghost { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); }
-.btn-ghost:hover { background: var(--bg); }
+.btn-ghost { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); transition: color .15s, border-color .15s, background .15s; }
+.btn-ghost:hover { background: #eff6ff; color: var(--primary); border-color: var(--primary); }
 .btn-block { width: 100%; }
 .btn-sm { padding: 6px 14px; font-size: 0.82rem; }
 .btn-link { background: none; border: none; padding: 4px 8px; font-size: 0.85rem; color: var(--text-muted); }
@@ -475,6 +496,7 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
    Profile
    ============================================================ */
 .profile-header { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; }
+.profile-mypage-btn { position: absolute; top: 0; right: 0; }
 .profile-info { flex: 1; }
 .profile-name { font-size: 1.4rem; font-weight: 700; margin-bottom: 6px; }
 .profile-bio { color: var(--text-muted); font-size: 0.92rem; line-height: 1.6; margin-bottom: 12px; }
@@ -764,20 +786,20 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #fff;
+  color: var(--text);
   font-size: 0.82rem;
   padding: 5px 14px;
   border-radius: 20px;
   margin-bottom: 10px;
 }
 .tabi-score-badge strong { font-size: 1rem; }
-.score-label { opacity: .85; font-size: 0.75rem; }
+.score-label { opacity: .75; font-size: 0.75rem; }
 .score-chip {
   display: inline-flex;
   align-items: center;
-  color: #fff;
+  color: var(--text);
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   padding: 2px 8px;
   border-radius: 20px;
 }
@@ -851,7 +873,7 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
   .nav-label, .logo-text, .sidebar-user-name, .sidebar-auth { display: none; }
   .logo { font-size: 1.4rem; margin-bottom: 24px; text-align: center; }
   .nav-item { justify-content: center; padding: 10px; }
-  .sidebar-user-info { justify-content: center; }
+  .sidebar-user-trigger { justify-content: center; }
   .main-content { margin-left: 64px; padding: 24px 16px; }
 }
 
@@ -1184,3 +1206,196 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
   margin-bottom: 12px;
   color: var(--text-muted);
 }
+
+/* ============================================================
+   Notification badge
+   ============================================================ */
+.nav-badge, .bottom-nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  background: var(--danger);
+  color: #fff;
+  font-size: .65rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  line-height: 1;
+}
+
+/* ============================================================
+   Notification list
+   ============================================================ */
+.notif-list {
+  display: flex;
+  flex-direction: column;
+}
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text);
+  transition: background .12s;
+}
+.notif-item:hover { background: var(--bg); }
+.notif-icon {
+  font-size: 1.1rem;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.notif-body { flex: 1; min-width: 0; }
+.notif-text { font-size: .9rem; line-height: 1.5; margin-bottom: 3px; }
+.notif-comment-body {
+  display: block;
+  font-size: .82rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.notif-date { font-size: .78rem; color: var(--text-muted); }
+
+/* ============================================================
+   Mypost card actions
+   ============================================================ */
+.mypost-card .post-card-image { position: relative; }
+.mypost-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.mypost-card:hover .mypost-actions { opacity: 1; }
+.mypost-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.92);
+  border: none;
+  cursor: pointer;
+  font-size: .95rem;
+  text-decoration: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+  transition: background .12s;
+}
+.mypost-action-btn:hover { background: #bfdbfe; }
+.mypost-delete-btn:hover { background: #fecaca; }
+
+/* ============================================================
+   Related spots section
+   ============================================================ */
+.related-section {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+.related-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+/* ============================================================
+   Sort bar
+   ============================================================ */
+.sort-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.sort-btn {
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  font-size: .85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all .15s;
+}
+.sort-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.sort-btn:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+
+/* ============================================================
+   Character counter
+   ============================================================ */
+.char-counter {
+  display: block;
+  text-align: right;
+  font-size: .78rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ============================================================
+   Spot ranking list (home)
+   ============================================================ */
+.spot-ranking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.spot-ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  transition: background .15s, box-shadow .15s;
+}
+.spot-ranking-item:hover { background: var(--bg); box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+.spot-rank-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: .85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.spot-rank-thumb {
+  width: 64px;
+  height: 48px;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+.spot-rank-info { flex: 1; min-width: 0; }
+.spot-rank-title {
+  font-size: .93rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spot-rank-meta { font-size: .8rem; color: var(--text-muted); }

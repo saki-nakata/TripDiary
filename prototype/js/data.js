@@ -372,10 +372,10 @@ function calcTabiScore(userId) {
 }
 
 function getScoreLabel(score) {
-  if (score >= 100) return { label: 'プラチナトラベラー', color: '#7c3aed' };
-  if (score >= 60)  return { label: 'ゴールドトラベラー',  color: '#d97706' };
-  if (score >= 30)  return { label: 'シルバートラベラー',  color: '#475569' };
-  return                   { label: 'ブロンズトラベラー',  color: '#92400e' };
+  if (score >= 100) return { label: 'プラチナトラベラー', color: '#ede9fe' };
+  if (score >= 60)  return { label: 'ゴールドトラベラー',  color: '#fef3c7' };
+  if (score >= 30)  return { label: 'シルバートラベラー',  color: '#f1f5f9' };
+  return                   { label: 'ブロンズトラベラー',  color: '#fef2e8' };
 }
 
 function getFollowActivities(currentUserId) {

@@ -25,7 +25,6 @@
     const allTags = [...new Set(getPosts().map(p => p.areaTag))].sort();
 
     const mainHtml = `
-      <a href="javascript:history.back()" class="back-btn">← 戻る</a>
       <div class="page-header">
         <h1 class="page-title">📍 ${tag}</h1>
         <span class="text-muted">${posts.length}件の投稿</span>
