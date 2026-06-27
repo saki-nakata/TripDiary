@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>エリアタグ — TripDiary</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+  initData();
+
+  const params = new URLSearchParams(location.search);
+  const tag = params.get('tag') || '';
+
+  function render() {
+    const posts = getPosts()
+      .filter(p => p.areaTag === tag)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const allTags = [...new Set(getPosts().map(p => p.areaTag))].sort();
+
+    const mainHtml = `
+      <a href="javascript:history.back()" class="back-btn">← 戻る</a>
+      <div class="page-header">
+        <h1 class="page-title">📍 ${tag}</h1>
+        <span class="text-muted">${posts.length}件の投稿</span>
+      </div>
+      <div class="filter-bar" style="margin-bottom:24px">
+        ${allTags.map(t => `<a href="tag.html?tag=${encodeURIComponent(t)}" class="filter-btn ${t === tag ? 'active' : ''}">${t}</a>`).join('')}
+      </div>
+      ${buildPostGrid(posts)}`;
+
+    document.getElementById('app').innerHTML = buildLayout('explore', mainHtml);
+  }
+
+  render();
+</script>
+</body>
+</html>

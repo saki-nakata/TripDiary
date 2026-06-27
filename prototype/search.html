@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>検索 — TripDiary</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+  initData();
+
+  const params = new URLSearchParams(location.search);
+  let activeTab = params.get('tab') || 'all';
+  let query = '';
+
+  function handleFollow(uid, btn) {
+    const me = getCurrentUser();
+    if (!me) { location.href = 'login.html'; return; }
+    toggleFollow(me.id, uid);
+    const following = isFollowing(me.id, uid);
+    btn.textContent = following ? 'フォロー中' : 'フォロー';
+    btn.className = `btn btn-sm ${following ? 'btn-ghost' : 'btn-primary'}`;
+  }
+
+  function buildUserResults(users) {
+    const me = getCurrentUser();
+    if (!users.length) return '<p class="empty-msg">ユーザーが見つかりません</p>';
+    return `<div class="user-list">${users.map(u => {
+      const following = me ? isFollowing(me.id, u.id) : false;
+      const score = calcTabiScore(u.id);
+      const info = getScoreLabel(score);
+      const postCount = getPosts().filter(p => p.userId === u.id).length;
+      return `<div class="user-item">
+        <a href="profile.html?id=${u.id}"><img src="${u.avatar}" alt="${u.name}" class="avatar"></a>
+        <div class="user-item-info">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <a href="profile.html?id=${u.id}" class="user-item-name">${u.name}</a>
+            <span class="score-chip" style="background:${info.color}">✈️ ${score} pts</span>
+          </div>
+          <p class="user-item-bio">${u.bio || ''}</p>
+          <p style="font-size:.78rem;color:var(--text-muted);margin-top:2px">${postCount}件の投稿 · フォロワー ${getFollowerCount(u.id)}人</p>
+        </div>
+        ${me && me.id !== u.id ? `<button class="btn btn-sm ${following ? 'btn-ghost' : 'btn-primary'}" onclick="handleFollow('${u.id}', this)">${following ? 'フォロー中' : 'フォロー'}</button>` : ''}
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  function buildRankingList() {
+    const me = getCurrentUser();
+    const users = getUsers().sort((a, b) => calcTabiScore(b.id) - calcTabiScore(a.id));
+    return `<div class="user-list">${users.map((u, i) => {
+      const following = me ? isFollowing(me.id, u.id) : false;
+      const score = calcTabiScore(u.id);
+      const info = getScoreLabel(score);
+      const postCount = getPosts().filter(p => p.userId === u.id).length;
+      return `<div class="user-item">
+        <div class="rank-badge rank-${i + 1}">${i + 1}</div>
+        <a href="profile.html?id=${u.id}"><img src="${u.avatar}" alt="${u.name}" class="avatar"></a>
+        <div class="user-item-info">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <a href="profile.html?id=${u.id}" class="user-item-name">${u.name}</a>
+            <span class="score-chip" style="background:${info.color}">✈️ ${score} pts · ${info.label}</span>
+          </div>
+          <p class="user-item-bio">${u.bio || ''}</p>
+          <p style="font-size:.78rem;color:var(--text-muted);margin-top:2px">${postCount}件の投稿 · フォロワー ${getFollowerCount(u.id)}人</p>
+        </div>
+        ${me && me.id !== u.id ? `<button class="btn btn-sm ${following ? 'btn-ghost' : 'btn-primary'}" onclick="handleFollow('${u.id}', this)">${following ? 'フォロー中' : 'フォロー'}</button>` : ''}
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  function setTab(tab) { activeTab = tab; render(); }
+
+  function render(q = query) {
+    query = q;
+    const allPosts = getPosts();
+    const allUsers = getUsers();
+
+    const matchedPosts = q
+      ? allPosts.filter(p =>
+          p.title.includes(q) ||
+          p.body.includes(q) ||
+          p.areaTag.includes(q) ||
+          p.category.includes(q))
+      : allPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const matchedUsers = q
+      ? allUsers.filter(u => u.name.includes(q) || (u.bio || '').includes(q))
+      : allUsers;
+
+    const allResults = q
+      ? `<h3 class="section-title" style="margin-top:24px">旅スポット (${matchedPosts.length}件)</h3>
+         ${matchedPosts.length ? buildPostGrid(matchedPosts) : '<p class="empty-msg">スポットが見つかりません</p>'}
+         <h3 class="section-title" style="margin-top:24px">ユーザー (${matchedUsers.length}件)</h3>
+         ${buildUserResults(matchedUsers)}`
+      : buildPostGrid(matchedPosts.slice(0, 6));
+
+    const mainHtml = `
+      <div class="page-header">
+        <h1 class="page-title">🔍 検索</h1>
+      </div>
+      <div class="search-bar-wrap" style="margin-bottom:16px">
+        <span class="search-icon">🔍</span>
+        <input id="search-input" type="text" class="form-control"
+          placeholder="スポット名・エリア・ユーザー名で検索…"
+          value="${q}"
+          oninput="render(this.value)">
+      </div>
+      <div class="tabs">
+        <button class="tab-btn ${activeTab === 'all' ? 'active' : ''}" onclick="setTab('all')">すべて</button>
+        <button class="tab-btn ${activeTab === 'spots' ? 'active' : ''}" onclick="setTab('spots')">旅スポット</button>
+        <button class="tab-btn ${activeTab === 'users' ? 'active' : ''}" onclick="setTab('users')">ユーザー</button>
+        <button class="tab-btn ${activeTab === 'ranking' ? 'active' : ''}" onclick="setTab('ranking')">🏆 ランキング</button>
+      </div>
+      ${activeTab === 'all' ? allResults : ''}
+      ${activeTab === 'spots' ? (matchedPosts.length ? buildPostGrid(matchedPosts) : '<p class="empty-msg">スポットが見つかりません</p>') : ''}
+      ${activeTab === 'users' ? buildUserResults(matchedUsers) : ''}
+      ${activeTab === 'ranking' ? buildRankingList() : ''}`;
+
+    document.getElementById('app').innerHTML = buildLayout('search', mainHtml);
+    const input = document.getElementById('search-input');
+    if (input) { input.focus(); input.setSelectionRange(q.length, q.length); }
+  }
+
+  render();
+</script>
+</body>
+</html>

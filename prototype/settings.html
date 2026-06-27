@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>設定 — TripDiary</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+  initData();
+  if (!requireAuth()) { /* redirect */ }
+
+  let newAvatarData = null;
+
+  function handleAvatarChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      newAvatarData = ev.target.result;
+      document.getElementById('avatar-preview').src = newAvatarData;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleSave() {
+    const me = getCurrentUser();
+    const name = document.getElementById('name').value.trim();
+    const bio = document.getElementById('bio').value.trim();
+    if (!name) { alert('名前を入力してください'); return; }
+
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === me.id);
+    users[idx] = { ...users[idx], name, bio, avatar: newAvatarData || users[idx].avatar };
+    saveUsers(users);
+    setCurrentUser(users[idx]);
+    showToast('プロフィールを更新しました');
+    setTimeout(() => render(), 300);
+  }
+
+  function render() {
+    const me = getCurrentUser();
+
+    const mainHtml = `
+      <div class="page-header">
+        <h1 class="page-title">⚙️ プロフィール設定</h1>
+      </div>
+      <div class="settings-card">
+        <div class="settings-avatar-wrap">
+          <img id="avatar-preview" src="${me.avatar}" alt="${me.name}" class="avatar-lg">
+          <div>
+            <p style="font-size:.88rem;font-weight:600;margin-bottom:4px">プロフィール画像</p>
+            <label class="avatar-upload-btn">
+              画像を変更
+              <input type="file" accept="image/*" style="display:none" onchange="handleAvatarChange(event)">
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">名前 <span style="color:var(--danger)">*</span></label>
+          <input id="name" type="text" class="form-control" value="${me.name}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">メールアドレス</label>
+          <input type="email" class="form-control" value="${me.email}" disabled style="background:var(--bg);color:var(--text-muted)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">自己紹介</label>
+          <textarea id="bio" class="form-control" rows="4" placeholder="旅の趣味や好きな場所を教えてください">${me.bio || ''}</textarea>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="btn btn-primary" onclick="handleSave()">保存する</button>
+          <a href="profile.html?id=${me.id}" class="btn btn-ghost">キャンセル</a>
+        </div>
+        <hr class="divider">
+        <div>
+          <h3 style="font-size:.95rem;font-weight:700;margin-bottom:8px;color:var(--danger)">アカウント操作</h3>
+          <button class="btn btn-danger btn-sm" onclick="logout()">ログアウト</button>
+        </div>
+      </div>`;
+
+    document.getElementById('app').innerHTML = buildLayout('profile', mainHtml);
+  }
+
+  render();
+</script>
+</body>
+</html>

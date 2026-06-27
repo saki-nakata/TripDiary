@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ログイン — TripDiary</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">✈️ TripDiary</div>
+    <p class="auth-subtitle">旅のスポットを記録・共有しよう</p>
+    <div id="error-msg" style="color:var(--danger);font-size:.85rem;margin-bottom:12px;display:none;"></div>
+    <div class="form-group">
+      <label class="form-label">メールアドレス</label>
+      <input id="email" type="email" class="form-control" placeholder="example@email.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">パスワード</label>
+      <input id="password" type="password" class="form-control" placeholder="パスワードを入力">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="handleLogin()">ログイン</button>
+    <p style="font-size:.78rem;color:var(--text-muted);margin-top:12px;text-align:center;">
+      デモ用アカウント：saki@example.com / password123
+    </p>
+    <p class="auth-footer">アカウントをお持ちでない方は <a href="signup.html">新規登録</a></p>
+  </div>
+</div>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  initData();
+  if (getCurrentUser()) window.location.href = 'index.html';
+
+  function handleLogin() {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    if (!email || !password) { showError('メールアドレスとパスワードを入力してください'); return; }
+    const user = login(email, password);
+    if (!user) { showError('メールアドレスまたはパスワードが正しくありません'); return; }
+    window.location.href = 'index.html';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+</script>
+</body>
+</html>

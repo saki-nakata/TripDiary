@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>投稿する — TripDiary</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  initData();
+  if (!requireAuth()) { /* redirect handled */ }
+
+  let selectedRating = 0;
+  let previewImages = [];
+  let pinLat = null;
+  let pinLng = null;
+  let leafletMap = null;
+  let leafletMarker = null;
+
+  function setRating(val) {
+    selectedRating = val;
+    document.querySelectorAll('#star-input span').forEach((s, i) => {
+      s.classList.toggle('active', i < val);
+    });
+  }
+
+  function handleImageInput(e) {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => { previewImages.push(ev.target.result); renderPreviews(); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function removeImage(idx) { previewImages.splice(idx, 1); renderPreviews(); }
+
+  function renderPreviews() {
+    const wrap = document.getElementById('image-previews');
+    wrap.innerHTML = previewImages.map((src, i) => `
+      <div class="image-preview-item">
+        <img src="${src}" alt="preview">
+        <button class="image-preview-remove" onclick="removeImage(${i})">✕</button>
+      </div>`).join('');
+  }
+
+  function initMap() {
+    if (leafletMap) return;
+    leafletMap = L.map('pin-map').setView([35.6812, 139.7671], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(leafletMap);
+    leafletMap.on('click', e => {
+      pinLat = parseFloat(e.latlng.lat.toFixed(6));
+      pinLng = parseFloat(e.latlng.lng.toFixed(6));
+      if (leafletMarker) leafletMarker.setLatLng(e.latlng);
+      else leafletMarker = L.marker(e.latlng).addTo(leafletMap);
+      document.getElementById('pin-label').textContent = `📍 ${pinLat}, ${pinLng}`;
+      document.getElementById('pin-clear').style.display = 'inline-flex';
+    });
+  }
+
+  function clearPin() {
+    pinLat = null; pinLng = null;
+    if (leafletMarker) { leafletMarker.remove(); leafletMarker = null; }
+    document.getElementById('pin-label').textContent = '地図をクリックしてピンを設置';
+    document.getElementById('pin-clear').style.display = 'none';
+  }
+
+  function handleSubmit() {
+    const title = document.getElementById('title').value.trim();
+    const body = document.getElementById('body').value.trim();
+    const areaTag = document.getElementById('areaTag').value.trim();
+    const category = document.getElementById('category').value;
+    const visitedAt = document.getElementById('visitedAt').value;
+
+    if (!title) { alert('タイトルを入力してください'); return; }
+    if (!body) { alert('本文を入力してください'); return; }
+    if (!category) { alert('カテゴリを選択してください'); return; }
+    if (selectedRating === 0) { alert('評価を選択してください'); return; }
+
+    const me = getCurrentUser();
+    const posts = getPosts();
+    const newPost = {
+      id: 'p' + generateId(),
+      userId: me.id,
+      title,
+      body,
+      areaTag: areaTag || 'その他',
+      category,
+      rating: selectedRating,
+      visitedAt: visitedAt || new Date().toISOString().split('T')[0],
+      lat: pinLat,
+      lng: pinLng,
+      images: previewImages.length > 0 ? previewImages : ['https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800'],
+      createdAt: new Date().toISOString(),
+    };
+    posts.unshift(newPost);
+    savePosts(posts);
+    showToast('投稿しました！');
+    setTimeout(() => location.href = `post-detail.html?id=${newPost.id}`, 600);
+  }
+
+  function render() {
+    const mainHtml = `
+      <a href="index.html" class="back-btn">← 戻る</a>
+      <div class="page-header"><h1 class="page-title">✏️ 旅スポットを投稿</h1></div>
+      <div class="post-form">
+        <div class="form-group">
+          <label class="form-label">タイトル <span style="color:var(--danger)">*</span></label>
+          <input id="title" type="text" class="form-control" placeholder="例：嵐山の竹林と渡月橋">
+        </div>
+        <div class="form-group">
+          <label class="form-label">本文 <span style="color:var(--danger)">*</span></label>
+          <textarea id="body" class="form-control" placeholder="旅の体験・感想を書いてください" rows="6"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">カテゴリ <span style="color:var(--danger)">*</span></label>
+            <select id="category" class="form-control">
+              <option value="">選択してください</option>
+              ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">エリアタグ</label>
+            <input id="areaTag" type="text" class="form-control" placeholder="例：京都、沖縄">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">訪問日</label>
+            <input id="visitedAt" type="date" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">評価 <span style="color:var(--danger)">*</span></label>
+            <div id="star-input" class="star-input">
+              ${[1,2,3,4,5].map(i => `<span onclick="setRating(${i})">★</span>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">場所（任意）</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span id="pin-label" style="font-size:.85rem;color:var(--text-muted)">地図をクリックしてピンを設置</span>
+            <button id="pin-clear" class="btn btn-ghost btn-sm" onclick="clearPin()" style="display:none">✕ クリア</button>
+          </div>
+          <div id="pin-map" style="height:240px;border-radius:var(--radius);border:1px solid var(--border)"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">画像（任意）</label>
+          <input type="file" accept="image/*" multiple class="form-control" onchange="handleImageInput(event)">
+          <div id="image-previews" class="image-preview-list"></div>
+        </div>
+        <button class="btn btn-primary" onclick="handleSubmit()">投稿する</button>
+      </div>`;
+
+    document.getElementById('app').innerHTML = buildLayout('new', mainHtml);
+    setTimeout(initMap, 100);
+  }
+
+  render();
+</script>
+</body>
+</html>
