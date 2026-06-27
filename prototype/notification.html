@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>通知 — TripDiary</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+  initData();
+  if (!requireAuth()) { /* redirect */ }
+
+  const me = getCurrentUser();
+
+  function render() {
+    markAllNotifsRead(me.id);
+    const notifs = buildNotifications(me.id);
+
+    const listHtml = notifs.length
+      ? notifs.map(n => {
+          const from = getUserById(n.fromUserId);
+          if (!from) return '';
+          let icon = '', text = '', link = '';
+          if (n.type === 'like') {
+            icon = '👍';
+            text = `<strong>${from.name}</strong> が「${n.post.title}」にいいねしました`;
+            link = `post-detail.html?id=${n.post.id}`;
+          } else if (n.type === 'comment') {
+            icon = '💬';
+            text = `<strong>${from.name}</strong> が「${n.post.title}」にコメントしました<span class="notif-comment-body">「${n.body}」</span>`;
+            link = `post-detail.html?id=${n.post.id}`;
+          } else if (n.type === 'follow') {
+            icon = '👤';
+            text = `<strong>${from.name}</strong> があなたをフォローしました`;
+            link = `profile.html?id=${from.id}`;
+          }
+          return `<a href="${link}" class="notif-item">
+            <span class="notif-icon">${icon}</span>
+            <img src="${from.avatar}" alt="${from.name}" class="avatar-sm">
+            <div class="notif-body">
+              <p class="notif-text">${text}</p>
+              ${n.date ? `<span class="notif-date">${formatDate(n.date)}</span>` : ''}
+            </div>
+          </a>`;
+        }).join('')
+      : `<div class="empty-msg" style="padding:64px 0">
+          <p style="font-size:2rem;margin-bottom:12px">🔔</p>
+          <p>まだ通知はありません</p>
+        </div>`;
+
+    const mainHtml = `
+      <div class="page-header">
+        <h1 class="page-title">🔔 通知</h1>
+      </div>
+      <div class="notif-list">${listHtml}</div>`;
+
+    document.getElementById('app').innerHTML = buildLayout('notification', mainHtml);
+  }
+
+  render();
+</script>
+</body>
+</html>

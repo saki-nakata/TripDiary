@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TripDiary — 旅スポットを記録・共有しよう</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+  initData();
+
+  function buildFeaturedCarousel(posts) {
+    if (!posts.length) return '';
+    const items = posts.slice(0, 5);
+    return `
+      <div class="featured-carousel" id="featured-carousel">
+        <div class="featured-track" id="featured-track">
+          ${items.map((p, i) => {
+            const user = getUserById(p.userId);
+            const img = p.images && p.images.length ? p.images[0] : '';
+            return `<div class="featured-slide" onclick="location.href='post-detail.html?id=${p.id}'">
+              <img src="${img}" alt="${p.title}">
+              <div class="featured-overlay">
+                <div class="featured-category">${categoryBadge(p.category)}</div>
+                <h3 class="featured-title">${p.title}</h3>
+                <div class="featured-meta">
+                  <img src="${user.avatar}" alt="${user.name}" class="avatar-xs">
+                  <span>${user.name}</span>
+                  <span class="area-tag" style="margin-left:auto">📍 ${p.areaTag}</span>
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        <button class="featured-btn prev" onclick="moveFeature(-1)">&#8249;</button>
+        <button class="featured-btn next" onclick="moveFeature(1)">&#8250;</button>
+        <div class="featured-dots">
+          ${items.map((_, i) => `<span class="featured-dot ${i === 0 ? 'active' : ''}" onclick="goFeature(${i})"></span>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  let featIdx = 0;
+  function goFeature(i) {
+    featIdx = i;
+    const track = document.getElementById('featured-track');
+    if (!track) return;
+    track.style.transform = `translateX(-${i * 100}%)`;
+    document.querySelectorAll('.featured-dot').forEach((d, j) => d.classList.toggle('active', i === j));
+  }
+  function moveFeature(dir) {
+    const posts = getPosts().sort((a, b) => getLikeCount(b.id) - getLikeCount(a.id)).slice(0, 5);
+    goFeature((featIdx + dir + posts.length) % posts.length);
+  }
+
+  function buildAreaSection() {
+    const tags = [...new Set(getPosts().map(p => p.areaTag))].sort();
+    return `
+      <section class="portal-section">
+        <h2 class="portal-section-title">📍 エリアから探す</h2>
+        <div class="area-tag-grid">
+          ${tags.map(tag => {
+            const count = getPosts().filter(p => p.areaTag === tag).length;
+            const img = getPosts().find(p => p.areaTag === tag)?.images?.[0] || '';
+            return `<a href="tag.html?tag=${encodeURIComponent(tag)}" class="area-tag-card">
+              <div class="area-tag-img" style="background-image:url('${img}')"></div>
+              <div class="area-tag-info">
+                <span class="area-tag-name">${tag}</span>
+                <span class="area-tag-count">${count}件</span>
+              </div>
+            </a>`;
+          }).join('')}
+        </div>
+      </section>`;
+  }
+
+  function buildCategorySection() {
+    const icons = { '自然': '🌿', 'グルメ': '🍜', 'アウトドア': '⛺', '歴史・文化': '🏛️', 'その他': '📌' };
+    return `
+      <section class="portal-section">
+        <h2 class="portal-section-title">🗂️ カテゴリから探す</h2>
+        <div class="category-grid">
+          ${CATEGORIES.map(c => {
+            const count = getPosts().filter(p => p.category === c).length;
+            return `<a href="index.html?category=${encodeURIComponent(c)}" class="category-card">
+              <span class="category-icon">${icons[c] || '📌'}</span>
+              <span class="category-name">${c}</span>
+              <span class="category-count">${count}件</span>
+            </a>`;
+          }).join('')}
+        </div>
+      </section>`;
+  }
+
+  function buildSpotRankingSection() {
+    const posts = [...getPosts()].sort((a, b) => getLikeCount(b.id) - getLikeCount(a.id)).slice(0, 5);
+    const rankColors = ['#f59e0b', '#9ca3af', '#b45309', '#6b7280', '#6b7280'];
+    return `
+      <section class="portal-section">
+        <div class="portal-section-header">
+          <h2 class="portal-section-title">🏆 人気スポットランキング</h2>
+          <a href="search.html?tab=ranking" class="portal-more">ランキング全件</a>
+        </div>
+        <div class="spot-ranking-list">
+          ${posts.map((p, i) => {
+            const user = getUserById(p.userId);
+            const thumb = p.images && p.images.length ? p.images[0] : '';
+            const likes = getLikeCount(p.id);
+            return `<a href="post-detail.html?id=${p.id}" class="spot-ranking-item">
+              <div class="spot-rank-badge" style="background:${rankColors[i]}">${i + 1}</div>
+              ${thumb ? `<div class="spot-rank-thumb" style="background-image:url('${thumb}')"></div>` : ''}
+              <div class="spot-rank-info">
+                <p class="spot-rank-title">${p.title}</p>
+                <p class="spot-rank-meta">📍 ${p.areaTag} &nbsp;·&nbsp; 👍 ${likes}</p>
+              </div>
+            </a>`;
+          }).join('')}
+        </div>
+      </section>`;
+  }
+
+  function handleFollowRanking(uid, btn) {
+    const me = getCurrentUser();
+    if (!me) { location.href = 'login.html'; return; }
+    toggleFollow(me.id, uid);
+    const following = isFollowing(me.id, uid);
+    btn.textContent = following ? 'フォロー中' : 'フォロー';
+    btn.className = `btn btn-sm ${following ? 'btn-ghost' : 'btn-primary'}`;
+  }
+
+  function render() {
+    const allPosts = getPosts();
+    const popularPosts = [...allPosts].sort((a, b) => getLikeCount(b.id) - getLikeCount(a.id)).slice(0, 6);
+    const latestPosts = [...allPosts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
+
+    const mainHtml = `
+      <section class="portal-section" style="margin-top:0">
+        <div class="portal-section-header">
+          <h2 class="portal-section-title">❤️ 人気の旅スポット</h2>
+          <a href="search.html?tab=spots" class="portal-more">スポット検索</a>
+        </div>
+        ${buildPostGrid(popularPosts)}
+      </section>
+
+      ${buildAreaSection()}
+
+      ${buildCategorySection()}
+
+      <section class="portal-section">
+        <div class="portal-section-header">
+          <h2 class="portal-section-title">🆕 最新の旅スポット</h2>
+          <a href="search.html?tab=spots" class="portal-more">スポット検索</a>
+        </div>
+        ${buildPostGrid(latestPosts)}
+      </section>
+
+      ${buildSpotRankingSection()}`;
+
+    document.getElementById('app').innerHTML = buildLayout('home', mainHtml);
+  }
+
+  render();
+</script>
+</body>
+</html>

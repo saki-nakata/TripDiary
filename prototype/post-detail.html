@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>投稿詳細 — TripDiary</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  initData();
+
+  const params = new URLSearchParams(location.search);
+  const postId = params.get('id');
+  const post = getPostById(postId);
+  if (!post) { location.href = 'index.html'; }
+
+  const me = getCurrentUser();
+  const author = getUserById(post.userId);
+  let lightboxIdx = 0;
+
+  function renderComments() {
+    const comments = getComments().filter(c => c.postId === post.id);
+    comments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    if (!comments.length) return '<p class="text-muted" style="padding:12px 0">まだコメントはありません</p>';
+    return comments.map(c => {
+      const cu = getUserById(c.userId);
+      const canDelete = me && (me.id === c.userId || me.id === post.userId);
+      return `<div class="comment-item">
+        <img src="${cu.avatar}" alt="${cu.name}" class="avatar-xs">
+        <div class="comment-body-wrap">
+          <a href="profile.html?id=${cu.id}" class="comment-author">${cu.name}</a>
+          <p class="comment-text">${c.body}</p>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="comment-time">${formatDate(c.createdAt)}</span>
+            ${canDelete ? `<button class="comment-delete" onclick="deleteComment('${c.id}')">削除</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function deleteComment(cid) {
+    const cs = getComments().filter(c => c.id !== cid);
+    saveComments(cs);
+    document.getElementById('comments-list').innerHTML = renderComments();
+  }
+
+  function postComment() {
+    if (!me) { location.href = 'login.html'; return; }
+    const body = document.getElementById('comment-input').value.trim();
+    if (!body) return;
+    const cs = getComments();
+    cs.push({ id: 'c' + generateId(), postId: post.id, userId: me.id, body, createdAt: new Date().toISOString() });
+    saveComments(cs);
+    document.getElementById('comment-input').value = '';
+    document.getElementById('comment-count').textContent = '0';
+    document.getElementById('comments-list').innerHTML = renderComments();
+  }
+
+  function updateCommentCounter() {
+    const el = document.getElementById('comment-input');
+    const cnt = document.getElementById('comment-count');
+    if (el && cnt) cnt.textContent = el.value.length;
+  }
+
+  function updateActions() {
+    if (!me) return;
+    const liked = isLiked(me.id, post.id);
+    const wishlisted = isWishlisted(me.id, post.id);
+    const visited = isVisitedPost(me.id, post.id);
+    document.getElementById('like-btn').className = `btn btn-ghost btn-sm ${liked ? 'liked' : ''}`;
+    document.getElementById('like-btn').innerHTML = `👍 いいね <span id="like-count">${getLikeCount(post.id)}</span>`;
+    document.getElementById('wishlist-btn').className = `btn btn-ghost btn-sm ${wishlisted ? 'active-btn' : ''}`;
+    document.getElementById('visited-btn').className = `btn btn-ghost btn-sm ${visited ? 'active-btn' : ''}`;
+  }
+
+  function handleLikeDetail() {
+    if (!me) { location.href = 'login.html'; return; }
+    toggleLike(me.id, post.id);
+    updateActions();
+  }
+  function handleWishlist() {
+    if (!me) { location.href = 'login.html'; return; }
+    toggleWishlist(me.id, post.id);
+    updateActions();
+    showToast(isWishlisted(me.id, post.id) ? '「行きたい」に追加しました' : '「行きたい」から削除しました');
+  }
+  function handleVisited() {
+    if (!me) { location.href = 'login.html'; return; }
+    toggleVisited(me.id, post.id);
+    updateActions();
+    showToast(isVisitedPost(me.id, post.id) ? '訪問済みに追加しました' : '訪問済みから削除しました');
+  }
+
+  function deletePost() {
+    if (!confirm('この投稿を削除しますか？')) return;
+    const posts = getPosts().filter(p => p.id !== post.id);
+    savePosts(posts);
+    location.href = 'index.html';
+  }
+
+  function openLightbox(idx) {
+    lightboxIdx = idx;
+    updateLightbox();
+  }
+
+  function updateLightbox() {
+    const imgs = post.images;
+    const existing = document.getElementById('lightbox');
+    if (existing) existing.remove();
+    const lb = document.createElement('div');
+    lb.id = 'lightbox';
+    lb.className = 'lightbox';
+    lb.innerHTML = `
+      <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+      <img src="${imgs[lightboxIdx]}" alt="">
+      ${imgs.length > 1 ? `
+        <button class="lightbox-prev" onclick="moveLightbox(-1)">&#8249;</button>
+        <button class="lightbox-next" onclick="moveLightbox(1)">&#8250;</button>
+        <div class="lightbox-counter">${lightboxIdx + 1} / ${imgs.length}</div>` : ''}`;
+    document.body.appendChild(lb);
+    lb.addEventListener('click', e => { if (e.target === lb) closeLightbox(); });
+  }
+
+  function moveLightbox(dir) {
+    lightboxIdx = (lightboxIdx + dir + post.images.length) % post.images.length;
+    updateLightbox();
+  }
+
+  function closeLightbox() {
+    const lb = document.getElementById('lightbox');
+    if (lb) lb.remove();
+  }
+
+  document.addEventListener('keydown', e => {
+    if (!document.getElementById('lightbox')) return;
+    if (e.key === 'ArrowLeft') moveLightbox(-1);
+    if (e.key === 'ArrowRight') moveLightbox(1);
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  let carouselIdx = 0;
+
+  function buildCarousel(images) {
+    if (!images || !images.length) return '';
+    const dots = images.length > 1 ? `
+      <div class="carousel-dots">
+        ${images.map((_, i) => `<span class="carousel-dot ${i === 0 ? 'active' : ''}" onclick="goCarousel(${i})"></span>`).join('')}
+      </div>` : '';
+    const thumbs = images.length > 1 ? `
+      <div class="carousel-thumbs">
+        ${images.map((src, i) => `
+          <div class="carousel-thumb ${i === 0 ? 'active' : ''}" onclick="goCarousel(${i})">
+            <img src="${src}" alt="">
+          </div>`).join('')}
+      </div>` : '';
+    return `
+      <div class="carousel" id="carousel">
+        <div class="carousel-track" id="carousel-track">
+          ${images.map((src, i) => `
+            <div class="carousel-slide">
+              <img src="${src}" alt="${post.title}" onclick="openLightbox(${i})">
+            </div>`).join('')}
+        </div>
+        ${images.length > 1 ? `
+          <button class="carousel-btn prev" onclick="moveCarousel(-1)">&#8249;</button>
+          <button class="carousel-btn next" onclick="moveCarousel(1)">&#8250;</button>` : ''}
+        ${dots}
+      </div>
+      ${thumbs}`;
+  }
+
+  function goCarousel(idx) {
+    carouselIdx = idx;
+    document.getElementById('carousel-track').style.transform = `translateX(-${idx * 100}%)`;
+    document.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+    document.querySelectorAll('.carousel-thumb').forEach((t, i) => t.classList.toggle('active', i === idx));
+  }
+
+  function moveCarousel(dir) {
+    goCarousel((carouselIdx + dir + post.images.length) % post.images.length);
+  }
+
+  function render() {
+    const liked = me ? isLiked(me.id, post.id) : false;
+    const wishlisted = me ? isWishlisted(me.id, post.id) : false;
+    const visited = me ? isVisitedPost(me.id, post.id) : false;
+    const isAuthor = me && me.id === post.userId;
+
+    const photoHtml = buildCarousel(post.images);
+
+    const commentFormHtml = me ? `
+      <div class="comment-form">
+        <img src="${me.avatar}" alt="${me.name}" class="avatar-xs" style="margin-top:4px">
+        <div style="flex:1">
+          <textarea id="comment-input" class="form-control" placeholder="コメントを入力…" rows="2" maxlength="2000" oninput="updateCommentCounter()"></textarea>
+          <span class="char-counter"><span id="comment-count">0</span> / 2000 文字</span>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="postComment()">投稿</button>
+      </div>` : `<p style="font-size:.88rem;color:var(--text-muted);margin-bottom:16px;"><a href="login.html" style="color:var(--primary)">ログイン</a>するとコメントできます</p>`;
+
+    const mainHtml = `
+      <div class="post-detail-header">
+        <div class="post-detail-meta" style="margin-bottom:10px">
+          ${categoryBadge(post.category)}
+          <a href="tag.html?tag=${encodeURIComponent(post.areaTag)}" class="area-tag">📍 ${post.areaTag}</a>
+          <span class="text-muted" style="font-size:.85rem">訪問日：${formatDate(post.visitedAt)}</span>
+        </div>
+        <h1 class="post-detail-title">${post.title}</h1>
+        <div class="post-detail-meta">
+          <a href="profile.html?id=${author.id}" style="display:flex;align-items:center;gap:8px">
+            <img src="${author.avatar}" alt="${author.name}" class="avatar-xs">
+            <span style="font-weight:600;font-size:.9rem">${author.name}</span>
+          </a>
+          <div>${renderStars(post.rating)}</div>
+          ${isAuthor ? `
+            <a href="post-edit.html?id=${post.id}" class="btn btn-ghost btn-sm" style="margin-left:auto">編集</a>
+            <button class="btn btn-danger btn-sm" onclick="deletePost()">削除</button>` : ''}
+        </div>
+      </div>
+
+      ${photoHtml}
+
+      <div class="post-actions">
+        <button id="like-btn" class="btn btn-ghost btn-sm ${liked ? 'liked' : ''}" onclick="handleLikeDetail()">
+          👍 いいね <span id="like-count">${getLikeCount(post.id)}</span>
+        </button>
+        <button id="wishlist-btn" class="btn btn-ghost btn-sm ${wishlisted ? 'active-btn' : ''}" onclick="handleWishlist()">
+          🔖 ${wishlisted ? '行きたい！済' : '行きたい！'}
+        </button>
+        <button id="visited-btn" class="btn btn-ghost btn-sm ${visited ? 'active-btn' : ''}" onclick="handleVisited()">
+          ✅ ${visited ? '訪問済み' : '訪問済みに追加'}
+        </button>
+      </div>
+
+      <p class="post-body">${post.body}</p>
+
+      ${post.lat && post.lng ? `<div id="map" class="map-container"></div>` : ''}
+
+      ${(() => {
+        const related = getPosts()
+          .filter(p => p.id !== post.id && p.areaTag === post.areaTag)
+          .sort((a, b) => getLikeCount(b.id) - getLikeCount(a.id))
+          .slice(0, 3);
+        if (!related.length) return '';
+        return `<div class="related-section">
+          <h2 class="related-title">📍 ${post.areaTag} の関連スポット</h2>
+          ${buildPostGrid(related)}
+        </div>`;
+      })()}
+
+      <div class="comments-section">
+        <h2 class="comments-title">💬 コメント (${getCommentCount(post.id)})</h2>
+        ${commentFormHtml}
+        <div id="comments-list">${renderComments()}</div>
+      </div>`;
+
+    document.getElementById('app').innerHTML = buildLayout('explore', mainHtml);
+
+    if (post.lat && post.lng) {
+      setTimeout(() => {
+        const map = L.map('map').setView([post.lat, post.lng], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        L.marker([post.lat, post.lng]).addTo(map).bindPopup(post.title).openPopup();
+      }, 100);
+    }
+  }
+
+  render();
+</script>
+<style>
+  .liked { color: var(--danger) !important; border-color: var(--danger) !important; }
+  .active-btn { background: #eff6ff !important; color: var(--primary) !important; border-color: var(--primary) !important; }
+</style>
+</body>
+</html>

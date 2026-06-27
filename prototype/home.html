@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ホーム — TripDiary</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+  initData();
+  if (!requireAuth()) { /* redirect */ }
+
+  const me = getCurrentUser();
+  let activeTab = 'timeline';
+
+  function buildActivityItem(act) {
+    const user = getUserById(act.userId);
+    const thumb = act.post && act.post.images && act.post.images.length
+      ? act.post.images[0] : null;
+
+    let label = '';
+    let link = '';
+    if (act.type === 'post') {
+      label = `<strong>${user.name}</strong> が旅スポットを投稿しました`;
+      link = `post-detail.html?id=${act.post.id}`;
+    } else if (act.type === 'like') {
+      label = `<strong>${user.name}</strong> が <em>${act.post.title}</em> にいいね！しました`;
+      link = `post-detail.html?id=${act.post.id}`;
+    } else if (act.type === 'comment') {
+      label = `<strong>${user.name}</strong> が <em>${act.post.title}</em> にコメントしました`;
+      link = `post-detail.html?id=${act.post.id}`;
+    } else if (act.type === 'follow') {
+      const target = getUserById(act.targetId);
+      label = `<strong>${user.name}</strong> が <strong>${target ? target.name : ''}</strong> をフォローしました`;
+      link = `profile.html?id=${act.userId}`;
+    }
+
+    const typeIcon = { post: '✈️', like: '👍', comment: '💬', follow: '👤' }[act.type];
+
+    return `<div class="activity-item" onclick="location.href='${link}'">
+      <div class="activity-icon">${typeIcon}</div>
+      <a href="profile.html?id=${user.id}" onclick="event.stopPropagation()">
+        <img src="${user.avatar}" alt="${user.name}" class="avatar-sm">
+      </a>
+      <div class="activity-body">
+        <p class="activity-label">${label}</p>
+        <span class="activity-time">${formatDate(act.date)}</span>
+        ${thumb ? `<a href="${link}" onclick="event.stopPropagation()">
+          <img src="${thumb}" alt="" class="activity-thumb">
+        </a>` : ''}
+        ${act.type === 'comment' ? `<p class="activity-comment-text">${act.comment.body}</p>` : ''}
+      </div>
+    </div>`;
+  }
+
+  function setTab(tab) {
+    activeTab = tab;
+    render();
+  }
+
+  function render() {
+    const followingIds = getFollows()
+      .filter(f => f.followerId === me.id)
+      .map(f => f.followingId);
+
+    const posts = getPosts()
+      .filter(p => followingIds.includes(p.userId))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const activities = getFollowActivities(me.id);
+
+    const emptyFollow = `
+      <div class="empty-msg" style="padding:64px 0">
+        <p style="font-size:2rem;margin-bottom:12px">👥</p>
+        <p>フォロー中のユーザーがいません</p>
+        <a href="search.html" class="btn btn-primary" style="margin-top:16px">ユーザーを探す</a>
+      </div>`;
+
+    const mainHtml = `
+      <div class="page-header">
+        <h1 class="page-title">🏠 ホーム</h1>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn ${activeTab === 'timeline' ? 'active' : ''}" onclick="setTab('timeline')">タイムライン</button>
+        <button class="tab-btn ${activeTab === 'posts' ? 'active' : ''}" onclick="setTab('posts')">投稿</button>
+      </div>
+      ${activeTab === 'timeline'
+        ? (activities.length
+            ? `<div class="activity-list">${activities.map(buildActivityItem).join('')}</div>`
+            : emptyFollow)
+        : (posts.length
+            ? buildPostGrid(posts)
+            : emptyFollow)
+      }`;
+
+    document.getElementById('app').innerHTML = buildLayout('home', mainHtml);
+  }
+
+  render();
+</script>
+</body>
+</html>
