@@ -95,17 +95,17 @@ git clone <repository-url>
 cd TripDiary
 
 # 2. 依存関係をインストール
-npm install
+pnpm install
 
 # 3. 環境変数を設定
 cp .env.sample .env.local
 # .env.local を編集して各値を設定
 
 # 4. DB マイグレーション
-npx prisma migrate dev
+pnpm prisma migrate dev
 
 # 5. 開発サーバー起動
-npm run dev
+pnpm dev
 ```
 
 | サービス | URL |
@@ -117,11 +117,11 @@ npm run dev
 ## 主なコマンド
 
 ```bash
-npm run dev          # 開発サーバー起動
-npm run build        # 本番ビルド
-npm run lint         # ESLint 実行
-npx prisma studio    # Prisma Studio（DB GUI）
-npx prisma migrate dev   # マイグレーション実行
+pnpm dev             # 開発サーバー起動
+pnpm build           # 本番ビルド
+pnpm lint            # ESLint 実行
+pnpm prisma studio       # Prisma Studio（DB GUI）
+pnpm prisma migrate dev  # マイグレーション実行
 ```
 
 ---
