@@ -10,7 +10,7 @@
 
 ### 1.1 設計方針
 
-- 画像は Cloudinary に保存し、DB には URL のみ保持する
+- 画像は AWS S3 に保存し、DB には URL のみ保持する
 - いいね・フォロー・訪問済み・行きたいリストは複合主キーで一意性を管理する
 - タイムスタンプは `createdAt` / `updatedAt` を全テーブルに持つ（`updatedAt` は変更があるテーブルのみ）
 - 認証テーブル（Account・Session・VerificationToken）は Auth.js v5 の仕様に準拠する
@@ -137,7 +137,7 @@ erDiagram
 | id | VARCHAR(30) | NOT NULL | cuid() | ユーザーID（cuid） |
 | email | VARCHAR(255) | NOT NULL | - | メールアドレス（一意） |
 | name | VARCHAR(100) | NOT NULL | - | 表示名 |
-| image | TEXT | NULL | - | プロフィール画像URL（Cloudinary） |
+| image | TEXT | NULL | - | プロフィール画像URL（S3） |
 | bio | VARCHAR(200) | NULL | - | 自己紹介文 |
 | password | VARCHAR(255) | NULL | - | ハッシュ化済みパスワード（OAuth利用時はNULL） |
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
@@ -191,7 +191,7 @@ erDiagram
 | カラム名 | 型 | NULL | デフォルト | 説明 |
 |---------|-----|------|-----------|------|
 | id | VARCHAR(30) | NOT NULL | cuid() | 画像ID（cuid） |
-| url | TEXT | NOT NULL | - | 画像URL（Cloudinary） |
+| url | TEXT | NOT NULL | - | 画像URL（S3） |
 | displayOrder | INT | NOT NULL | 0 | 表示順序（0始まり）。`order` は SQL 予約語のため `displayOrder` を使用 |
 | postId | VARCHAR(30) | NOT NULL | - | 紐付く投稿のID |
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |

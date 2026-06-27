@@ -310,8 +310,8 @@ Auth.js v5（セッションベース）を使用する。
 
 | Method | エンドポイント | 説明 | 認証 |
 |--------|--------------|------|------|
-| POST | `/api/upload/post` | 投稿写真を Cloudinary にアップロード | 必要 |
-| POST | `/api/upload/avatar` | プロフィール画像を Cloudinary にアップロード | 必要 |
+| POST | `/api/upload/post` | 投稿写真を S3 にアップロード | 必要 |
+| POST | `/api/upload/avatar` | プロフィール画像を S3 にアップロード | 必要 |
 
 **リクエスト（multipart/form-data）**
 
@@ -322,7 +322,7 @@ Auth.js v5（セッションベース）を使用する。
 **レスポンス（200）**
 ```json
 {
-  "url": "https://res.cloudinary.com/..."
+  "url": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/..."
 }
 ```
 
