@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  image     String?  @db.Text
+  bio       String?  @db.VarChar(200)
+  password  String?  @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts     Post[]
+  comments  Comment[]
+  likes     Like[]
+  followers Follow[]  @relation("following")
+  following Follow[]  @relation("follower")
+  wishlists Wishlist[]
+  visited   Visited[]
+  plans     Plan[]
+  accounts  Account[]
+
+  @@map("users")
+}
+
+model Post {
+  id             String    @id @default(cuid())
+  title          String    @db.VarChar(100)
+  body           String    @db.Text
+  areaTag        String    @db.VarChar(50)
+  category       String?   @db.VarChar(50)
+  rating         Int?
+  visitedAt      DateTime  @db.Date
+  cost           Int?
+  costBreakdown  Json?
+  planId         String?   @db.VarChar(30)
+  latitude       Float?
+  longitude      Float?
+  authorId       String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  author     User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  plan       Plan?       @relation(fields: [planId], references: [id], onDelete: SetNull)
+  images     PostImage[]
+  comments   Comment[]
+  likes      Like[]
+  wishlists  Wishlist[]
+  visited    Visited[]
+  planSpots  PlanSpot[]
+
+  @@index([authorId])
+  @@index([areaTag])
+  @@index([category])
+  @@index([rating])
+  @@index([createdAt(sort: Desc)])
+  @@index([planId])
+  @@map("posts")
+}
+
+model PostImage {
+  id           String   @id @default(cuid())
+  url          String   @db.Text
+  displayOrder Int      @default(0)
+  postId       String
+  createdAt    DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("post_images")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  body      String   @db.Text
+  authorId  String
+  postId    String
+  createdAt DateTime @default(now())
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("comments")
+}
+
+model Like {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@map("likes")
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@map("follows")
+}
+
+model Wishlist {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@map("wishlists")
+}
+
+model Visited {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@map("visited")
+}
+
+model Plan {
+  id              String   @id @default(cuid())
+  title           String   @db.VarChar(60)
+  startDate       DateTime? @db.Date
+  endDate         DateTime? @db.Date
+  budget          Int?
+  budgetBreakdown Json?
+  memo            String?  @db.Text
+  completed       Boolean  @default(false)
+  userId          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts     Post[]
+  planSpots PlanSpot[]
+
+  @@index([userId])
+  @@index([completed])
+  @@map("plans")
+}
+
+model PlanSpot {
+  planId       String
+  postId       String
+  displayOrder Int    @default(0)
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([planId, postId])
+  @@map("plan_spots")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String  @db.VarChar(50)
+  provider          String  @db.VarChar(50)
+  providerAccountId String  @db.VarChar(255)
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String? @db.VarChar(50)
+  scope             String? @db.Text
+  id_token          String? @db.Text
+  session_state     String? @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model VerificationToken {
+  identifier String   @db.VarChar(255)
+  token      String   @unique @db.VarChar(255)
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
