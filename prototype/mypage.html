@@ -18,8 +18,10 @@
   const me = getCurrentUser();
   const tabParam = new URLSearchParams(location.search).get('tab');
   let activeTab = tabParam || 'follow-feed';
+  let reportYear = new Date().getFullYear();
 
   function setTab(tab) { activeTab = tab; render(); }
+  function setReportYear(y) { reportYear = Number(y); render(); }
 
   function deleteMyPost(postId) {
     if (!confirm('この投稿を削除しますか？')) return;
@@ -98,6 +100,198 @@
         </div>` : ''}`;
   }
 
+  // ────────────────────────────────────────────
+  // 旅行レポート
+  // ────────────────────────────────────────────
+
+  function buildReportTab(allMyPosts) {
+    const years = [...new Set(allMyPosts.map(p => new Date(p.visitedAt).getFullYear()))].sort((a, b) => b - a);
+    if (!years.length) return `<div class="report-empty">📋 まだ投稿がありません。<br>旅の記録を投稿すると旅行レポートが生成されます。</div>`;
+
+    const yearPosts = allMyPosts.filter(p => new Date(p.visitedAt).getFullYear() === reportYear)
+      .sort((a, b) => new Date(b.visitedAt) - new Date(a.visitedAt));
+
+    const yearOptions = years.map(y =>
+      `<option value="${y}" ${y === reportYear ? 'selected' : ''}>${y}年</option>`
+    ).join('');
+
+    // 集計
+    const completedPlans = getPlans().filter(p => {
+      if (p.userId !== me.id || !p.completed) return false;
+      if (!p.startDate) return false;
+      return new Date(p.startDate).getFullYear() === reportYear;
+    });
+
+    const prefectures = [...new Set(yearPosts.map(p => p.prefecture).filter(Boolean))];
+    const totalPhotos = yearPosts.reduce((s, p) => s + (p.images ? p.images.length : 0), 0);
+    const totalCost = yearPosts.reduce((s, p) => s + (p.cost || 0), 0);
+
+    // 最多訪問都道府県
+    const prefCount = {};
+    yearPosts.forEach(p => { if (p.prefecture) prefCount[p.prefecture] = (prefCount[p.prefecture] || 0) + 1; });
+    const topPref = Object.entries(prefCount).sort((a, b) => b[1] - a[1])[0];
+
+    // カテゴリ集計
+    const catCount = {};
+    yearPosts.forEach(p => { const c = p.category || 'その他'; catCount[c] = (catCount[c] || 0) + 1; });
+    const catEntries = Object.entries(catCount).sort((a, b) => b[1] - a[1]);
+    const maxCat = catEntries[0] ? catEntries[0][1] : 1;
+
+    // 月別費用集計
+    const monthlyCost = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, cost: 0 }));
+    yearPosts.forEach(p => {
+      const m = new Date(p.visitedAt).getMonth();
+      monthlyCost[m].cost += p.cost || 0;
+    });
+    const maxMonthlyCost = Math.max(...monthlyCost.map(m => m.cost), 1);
+
+    // 年別タイムライン（全年）
+    const byYear = {};
+    allMyPosts.forEach(p => {
+      const y = new Date(p.visitedAt).getFullYear();
+      if (!byYear[y]) byYear[y] = [];
+      byYear[y].push(p);
+    });
+    const sortedYears = Object.keys(byYear).map(Number).sort((a, b) => b - a);
+
+    return `
+      <div class="report-tab">
+
+        <!-- 年選択 -->
+        <div class="report-year-selector">
+          <label>表示する年：</label>
+          <select class="report-year-select" onchange="setReportYear(this.value)">${yearOptions}</select>
+        </div>
+
+        <!-- Wrapped風カード -->
+        <div>
+          <div class="report-section-title">✨ ${reportYear}年の旅まとめ</div>
+          ${yearPosts.length === 0
+            ? `<div class="report-empty">${reportYear}年の旅の記録がありません。</div>`
+            : `<div class="report-cards-grid">
+                <div class="report-card">
+                  <div class="report-card-value">${completedPlans.length}</div>
+                  <div class="report-card-unit">回</div>
+                  <div class="report-card-label">旅行回数</div>
+                </div>
+                <div class="report-card">
+                  <div class="report-card-value">${prefectures.length}</div>
+                  <div class="report-card-unit">都道府県</div>
+                  <div class="report-card-label">訪問エリア数</div>
+                </div>
+                <div class="report-card">
+                  <div class="report-card-value">${yearPosts.length}</div>
+                  <div class="report-card-unit">スポット</div>
+                  <div class="report-card-label">訪問スポット数</div>
+                </div>
+                <div class="report-card">
+                  <div class="report-card-value">${yearPosts.length}</div>
+                  <div class="report-card-unit">件</div>
+                  <div class="report-card-label">投稿数</div>
+                </div>
+                <div class="report-card">
+                  <div class="report-card-value">${totalPhotos}</div>
+                  <div class="report-card-unit">枚</div>
+                  <div class="report-card-label">写真枚数</div>
+                </div>
+                <div class="report-card">
+                  <div class="report-card-value">${totalCost > 0 ? (totalCost >= 10000 ? Math.round(totalCost / 1000) + 'k' : totalCost.toLocaleString()) : '—'}</div>
+                  <div class="report-card-unit">${totalCost >= 10000 ? '円（概算）' : totalCost > 0 ? '円' : ''}</div>
+                  <div class="report-card-label">旅行費用合計</div>
+                </div>
+                <div class="report-card">
+                  <div class="report-card-value" style="font-size:1.3rem">${topPref ? topPref[0] : '—'}</div>
+                  <div class="report-card-unit">${topPref ? topPref[1] + '回訪問' : ''}</div>
+                  <div class="report-card-label">最多訪問エリア</div>
+                </div>
+              </div>`
+          }
+        </div>
+
+        <!-- カテゴリ別投稿数 -->
+        ${yearPosts.length > 0 ? `
+        <div class="report-section">
+          <div class="report-section-title">📊 カテゴリ別投稿数</div>
+          <div class="report-bar-list">
+            ${catEntries.map(([cat, count]) => `
+              <div class="report-bar-row">
+                <span class="report-bar-name">${cat}</span>
+                <div class="report-bar-track">
+                  <div class="report-bar-fill" style="width:${Math.round(count / maxCat * 100)}%"></div>
+                </div>
+                <span class="report-bar-count">${count}件</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- 月別費用 -->
+        <div class="report-section">
+          <div class="report-section-title">💴 月別旅行費用</div>
+          <div style="display:flex;align-items:flex-end;gap:4px;height:160px;padding-bottom:28px;position:relative">
+            <div style="position:absolute;bottom:28px;left:0;right:0;height:1px;background:var(--border)"></div>
+            ${monthlyCost.map(m => {
+              const h = m.cost > 0 ? Math.max(Math.round(m.cost / maxMonthlyCost * 110), 4) : 0;
+              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;position:relative">
+                <div style="width:70%;background:linear-gradient(180deg,#667eea,#764ba2);border-radius:4px 4px 0 0;height:${h}px;transition:height .8s"></div>
+                <span style="font-size:.6rem;color:var(--text-muted);margin-top:4px;position:absolute;bottom:4px">${m.month}月</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- 訪問エリア -->
+        <div class="report-section">
+          <div class="report-section-title">📍 訪問した都道府県（${prefectures.length}件）</div>
+          ${prefectures.length
+            ? `<div class="report-pref-tags">${prefectures.map(p => `<span class="report-pref-tag">${p}</span>`).join('')}</div>`
+            : `<p style="color:var(--text-muted);font-size:.9rem">都道府県データが登録されていません</p>`
+          }
+        </div>
+        ` : ''}
+
+        <!-- 年別タイムライン -->
+        <div>
+          <div class="report-section-title">🗓️ 年別タイムライン</div>
+          <div class="report-timeline">
+            ${sortedYears.map(y => {
+              const posts = byYear[y].sort((a, b) => new Date(b.visitedAt) - new Date(a.visitedAt));
+              const LIMIT = 3;
+              const visible = posts.slice(0, LIMIT);
+              const hidden = posts.slice(LIMIT);
+              const uid = 'tl_' + y;
+              const postHtml = p => {
+                const thumb = p.images && p.images.length ? p.images[0] : '';
+                return `<div class="report-timeline-post" onclick="location.href='post-detail.html?id=${p.id}'">
+                  ${thumb ? `<img src="${thumb}" class="report-timeline-thumb" alt="">` : `<div class="report-timeline-thumb"></div>`}
+                  <div class="report-timeline-info">
+                    <div class="report-timeline-title">${p.title}</div>
+                    <div class="report-timeline-meta">📍 ${p.areaTag}　${formatDate(p.visitedAt)}</div>
+                  </div>
+                </div>`;
+              };
+              return `<div class="report-timeline-year">
+                <div class="report-timeline-year-label">${y}年の旅（${posts.length}件）</div>
+                ${visible.map(postHtml).join('')}
+                ${hidden.length > 0 ? `
+                  <div id="${uid}_hidden" style="display:none">${hidden.map(postHtml).join('')}</div>
+                  <button class="report-timeline-toggle" id="${uid}_btn"
+                    onclick="(function(){
+                      var h=document.getElementById('${uid}_hidden');
+                      var b=document.getElementById('${uid}_btn');
+                      var open=h.style.display!=='none';
+                      h.style.display=open?'none':'block';
+                      b.textContent=open?'▼ 残り${hidden.length}件を表示':'▲ 折りたたむ';
+                    })()">▼ 残り${hidden.length}件を表示</button>
+                ` : ''}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+
+      </div>`;
+  }
+
   function render() {
     const myPosts = getPosts().filter(p => p.userId === me.id);
     const wishlistPostIds = getWishlists().filter(w => w.userId === me.id).map(w => w.postId);
@@ -114,6 +308,7 @@
       visited: `✅ 訪問済み <span class="page-count">${visitedPosts.length}</span>`,
       myposts: `✈️ 自分の投稿 <span class="page-count">${myPosts.length}</span>`,
       plans: `🗺️ 旅行プラン <span class="page-count">${getPlans().filter(p => p.userId === me.id && !p.completed).length}</span>`,
+      report: `📋 旅行レポート`,
     };
     const mainHtml = `
       <div class="page-header" style="display:flex;align-items:center;gap:16px">
@@ -129,6 +324,8 @@
         ? (visitedPosts.length ? buildPostGrid(visitedPosts) : `<div class="empty-msg" style="padding:48px 0"><p style="font-size:2rem;margin-bottom:12px">✅</p><p>訪問済みのスポットがありません</p></div>`)
         : activeTab === 'myposts'
         ? buildMyPostGrid(myPosts)
+        : activeTab === 'report'
+        ? buildReportTab(myPosts)
         : buildPlanTab()}`;
 
     document.getElementById('app').innerHTML = buildLayout('mypage', mainHtml);

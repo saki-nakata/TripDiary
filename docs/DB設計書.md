@@ -39,6 +39,7 @@ erDiagram
         String title
         String body
         String areaTag
+        String prefecture
         String category
         Int rating
         Date visitedAt
@@ -121,13 +122,6 @@ erDiagram
         DateTime createdAt
     }
 
-    Session {
-        String id PK
-        String sessionToken UK
-        String userId FK
-        DateTime expires
-    }
-
     VerificationToken {
         String identifier
         String token UK
@@ -142,7 +136,6 @@ erDiagram
     User ||--o{ Wishlist : "行きたいに追加"
     User ||--o{ Visited : "訪問済みに追加"
     User ||--o{ Account : "OAuthアカウント"
-    User ||--o{ Session : "セッション"
     Post ||--o{ PostImage : "写真を持つ"
     Post ||--o{ Comment : "コメントを持つ"
     Post ||--o{ Like : "いいねされる"
@@ -193,6 +186,7 @@ erDiagram
 | category | VARCHAR(50) | NULL | - | カテゴリ（観光スポット/グルメ/宿・ホテル/自然/アクティビティ/その他）。アプリレベルで値を制限 |
 | rating | INT | NULL | - | 評価（1〜5）。アプリレベルで 1〜5 に制限 |
 | visitedAt | DATE | NOT NULL | - | 訪問日（必須） |
+| prefecture | VARCHAR(10) | NULL | - | 都道府県（例：東京都、北海道）。旅行レポートの集計に使用 |
 | cost | INT | NULL | - | 費用合計（costBreakdown の自動集計値） |
 | costBreakdown | JSON | NULL | - | 費用内訳。`[{"label":"交通費","amount":3000}, ...]` 形式。自分のみ表示 |
 | planId | VARCHAR(30) | NULL | - | 旅行プランから投稿した場合のプランID |
@@ -215,6 +209,7 @@ erDiagram
 | posts_rating_idx | rating | 評価絞り込み |
 | posts_createdAt_idx | createdAt DESC | 新着順フィード取得 |
 | posts_planId_idx | planId | プラン別投稿取得 |
+| posts_prefecture_idx | prefecture | 旅行レポート都道府県集計 |
 
 **外部キー追加**
 - `planId` → `plans.id`（SET NULL on DELETE）
@@ -392,7 +387,7 @@ erDiagram
 
 ---
 
-### 3.10 verification_tokens テーブル（Auth.js v5 用）
+### 3.12 verification_tokens テーブル（Auth.js v5 用）
 
 | カラム名 | 型 | NULL | デフォルト | 説明 |
 |---------|-----|------|-----------|------|

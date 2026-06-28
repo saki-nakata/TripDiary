@@ -12,10 +12,11 @@ function buildSidebar(activePage) {
     { href: 'post-new.html', icon: '✏️', label: '投稿する', key: 'new', authRequired: true },
     { href: `profile.html?id=${user?.id}`, icon: '🌐', label: 'プロフィール', key: 'profile', authRequired: true },
     { divider: true },
+    { href: 'mypage.html?tab=plans', icon: '🗺️', label: '旅行プラン', key: 'plans', authRequired: true },
+    { href: 'mypage.html?tab=myposts', icon: '✈️', label: '自分の投稿', key: 'myposts', authRequired: true },
+    { href: 'mypage.html?tab=report', icon: '📋', label: '旅行レポート', key: 'report', authRequired: true },
     { href: 'mypage.html?tab=wishlist', icon: '🔖', label: '行きたい', key: 'wishlist', authRequired: true },
     { href: 'mypage.html?tab=visited', icon: '✅', label: '訪問済み', key: 'visited', authRequired: true },
-    { href: 'mypage.html?tab=myposts', icon: '✈️', label: '自分の投稿', key: 'myposts', authRequired: true },
-    { href: 'mypage.html?tab=plans', icon: '🗺️', label: '旅行プラン', key: 'plans', authRequired: true },
     { href: 'mypage.html?tab=follow-feed', icon: '👥', label: 'フォロー中の投稿', key: 'follow-feed', authRequired: true },
   ];
 
@@ -40,6 +41,7 @@ function buildSidebar(activePage) {
         <span class="nav-icon" style="position:relative">🔔${badge}</span>
         <span class="nav-label">通知</span>
       </a>
+      <div style="height:4px"></div>
       <div class="sidebar-user" style="border-top:none;padding-top:0">
         <button class="sidebar-user-trigger" onclick="toggleUserDropdown(event)" aria-label="メニューを開く">
           <img src="${user.avatar}" alt="${user.name}" class="avatar-sm">
