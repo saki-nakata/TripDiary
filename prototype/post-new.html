@@ -109,6 +109,7 @@
     const title = document.getElementById('title').value.trim();
     const body = document.getElementById('body').value.trim();
     const areaTag = document.getElementById('areaTag').value.trim();
+    const prefecture = document.getElementById('prefecture').value;
     const category = document.getElementById('category').value;
     const visitedAt = document.getElementById('visitedAt').value;
     const filledItems = costItems.filter(it => it.label.trim() || (it.amount !== '' && Number(it.amount) > 0));
@@ -129,6 +130,7 @@
       title,
       body,
       areaTag: areaTag || 'その他',
+      prefecture: prefecture || null,
       category,
       rating: selectedRating,
       visitedAt: visitedAt,
@@ -173,9 +175,16 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">エリアタグ</label>
-            <input id="areaTag" type="text" class="form-control" placeholder="例：京都、沖縄" value="${presetAreaTag}">
+            <label class="form-label">都道府県</label>
+            <select id="prefecture" class="form-control">
+              <option value="">未設定</option>
+              ${PREFECTURES.map(p => `<option value="${p}">${p}</option>`).join('')}
+            </select>
           </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">エリアタグ <span style="color:var(--text-muted);font-size:.8rem;font-weight:normal">（任意・スポット近くの地名など）</span></label>
+          <input id="areaTag" type="text" class="form-control" placeholder="例：嵐山、那覇、新宿" value="${presetAreaTag}">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">

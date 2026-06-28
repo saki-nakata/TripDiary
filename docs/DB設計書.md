@@ -46,9 +46,9 @@ erDiagram
         Int cost
         Json costBreakdown
         String planId FK
-        Float latitude
-        Float longitude
-        String authorId FK
+        Float lat
+        Float lng
+        String userId FK
         DateTime createdAt
         DateTime updatedAt
     }
@@ -180,30 +180,30 @@ erDiagram
 | カラム名 | 型 | NULL | デフォルト | 説明 |
 |---------|-----|------|-----------|------|
 | id | VARCHAR(30) | NOT NULL | cuid() | 投稿ID（cuid） |
-| title | VARCHAR(100) | NOT NULL | - | スポット名・タイトル |
+| title | VARCHAR(40) | NOT NULL | - | スポット名・タイトル（最大40文字） |
 | body | TEXT | NOT NULL | - | 感想・説明文 |
 | areaTag | VARCHAR(50) | NOT NULL | - | エリアタグ（例：北海道、京都） |
-| category | VARCHAR(50) | NULL | - | カテゴリ（観光スポット/グルメ/宿・ホテル/自然/アクティビティ/その他）。アプリレベルで値を制限 |
+| category | VARCHAR(20) | NULL | - | カテゴリ（観光/グルメ/宿・ホテル/自然/アクティビティ/歴史・文化/その他）。アプリレベルで値を制限 |
 | rating | INT | NULL | - | 評価（1〜5）。アプリレベルで 1〜5 に制限 |
 | visitedAt | DATE | NOT NULL | - | 訪問日（必須） |
-| prefecture | VARCHAR(10) | NULL | - | 都道府県（例：東京都、北海道）。旅行レポートの集計に使用 |
+| prefecture | VARCHAR(10) | NULL | - | 都道府県（値域：47都道府県＋「海外」、または NULL）。旅行レポートの集計・検索エリアタブの絞り込みに使用 |
 | cost | INT | NULL | - | 費用合計（costBreakdown の自動集計値） |
 | costBreakdown | JSON | NULL | - | 費用内訳。`[{"label":"交通費","amount":3000}, ...]` 形式。自分のみ表示 |
 | planId | VARCHAR(30) | NULL | - | 旅行プランから投稿した場合のプランID |
-| latitude | DOUBLE | NULL | - | 緯度（未定：地図機能実装時に確定） |
-| longitude | DOUBLE | NULL | - | 経度（未定：地図機能実装時に確定） |
-| authorId | VARCHAR(30) | NOT NULL | - | 投稿者のユーザーID |
+| lat | DOUBLE | NULL | - | 緯度（任意・地図ピン設置時に設定） |
+| lng | DOUBLE | NULL | - | 経度（任意・地図ピン設置時に設定） |
+| userId | VARCHAR(30) | NOT NULL | - | 投稿者のユーザーID |
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
 | updatedAt | DATETIME(3) | NOT NULL | - | 更新日時 |
 
 **制約**
 - 主キー：`id`
-- 外部キー：`authorId` → `users.id`（CASCADE DELETE）
+- 外部キー：`userId` → `users.id`（CASCADE DELETE）
 
 **インデックス**
 | インデックス名 | カラム | 目的 |
 |-------------|-------|------|
-| posts_authorId_idx | authorId | ユーザー別投稿一覧取得 |
+| posts_userId_idx | userId | ユーザー別投稿一覧取得 |
 | posts_areaTag_idx | areaTag | エリアタグ絞り込み |
 | posts_category_idx | category | カテゴリ絞り込み |
 | posts_rating_idx | rating | 評価絞り込み |
@@ -249,7 +249,7 @@ erDiagram
 
 **制約**
 - 主キー：`id`
-- 外部キー：`authorId` → `users.id`（CASCADE DELETE）
+- 外部キー：`userId` → `users.id`（CASCADE DELETE）
 - 外部キー：`postId` → `posts.id`（CASCADE DELETE）
 
 **インデックス**
