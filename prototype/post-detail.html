@@ -211,7 +211,7 @@
         <div class="post-detail-meta" style="margin-bottom:10px">
           ${categoryBadge(post.category)}
           <a href="tag.html?tag=${encodeURIComponent(post.areaTag)}" class="area-tag">📍 ${post.areaTag}</a>
-          <span class="text-muted" style="font-size:.85rem">訪問日：${formatDate(post.visitedAt)}</span>
+          <span class="text-muted" style="font-size:.85rem">訪問日：${formatDateWithDay(post.visitedAt)}</span>
         </div>
         <h1 class="post-detail-title">${post.title}</h1>
         <div class="post-detail-meta">
@@ -279,7 +279,7 @@
 </script>
 <style>
   .liked { color: var(--danger) !important; border-color: var(--danger) !important; }
-  .active-btn { background: #eff6ff !important; color: var(--primary) !important; border-color: var(--primary) !important; }
+  .active-btn { background: #dcfce7 !important; color: var(--primary) !important; border-color: var(--primary) !important; }
 </style>
 </body>
 </html>

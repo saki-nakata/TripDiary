@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>旅行プラン — TripDiary</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+  initData();
+  if (!requireAuth()) { /* redirect */ }
+
+  const me = getCurrentUser();
+  const params = new URLSearchParams(location.search);
+  const planId = params.get('id');
+  let plan = getPlanById(planId);
+  if (!plan || plan.userId !== me.id) { location.href = 'mypage.html'; }
+
+  function deletePlan() {
+    if (!confirm('このプランを削除しますか？')) return;
+    savePlans(getPlans().filter(p => p.id !== planId));
+    showToast('プランを削除しました');
+    setTimeout(() => location.href = 'mypage.html', 600);
+  }
+
+  function completePlan() {
+    if (!confirm('この旅行を完了済みにしますか？')) return;
+    savePlans(getPlans().map(p => p.id === planId ? { ...p, completed: true } : p));
+    showToast('旅行を完了済みにしました');
+    render();
+  }
+
+  function uncompletePlan() {
+    if (!confirm('完了を取り消しますか？')) return;
+    savePlans(getPlans().map(p => p.id === planId ? { ...p, completed: false } : p));
+    showToast('完了を取り消しました');
+    render();
+  }
+
+  function buildSpotList() {
+    if (!plan.spotIds.length) {
+      return `<div class="empty-msg" style="padding:32px 0">
+        <p style="font-size:1.5rem;margin-bottom:8px">📍</p>
+        <p>スポットが追加されていません</p>
+        <a href="plan-edit.html?id=${planId}" class="btn btn-primary btn-sm" style="margin-top:12px">編集してスポットを追加</a>
+      </div>`;
+    }
+    return `<div class="plan-spot-list">${plan.spotIds.map((sid, idx) => {
+      const post = getPostById(sid);
+      if (!post) return '';
+      const thumb = post.images && post.images.length ? post.images[0] : '';
+      return `<div class="plan-spot-item">
+        <span class="plan-spot-num">${idx + 1}</span>
+        ${thumb ? `<div class="plan-spot-thumb" style="background-image:url('${thumb}')"></div>` : ''}
+        <div class="plan-spot-info">
+          <a href="post-detail.html?id=${post.id}" class="plan-spot-title">${post.title}</a>
+          <p class="plan-spot-meta">📍 ${post.areaTag} &nbsp;·&nbsp; ${categoryBadge(post.category)}</p>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  function buildRecordSection() {
+    if (!plan.spotIds.length) return '';
+    const spots = plan.spotIds.map(id => getPostById(id)).filter(Boolean);
+    const linkedPosts = getPosts().filter(p => p.planId === planId);
+
+    return `
+      <div class="plan-section" style="margin-top:16px">
+        <h2 class="plan-section-title" style="margin-bottom:6px">✈️ この旅を記録する</h2>
+        <p style="font-size:.83rem;color:var(--text-muted);margin-bottom:14px">スポットを選んで投稿を作成できます</p>
+        <div class="plan-record-list">${spots.map(post => {
+          const url = `post-new.html?fromPlan=${planId}&areaTag=${encodeURIComponent(post.areaTag)}&title=${encodeURIComponent(post.title)}&category=${encodeURIComponent(post.category)}`;
+          const thumb = post.images && post.images.length ? post.images[0] : '';
+          return `<a href="${url}" class="plan-record-item">
+            ${thumb ? `<div class="plan-spot-thumb" style="background-image:url('${thumb}')"></div>` : ''}
+            <div class="plan-spot-info">
+              <p class="plan-spot-title">${post.title}</p>
+              <p class="plan-spot-meta">📍 ${post.areaTag}</p>
+            </div>
+            <span class="plan-record-btn">投稿する →</span>
+          </a>`;
+        }).join('')}</div>
+        ${linkedPosts.length ? `
+        <div style="margin-top:16px">
+          <p class="picker-section-label">📝 この旅の投稿（${linkedPosts.length}件）</p>
+          <div class="plan-record-list">${linkedPosts.map(p => {
+            const thumb = p.images && p.images.length ? p.images[0] : '';
+            return `<a href="post-detail.html?id=${p.id}" class="plan-record-item plan-linked-post">
+              ${thumb ? `<div class="plan-spot-thumb" style="background-image:url('${thumb}')"></div>` : ''}
+              <div class="plan-spot-info">
+                <p class="plan-spot-title">${p.title}</p>
+                <p class="plan-spot-meta">${renderStars(p.rating)} · ${formatDate(p.createdAt)}</p>
+              </div>
+              <span class="plan-record-btn" style="color:var(--text-muted)">見る →</span>
+            </a>`;
+          }).join('')}</div>
+        </div>` : ''}
+        ${!plan.completed ? `
+          <button class="btn btn-outline btn-block" style="margin-top:16px" onclick="completePlan()">✅ 旅行を完了済みにする</button>
+        ` : ''}
+      </div>`;
+  }
+
+  function render() {
+    plan = getPlanById(planId);
+    const dateRange = plan.startDate
+      ? `${formatDateWithDay(plan.startDate)}${plan.endDate ? ' 〜 ' + formatDateWithDay(plan.endDate) : ''}`
+      : '日程未定';
+
+    const mainHtml = `
+      <div class="plan-detail-header">
+        <div>
+          <h1 class="plan-detail-title">🗺️ ${plan.title}
+            ${plan.completed ? '<span class="plan-completed-badge">✅ 完了済み</span>' : ''}
+          </h1>
+          <p class="plan-detail-date">📅 ${dateRange}</p>
+          ${plan.budget != null ? `<p class="plan-detail-date">💴 予算：${plan.budget.toLocaleString()}円</p>${Array.isArray(plan.budgetBreakdown) && plan.budgetBreakdown.length ? `<div class="private-memo-display">${plan.budgetBreakdown.map(it => `<span class="cost-breakdown-tag">${it.label} <strong>${Number(it.amount).toLocaleString()}円</strong></span>`).join('')}</div>` : ''}` : ''}
+          ${plan.memo ? `<p class="plan-detail-memo">${plan.memo}</p>` : ''}
+        </div>
+        <div style="display:flex;gap:8px">
+          ${!plan.completed ? `<a href="plan-edit.html?id=${planId}" class="btn btn-ghost btn-sm">✏️ 編集</a>` : `<button class="btn btn-ghost btn-sm" onclick="uncompletePlan()">↩ 完了を取り消す</button>`}
+          <button class="btn btn-danger btn-sm" onclick="deletePlan()">削除</button>
+        </div>
+      </div>
+
+      <div class="plan-section">
+        <h2 class="plan-section-title" style="margin-bottom:14px">📍 プランのスポット (${plan.spotIds.length}件)</h2>
+        ${buildSpotList()}
+      </div>
+
+      ${buildRecordSection()}`;
+
+    document.getElementById('app').innerHTML = buildLayout('mypage', mainHtml);
+  }
+
+  render();
+</script>
+</body>
+</html>

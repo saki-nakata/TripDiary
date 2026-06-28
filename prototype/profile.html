@@ -20,7 +20,8 @@
   if (!targetUser) { location.href = 'index.html'; }
 
   const me = getCurrentUser();
-  let activeTab = 'posts';
+  const initTab = params.get('tab');
+  let activeTab = (initTab && initTab !== 'follow-feed') ? initTab : 'posts';
 
   function handleFollow() {
     if (!me) { location.href = 'login.html'; return; }
@@ -76,12 +77,24 @@
       .map(f => getUserById(f.followingId))
       .filter(Boolean);
 
+    const allComments = getComments();
+    const userComments = allComments
+      .filter(c => c.userId === targetUser.id)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const commentedPosts = userComments.map(c => ({ comment: c, post: getPostById(c.postId) })).filter(x => x.post);
+
     const score = calcTabiScore(targetUser.id);
     const scoreInfo = getScoreLabel(score);
 
+    const myPostIds = isMe ? userPosts.map(p => p.id) : [];
+    const receivedComments = isMe
+      ? getComments().filter(c => myPostIds.includes(c.postId) && c.userId !== me.id)
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .map(c => ({ comment: c, post: getPostById(c.postId), user: getUserById(c.userId) })).filter(x => x.post && x.user)
+      : [];
+
     const mainHtml = `
-      <div class="profile-header" style="position:relative">
-        ${isMe ? `<a href="mypage.html" class="btn btn-outline btn-sm profile-mypage-btn">📋 管理画面を見る</a>` : ''}
+      <div class="profile-header">
         <img src="${targetUser.avatar}" alt="${targetUser.name}" class="avatar-xl">
         <div class="profile-info">
           <h1 class="profile-name">${targetUser.name}</h1>
@@ -113,18 +126,45 @@
       </div>
 
       <div class="tabs">
-        <button class="tab-btn active" data-tab="posts" onclick="setTab('posts')">投稿 (${userPosts.length})</button>
-        <button class="tab-btn" data-tab="followers" onclick="setTab('followers')">フォロワー (${followers.length})</button>
-        <button class="tab-btn" data-tab="following" onclick="setTab('following')">フォロー中 (${followings.length})</button>
+        <button class="tab-btn ${activeTab==='posts'?'active':''}" data-tab="posts" onclick="setTab('posts')">投稿 (${userPosts.length})</button>
+        <button class="tab-btn ${activeTab==='comments-sent'?'active':''}" data-tab="comments-sent" onclick="setTab('comments-sent')">投稿したコメント (${commentedPosts.length})</button>
+        ${isMe ? `<button class="tab-btn ${activeTab==='comments-received'?'active':''}" data-tab="comments-received" onclick="setTab('comments-received')">自分へのコメント (${receivedComments.length})</button>` : ''}
+        <button class="tab-btn ${activeTab==='followers'?'active':''}" data-tab="followers" onclick="setTab('followers')">フォロワー (${followers.length})</button>
+        <button class="tab-btn ${activeTab==='following'?'active':''}" data-tab="following" onclick="setTab('following')">フォロー中 (${followings.length})</button>
       </div>
 
-      <div id="tab-posts" class="tab-panel active">
+      <div id="tab-posts" class="tab-panel ${activeTab==='posts'?'active':''}">
         ${buildPostGrid(userPosts)}
       </div>
-      <div id="tab-followers" class="tab-panel">
+      <div id="tab-comments-sent" class="tab-panel ${activeTab==='comments-sent'?'active':''}">
+        ${commentedPosts.length ? `<div class="comment-history-list">${commentedPosts.map(({ comment, post }) => `
+          <a href="post-detail.html?id=${post.id}" class="comment-history-item">
+            <div class="comment-history-thumb" style="${post.images && post.images.length ? `background-image:url('${post.images[0]}')` : 'background:#f1f5f9'}"></div>
+            <div class="comment-history-body">
+              <p class="comment-history-post-title">${post.title}</p>
+              <p class="comment-history-text">${comment.body}</p>
+              <p class="comment-history-date">${formatDate(comment.createdAt)}</p>
+            </div>
+          </a>`).join('')}</div>`
+        : '<p class="empty-msg">まだコメントがありません</p>'}
+      </div>
+      ${isMe ? `
+      <div id="tab-comments-received" class="tab-panel ${activeTab==='comments-received'?'active':''}">
+        ${receivedComments.length ? `<div class="comment-history-list">${receivedComments.map(({ comment, post, user }) => `
+          <a href="post-detail.html?id=${post.id}" class="comment-history-item">
+            <img src="${user.avatar}" alt="${user.name}" class="avatar-sm" style="flex-shrink:0">
+            <div class="comment-history-body">
+              <p class="comment-history-post-title"><strong>${user.name}</strong> · ${post.title}</p>
+              <p class="comment-history-text">${comment.body}</p>
+              <p class="comment-history-date">${formatDate(comment.createdAt)}</p>
+            </div>
+          </a>`).join('')}</div>`
+        : '<p class="empty-msg">まだコメントを受け取っていません</p>'}
+      </div>` : ''}
+      <div id="tab-followers" class="tab-panel ${activeTab==='followers'?'active':''}">
         ${followers.length ? `<div class="user-list">${followers.map(buildUserCard).join('')}</div>` : '<p class="empty-msg">フォロワーはまだいません</p>'}
       </div>
-      <div id="tab-following" class="tab-panel">
+      <div id="tab-following" class="tab-panel ${activeTab==='following'?'active':''}">
         ${followings.length ? `<div class="user-list">${followings.map(buildUserCard).join('')}</div>` : '<p class="empty-msg">フォロー中のユーザーはいません</p>'}
       </div>`;
 

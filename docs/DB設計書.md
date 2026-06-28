@@ -1,7 +1,8 @@
 # TripDiary DB設計書
 
-**バージョン:** 1.0
+**バージョン:** 1.1
 **作成日:** 2026-06-27
+**更新日:** 2026-06-28
 **作成者:** Nakata Saki
 
 ---
@@ -41,11 +42,34 @@ erDiagram
         String category
         Int rating
         Date visitedAt
+        Int cost
+        Json costBreakdown
+        String planId FK
         Float latitude
         Float longitude
         String authorId FK
         DateTime createdAt
         DateTime updatedAt
+    }
+
+    Plan {
+        String id PK
+        String title
+        Date startDate
+        Date endDate
+        Int budget
+        Json budgetBreakdown
+        String memo
+        Boolean completed
+        String userId FK
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    PlanSpot {
+        String planId PK,FK
+        String postId PK,FK
+        Int displayOrder
     }
 
     PostImage {
@@ -124,6 +148,10 @@ erDiagram
     Post ||--o{ Like : "いいねされる"
     Post ||--o{ Wishlist : "行きたいに登録される"
     Post ||--o{ Visited : "訪問済みに登録される"
+    Post }o--o| Plan : "旅行プランから記録"
+    Plan ||--o{ PlanSpot : "スポットを持つ"
+    Post ||--o{ PlanSpot : "プランに含まれる"
+    User ||--o{ Plan : "プランを作成"
 ```
 
 ---
@@ -164,7 +192,10 @@ erDiagram
 | areaTag | VARCHAR(50) | NOT NULL | - | エリアタグ（例：北海道、京都） |
 | category | VARCHAR(50) | NULL | - | カテゴリ（観光スポット/グルメ/宿・ホテル/自然/アクティビティ/その他）。アプリレベルで値を制限 |
 | rating | INT | NULL | - | 評価（1〜5）。アプリレベルで 1〜5 に制限 |
-| visitedAt | DATE | NULL | - | 訪問日 |
+| visitedAt | DATE | NOT NULL | - | 訪問日（必須） |
+| cost | INT | NULL | - | 費用合計（costBreakdown の自動集計値） |
+| costBreakdown | JSON | NULL | - | 費用内訳。`[{"label":"交通費","amount":3000}, ...]` 形式。自分のみ表示 |
+| planId | VARCHAR(30) | NULL | - | 旅行プランから投稿した場合のプランID |
 | latitude | DOUBLE | NULL | - | 緯度（未定：地図機能実装時に確定） |
 | longitude | DOUBLE | NULL | - | 経度（未定：地図機能実装時に確定） |
 | authorId | VARCHAR(30) | NOT NULL | - | 投稿者のユーザーID |
@@ -183,6 +214,10 @@ erDiagram
 | posts_category_idx | category | カテゴリ絞り込み |
 | posts_rating_idx | rating | 評価絞り込み |
 | posts_createdAt_idx | createdAt DESC | 新着順フィード取得 |
+| posts_planId_idx | planId | プラン別投稿取得 |
+
+**外部キー追加**
+- `planId` → `plans.id`（SET NULL on DELETE）
 
 ---
 
@@ -290,7 +325,50 @@ erDiagram
 
 ---
 
-### 3.9 accounts テーブル（Auth.js v5 用）
+### 3.9 plans テーブル
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|-----|------|-----------|------|
+| id | VARCHAR(30) | NOT NULL | cuid() | プランID（cuid） |
+| title | VARCHAR(60) | NOT NULL | - | プランタイトル |
+| startDate | DATE | NULL | - | 出発日 |
+| endDate | DATE | NULL | - | 帰着日（startDate 以降） |
+| budget | INT | NULL | - | 予算合計（budgetBreakdown の自動集計値） |
+| budgetBreakdown | JSON | NULL | - | 予算内訳。`[{"label":"宿泊費","amount":20000}, ...]` 形式 |
+| memo | TEXT | NULL | - | メモ（旅のテーマ・持ち物など自由記述） |
+| completed | BOOLEAN | NOT NULL | false | 旅行完了フラグ |
+| userId | VARCHAR(30) | NOT NULL | - | プラン作成者のユーザーID |
+| createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
+| updatedAt | DATETIME(3) | NOT NULL | - | 更新日時 |
+
+**制約**
+- 主キー：`id`
+- 外部キー：`userId` → `users.id`（CASCADE DELETE）
+
+**インデックス**
+| インデックス名 | カラム | 目的 |
+|-------------|-------|------|
+| plans_userId_idx | userId | ユーザー別プラン一覧取得 |
+| plans_completed_idx | completed | 完了済み/進行中フィルタリング |
+
+---
+
+### 3.10 plan_spots テーブル
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|-----|------|-----------|------|
+| planId | VARCHAR(30) | NOT NULL | - | プランID |
+| postId | VARCHAR(30) | NOT NULL | - | スポット（投稿）ID |
+| displayOrder | INT | NOT NULL | 0 | スポットの訪問順序（0始まり） |
+
+**制約**
+- 複合主キー：`(planId, postId)`
+- 外部キー：`planId` → `plans.id`（CASCADE DELETE）
+- 外部キー：`postId` → `posts.id`（CASCADE DELETE）
+
+---
+
+### 3.11 accounts テーブル（Auth.js v5 用）
 
 | カラム名 | 型 | NULL | デフォルト | 説明 |
 |---------|-----|------|-----------|------|

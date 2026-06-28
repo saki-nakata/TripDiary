@@ -17,12 +17,37 @@
   initData();
   if (!requireAuth()) { /* redirect handled */ }
 
+  const urlParams = new URLSearchParams(location.search);
+  const fromPlan = urlParams.get('fromPlan');
+  const presetTitle = urlParams.get('title') || '';
+  const presetAreaTag = urlParams.get('areaTag') || '';
+  const presetCategory = urlParams.get('category') || '';
+
   let selectedRating = 0;
   let previewImages = [];
   let pinLat = null;
+  let costItems = [];
   let pinLng = null;
   let leafletMap = null;
   let leafletMarker = null;
+
+  function calcTotal(items) {
+    return items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+  }
+  function updateCostTotal() {
+    const total = calcTotal(costItems);
+    document.getElementById('cost-total').textContent = total > 0 ? total.toLocaleString() + '円' : '—';
+  }
+  function renderCostItems() {
+    updateCostTotal();
+    document.getElementById('cost-items-list').innerHTML = costItems.map((it, i) => `
+      <div class="cost-item-row">
+        <input type="number" class="form-control cost-item-amount" placeholder="金額" min="0" value="${it.amount}" oninput="costItems[${i}].amount=this.value;updateCostTotal()">
+        <input type="text" class="form-control cost-item-label" placeholder="内容（例：交通費）" value="${it.label}" oninput="costItems[${i}].label=this.value">
+        <button class="cost-item-remove" onclick="costItems.splice(${i},1);renderCostItems()">✕</button>
+      </div>`).join('');
+  }
+  function addCostItem() { costItems.push({ label: '', amount: '' }); renderCostItems(); }
 
   function setRating(val) {
     selectedRating = val;
@@ -86,11 +111,15 @@
     const areaTag = document.getElementById('areaTag').value.trim();
     const category = document.getElementById('category').value;
     const visitedAt = document.getElementById('visitedAt').value;
+    const filledItems = costItems.filter(it => it.label.trim() || (it.amount !== '' && Number(it.amount) > 0));
+    const cost = filledItems.length ? calcTotal(filledItems) || null : null;
+    const costBreakdown = filledItems.length ? filledItems : null;
 
     if (!title) { alert('タイトルを入力してください'); return; }
     if (!body) { alert('本文を入力してください'); return; }
     if (!category) { alert('カテゴリを選択してください'); return; }
     if (selectedRating === 0) { alert('評価を選択してください'); return; }
+    if (!visitedAt) { alert('訪問日を入力してください'); return; }
 
     const me = getCurrentUser();
     const posts = getPosts();
@@ -102,26 +131,34 @@
       areaTag: areaTag || 'その他',
       category,
       rating: selectedRating,
-      visitedAt: visitedAt || new Date().toISOString().split('T')[0],
+      visitedAt: visitedAt,
+      cost,
+      costBreakdown,
       lat: pinLat,
       lng: pinLng,
       images: previewImages.length > 0 ? previewImages : ['https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800'],
       createdAt: new Date().toISOString(),
+      planId: fromPlan || null,
     };
+    const submitBtn = document.querySelector('.btn-primary[onclick]');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '投稿中...'; }
     posts.unshift(newPost);
     savePosts(posts);
     showToast('投稿しました！');
-    setTimeout(() => location.href = `post-detail.html?id=${newPost.id}`, 600);
+    setTimeout(() => location.href = fromPlan ? `plan-detail.html?id=${fromPlan}` : `post-detail.html?id=${newPost.id}`, 600);
   }
 
   function render() {
     const mainHtml = `
-<div class="page-header"><h1 class="page-title">✏️ 旅スポットを投稿</h1></div>
+<div class="page-header">
+        <h1 class="page-title">✏️ 旅スポットを投稿</h1>
+        ${fromPlan ? `<p style="font-size:.85rem;color:var(--text-muted);margin-top:4px">🗺️ 旅行プランから記録</p>` : ''}
+      </div>
       <div class="post-form">
         <div class="form-group">
           <label class="form-label">タイトル <span style="color:var(--danger)">*</span></label>
-          <input id="title" type="text" class="form-control" placeholder="例：嵐山の竹林と渡月橋" maxlength="40" oninput="updateCounter('title','title-count')">
-          <span class="char-counter"><span id="title-count">0</span> / 40 文字</span>
+          <input id="title" type="text" class="form-control" placeholder="例：嵐山の竹林と渡月橋" maxlength="40" value="${presetTitle}" oninput="updateCounter('title','title-count')">
+          <span class="char-counter"><span id="title-count">${presetTitle.length}</span> / 40 文字</span>
         </div>
         <div class="form-group">
           <label class="form-label">本文 <span style="color:var(--danger)">*</span></label>
@@ -132,12 +169,12 @@
             <label class="form-label">カテゴリ <span style="color:var(--danger)">*</span></label>
             <select id="category" class="form-control">
               <option value="">選択してください</option>
-              ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+              ${CATEGORIES.map(c => `<option value="${c}" ${presetCategory === c ? 'selected' : ''}>${c}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">エリアタグ</label>
-            <input id="areaTag" type="text" class="form-control" placeholder="例：京都、沖縄">
+            <input id="areaTag" type="text" class="form-control" placeholder="例：京都、沖縄" value="${presetAreaTag}">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -151,6 +188,12 @@
               ${[1,2,3,4,5].map(i => `<span onclick="setRating(${i})">★</span>`).join('')}
             </div>
           </div>
+        </div>
+        <div class="form-group private-cost-block">
+          <label class="form-label">費用 <span class="private-label-tag">🔒 自分のみ</span></label>
+          <div class="cost-total-row">合計：<span id="cost-total">—</span></div>
+          <div id="cost-items-list"></div>
+          <button type="button" class="cost-add-btn" onclick="addCostItem()">＋ 項目を追加</button>
         </div>
         <div class="form-group">
           <label class="form-label">場所（任意）</label>
@@ -169,6 +212,7 @@
       </div>`;
 
     document.getElementById('app').innerHTML = buildLayout('new', mainHtml);
+    renderCostItems();
     setTimeout(initMap, 100);
   }
 

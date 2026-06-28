@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>プランを編集 — TripDiary</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+  initData();
+  if (!requireAuth()) { /* redirect */ }
+
+  const me = getCurrentUser();
+  const params = new URLSearchParams(location.search);
+  const planId = params.get('id');
+  const plan = getPlanById(planId);
+  if (!plan || plan.userId !== me.id) { location.href = 'mypage.html'; }
+
+  let selectedSpotIds = [...(plan.spotIds || [])];
+  let budgetItems = Array.isArray(plan.budgetBreakdown) ? [...plan.budgetBreakdown]
+    : plan.budget ? [{ label: plan.budgetBreakdown || '', amount: plan.budget }] : [];
+
+  function calcBudgetTotal(items) {
+    return items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+  }
+  function updateBudgetTotal() {
+    const el = document.getElementById('budget-total');
+    if (!el) return;
+    const total = calcBudgetTotal(budgetItems);
+    el.textContent = total > 0 ? total.toLocaleString() + '円' : '—';
+  }
+  function renderBudgetItems() {
+    const list = document.getElementById('budget-items-list');
+    if (!list) return;
+    updateBudgetTotal();
+    list.innerHTML = budgetItems.map((it, i) => `
+      <div class="cost-item-row">
+        <input type="number" class="form-control cost-item-amount" placeholder="金額" min="0" value="${it.amount}" oninput="budgetItems[${i}].amount=this.value;updateBudgetTotal()">
+        <input type="text" class="form-control cost-item-label" placeholder="内容（例：交通費）" value="${it.label}" oninput="budgetItems[${i}].label=this.value">
+        <button class="cost-item-remove" onclick="budgetItems.splice(${i},1);renderBudgetItems()">✕</button>
+      </div>`).join('');
+  }
+  function addBudgetItem() { budgetItems.push({ label: '', amount: '' }); renderBudgetItems(); }
+
+  function toggleSpot(postId) {
+    if (selectedSpotIds.includes(postId)) {
+      selectedSpotIds = selectedSpotIds.filter(id => id !== postId);
+    } else {
+      selectedSpotIds.push(postId);
+    }
+    render();
+  }
+
+  function savePlan() {
+    const title = document.getElementById('plan-title').value.trim();
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    const filledBudget = budgetItems.filter(it => it.label.trim() || (it.amount !== '' && Number(it.amount) > 0));
+    const budget = filledBudget.length ? calcBudgetTotal(filledBudget) || null : null;
+    const budgetBreakdown = filledBudget.length ? filledBudget : null;
+    const memo = document.getElementById('memo').value.trim();
+
+    if (!title) { alert('プランのタイトルを入力してください'); return; }
+    if (startDate && endDate && endDate < startDate) { alert('終了日は開始日以降を選択してください'); return; }
+
+    const plans = getPlans().map(p =>
+      p.id === planId ? { ...p, title, startDate: startDate || null, endDate: endDate || null, budget, budgetBreakdown, memo, spotIds: [...selectedSpotIds] } : p
+    );
+    const submitBtn = document.querySelector('.btn-primary[onclick]');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '保存中...'; }
+    savePlans(plans);
+    showToast('プランを更新しました');
+    setTimeout(() => location.href = `plan-detail.html?id=${planId}`, 600);
+  }
+
+  function buildCandidateItem(p, isWishlist) {
+    const thumb = p.images && p.images.length ? p.images[0] : '';
+    return `<div class="picker-candidate-item" onclick="toggleSpot('${p.id}')">
+      ${thumb ? `<div class="plan-spot-thumb" style="background-image:url('${thumb}')"></div>` : ''}
+      <div class="plan-spot-info">
+        <p class="plan-spot-title">${p.title}${isWishlist ? ' <span class="picker-wishlist-tag">🔖</span>' : ''}</p>
+        <p class="plan-spot-meta">📍 ${p.areaTag} · ${p.category}</p>
+      </div>
+      <span class="picker-add-btn">＋</span>
+    </div>`;
+  }
+
+  function buildWishlistPicker() {
+    const wishlistPostIds = getWishlists().filter(w => w.userId === me.id).map(w => w.postId);
+    const allPosts = getPosts();
+    const allCandidates = allPosts.filter(p => !selectedSpotIds.includes(p.id));
+    const wishlistUnselected = allCandidates.filter(p => wishlistPostIds.includes(p.id));
+    const othersUnselected = allCandidates.filter(p => !wishlistPostIds.includes(p.id));
+
+    const selectedPosts = selectedSpotIds.map(id => allPosts.find(p => p.id === id)).filter(Boolean);
+
+    const selectedHtml = selectedPosts.length
+      ? selectedPosts.map((p, i) => {
+          const thumb = p.images && p.images.length ? p.images[0] : '';
+          return `<div class="picker-selected-item">
+            <span class="picker-order-num">${i + 1}</span>
+            ${thumb ? `<div class="plan-spot-thumb" style="background-image:url('${thumb}')"></div>` : ''}
+            <div class="plan-spot-info">
+              <p class="plan-spot-title">${p.title}</p>
+              <p class="plan-spot-meta">📍 ${p.areaTag}</p>
+            </div>
+            <button class="picker-remove-btn" onclick="toggleSpot('${p.id}')">✕</button>
+          </div>`;
+        }).join('')
+      : `<p style="font-size:.85rem;color:var(--text-muted);padding:12px 0">下のリストからスポットを追加してください</p>`;
+
+    return `
+      <div class="picker-selected-section">
+        <p class="picker-section-label">選択済み（${selectedPosts.length}件）</p>
+        ${selectedHtml}
+      </div>
+      <div class="picker-candidates-section">
+        ${wishlistUnselected.length ? `
+          <p class="picker-section-label">🔖 行きたいリスト</p>
+          ${wishlistUnselected.map(p => buildCandidateItem(p, true)).join('')}
+          ${othersUnselected.length ? '<div class="picker-divider"></div>' : ''}
+        ` : ''}
+        ${othersUnselected.length ? `
+          <button class="picker-others-toggle" onclick="this.nextElementSibling.classList.toggle('open');this.classList.toggle('open')">
+            その他のスポット（${othersUnselected.length}件）<span class="picker-toggle-arrow">▼</span>
+          </button>
+          <div class="picker-others-list">
+            ${othersUnselected.map(p => buildCandidateItem(p, false)).join('')}
+          </div>
+        ` : ''}
+        ${!wishlistUnselected.length && !othersUnselected.length ? '<p style="font-size:.85rem;color:var(--text-muted);padding:8px 0">追加できるスポットがありません</p>' : ''}
+      </div>`;
+  }
+
+  function render() {
+    const mainHtml = `
+      <div class="page-header">
+        <h1 class="page-title">🗺️ プランを編集</h1>
+      </div>
+      <div class="post-form">
+        <div class="form-group">
+          <label class="form-label">プランのタイトル <span style="color:var(--danger)">*</span></label>
+          <input id="plan-title" type="text" class="form-control" value="${plan.title}" maxlength="60">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">出発日</label>
+            <input id="start-date" type="date" class="form-control" value="${plan.startDate || ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">帰着日</label>
+            <input id="end-date" type="date" class="form-control" value="${plan.endDate || ''}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">予算</label>
+          <div class="cost-total-row">合計：<span id="budget-total">—</span></div>
+          <div id="budget-items-list"></div>
+          <button type="button" class="cost-add-btn cost-add-btn-neutral" onclick="addBudgetItem()">＋ 項目を追加</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">メモ</label>
+          <textarea id="memo" class="form-control" rows="4" placeholder="旅のテーマや持ち物など自由に…">${plan.memo || ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">スポット <span style="font-size:.78rem;color:var(--text-muted)">（「行きたい」リストから選択・クリックで切り替え）</span></label>
+          ${buildWishlistPicker()}
+        </div>
+        <div style="display:flex;gap:10px">
+          <a href="plan-detail.html?id=${planId}" class="btn btn-ghost" style="flex:1;text-align:center">キャンセル</a>
+          <button class="btn btn-primary" style="flex:2" onclick="savePlan()">保存する</button>
+        </div>
+      </div>`;
+
+    document.getElementById('app').innerHTML = buildLayout('mypage', mainHtml);
+    renderBudgetItems();
+  }
+
+  render();
+</script>
+</body>
+</html>
