@@ -90,7 +90,7 @@ const INITIAL_DATA = {
       body: '富士スバルラインで五合目まで車で上がり、そこから奥庭まで散策。雲海の上に頭を出す富士山は一生の思い出になりました。装備はしっかりと用意して行くことをおすすめします。',
       areaTag: '山梨',
       prefecture: '山梨県',
-      category: 'アウトドア',
+      category: 'アクティビティ',
       rating: 5,
       visitedAt: '2026-05-25',
       lat: 35.3606,
@@ -125,7 +125,7 @@ const INITIAL_DATA = {
       body: '恩納村の青の洞窟は本当に感動的！透明度が高く、色とりどりの熱帯魚と泳げました。ガイドツアーで行ったので安心安全。ライセンスなしでも楽しめます。',
       areaTag: '沖縄',
       prefecture: '沖縄県',
-      category: 'アウトドア',
+      category: 'アクティビティ',
       rating: 5,
       visitedAt: '2026-06-10',
       lat: 26.4061,
@@ -318,7 +318,7 @@ const INITIAL_DATA = {
       body: '大正池から河童橋まで歩いた梓川沿いのトレッキングは最高！エメラルドグリーンの川と穂高連峰の白い峰々のコントラストが美しすぎました。早朝の静けさが格別。',
       areaTag: '上高地',
       prefecture: '長野県',
-      category: 'アウトドア',
+      category: 'アクティビティ',
       rating: 5,
       visitedAt: '2024-07-20',
       cost: 28000,
@@ -604,16 +604,31 @@ function formatDateWithDay(dateStr) {
 
 function categoryBadge(category) {
   const map = {
-    '自然': 'badge-nature',
+    '観光': 'badge-sightseeing',
     'グルメ': 'badge-gourmet',
-    'アウトドア': 'badge-outdoor',
+    '宿・ホテル': 'badge-hotel',
+    '自然': 'badge-nature',
+    'アクティビティ': 'badge-outdoor',
     '歴史・文化': 'badge-culture',
     'その他': 'badge-other',
   };
   return `<span class="badge ${map[category] || 'badge-other'}">${category}</span>`;
 }
 
-const CATEGORIES = ['自然', 'グルメ', 'アウトドア', '歴史・文化', 'その他'];
+const CATEGORIES = ['観光', 'グルメ', '宿・ホテル', '自然', 'アクティビティ', '歴史・文化', 'その他'];
+
+const PREFECTURES = [
+  '北海道',
+  '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
+  '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
+  '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県',
+  '岐阜県', '静岡県', '愛知県', '三重県',
+  '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県',
+  '鳥取県', '島根県', '岡山県', '広島県', '山口県',
+  '徳島県', '香川県', '愛媛県', '高知県',
+  '福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県',
+  '海外',
+];
 
 function calcTabiScore(userId) {
   const postCount    = getPosts().filter(p => p.userId === userId).length;

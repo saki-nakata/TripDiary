@@ -122,6 +122,7 @@ Auth.js v5（セッションベース）を使用する。
 | sort | string | 任意 | `newest`（デフォルト）または `popular`（いいね数降順） |
 | category | string | 任意 | カテゴリで絞り込み（例：`グルメ`） |
 | areaTag | string | 任意 | エリアタグで絞り込み |
+| prefecture | string | 任意 | 都道府県で絞り込み（例：`京都府`、`海外`） |
 | cursor | string | 任意 | ページネーション用カーソル（前回レスポンスの `nextCursor`） |
 | limit | number | 任意 | 取得件数（デフォルト：20） |
 
@@ -134,7 +135,7 @@ Auth.js v5（セッションベース）を使用する。
       "title": "嵐山 竹林の道",
       "body": "朝早くに行くと人が少なくておすすめです。",
       "areaTag": "京都",
-      "category": "観光スポット",
+      "category": "観光",
       "rating": 5,
       "visitedAt": "2026-03-15",
       "createdAt": "2026-06-27T10:00:00.000Z",
@@ -170,7 +171,7 @@ Auth.js v5（セッションベース）を使用する。
   "title": "嵐山 竹林の道",
   "body": "朝早くに行くと人が少なくておすすめです。",
   "areaTag": "京都",
-  "category": "観光スポット",
+  "category": "観光",
   "rating": 5,
   "visitedAt": "2026-03-15",
   "latitude": 35.0116,
@@ -415,7 +416,7 @@ Auth.js v5（セッションベース）を使用する。
   "visitedPrefectures": ["沖縄県", "奈良県", "静岡県"],
   "topPrefecture": "沖縄県",
   "categoryBreakdown": [
-    { "category": "アウトドア", "count": 2 },
+    { "category": "アクティビティ", "count": 2 },
     { "category": "歴史・文化", "count": 2 },
     { "category": "自然", "count": 1 }
   ],

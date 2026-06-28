@@ -62,7 +62,10 @@
     const tags = [...new Set(getPosts().map(p => p.areaTag))].sort();
     return `
       <section class="portal-section">
-        <h2 class="portal-section-title">📍 エリアから探す</h2>
+        <div class="portal-section-header">
+          <h2 class="portal-section-title">📍 エリアから探す</h2>
+          <a href="search.html?tab=area" class="portal-more">都道府県で探す</a>
+        </div>
         <div class="area-tag-grid">
           ${tags.map(tag => {
             const count = getPosts().filter(p => p.areaTag === tag).length;
@@ -80,7 +83,7 @@
   }
 
   function buildCategorySection() {
-    const icons = { '自然': '🌿', 'グルメ': '🍜', 'アウトドア': '⛺', '歴史・文化': '🏛️', 'その他': '📌' };
+    const icons = { '観光': '🗼', 'グルメ': '🍜', '宿・ホテル': '🏨', '自然': '🌿', 'アクティビティ': '⛺', '歴史・文化': '🏛️', 'その他': '📌' };
     return `
       <section class="portal-section">
         <h2 class="portal-section-title">🗂️ カテゴリから探す</h2>
@@ -98,7 +101,7 @@
   }
 
   function buildTopRatedByCategorySection(excludeIds) {
-    const categoryIcons = { '自然': '🌿', 'グルメ': '🍜', 'アウトドア': '⛺', '歴史・文化': '🏛️', 'その他': '📌' };
+    const categoryIcons = { '観光': '🗼', 'グルメ': '🍜', '宿・ホテル': '🏨', '自然': '🌿', 'アクティビティ': '⛺', '歴史・文化': '🏛️', 'その他': '📌' };
     const allPosts = getPosts().filter(p => !excludeIds.has(p.id));
     const topByCategory = CATEGORIES.map(cat => {
       const candidates = allPosts
