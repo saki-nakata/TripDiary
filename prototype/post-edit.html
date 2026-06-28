@@ -30,6 +30,26 @@
   let pinLng = post.lng || null;
   let leafletMap = null;
   let leafletMarker = null;
+  let costItems = Array.isArray(post.costBreakdown) ? [...post.costBreakdown]
+    : post.cost ? [{ label: post.costBreakdown || '', amount: post.cost }] : [];
+
+  function calcTotal(items) {
+    return items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+  }
+  function updateCostTotal() {
+    const total = calcTotal(costItems);
+    document.getElementById('cost-total').textContent = total > 0 ? total.toLocaleString() + '円' : '—';
+  }
+  function renderCostItems() {
+    updateCostTotal();
+    document.getElementById('cost-items-list').innerHTML = costItems.map((it, i) => `
+      <div class="cost-item-row">
+        <input type="number" class="form-control cost-item-amount" placeholder="金額" min="0" value="${it.amount}" oninput="costItems[${i}].amount=this.value;updateCostTotal()">
+        <input type="text" class="form-control cost-item-label" placeholder="内容（例：交通費）" value="${it.label}" oninput="costItems[${i}].label=this.value">
+        <button class="cost-item-remove" onclick="costItems.splice(${i},1);renderCostItems()">✕</button>
+      </div>`).join('');
+  }
+  function addCostItem() { costItems.push({ label: '', amount: '' }); renderCostItems(); }
 
   function setRating(val) {
     selectedRating = val;
@@ -103,12 +123,17 @@
     const areaTag = document.getElementById('areaTag').value.trim();
     const category = document.getElementById('category').value;
     const visitedAt = document.getElementById('visitedAt').value;
+    const filledItems = costItems.filter(it => it.label.trim() || (it.amount !== '' && Number(it.amount) > 0));
+    const cost = filledItems.length ? calcTotal(filledItems) || null : null;
+    const costBreakdown = filledItems.length ? filledItems : null;
 
     if (!title || !body || !category || selectedRating === 0) { alert('必須項目を入力してください'); return; }
 
     const posts = getPosts();
     const idx = posts.findIndex(p => p.id === post.id);
-    posts[idx] = { ...posts[idx], title, body, areaTag: areaTag || 'その他', category, rating: selectedRating, visitedAt, lat: pinLat, lng: pinLng, images: previewImages };
+    posts[idx] = { ...posts[idx], title, body, areaTag: areaTag || 'その他', category, rating: selectedRating, visitedAt, cost, costBreakdown, lat: pinLat, lng: pinLng, images: previewImages };
+    const submitBtn = document.querySelector('.btn-primary[onclick]');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '保存中...'; }
     savePosts(posts);
     showToast('更新しました！');
     setTimeout(() => location.href = `post-detail.html?id=${post.id}`, 600);
@@ -152,6 +177,12 @@
             </div>
           </div>
         </div>
+        <div class="form-group private-cost-block">
+          <label class="form-label">費用 <span class="private-label-tag">🔒 自分のみ</span></label>
+          <div class="cost-total-row">合計：<span id="cost-total">—</span></div>
+          <div id="cost-items-list"></div>
+          <button type="button" class="cost-add-btn" onclick="addCostItem()">＋ 項目を追加</button>
+        </div>
         <div class="form-group">
           <label class="form-label">場所（任意）</label>
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
@@ -170,6 +201,7 @@
 
     document.getElementById('app').innerHTML = buildLayout('explore', mainHtml);
     renderPreviews();
+    renderCostItems();
     setTimeout(initMap, 100);
   }
 

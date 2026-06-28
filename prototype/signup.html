@@ -24,7 +24,11 @@
       <label class="form-label">パスワード</label>
       <input id="password" type="password" class="form-control" placeholder="6文字以上">
     </div>
-    <button class="btn btn-primary btn-block" onclick="handleSignup()">登録する</button>
+    <div class="form-group">
+      <label class="form-label">パスワード（確認）</label>
+      <input id="password-confirm" type="password" class="form-control" placeholder="もう一度入力してください">
+    </div>
+    <button id="signup-btn" class="btn btn-primary btn-block" onclick="handleSignup()">登録する</button>
     <p class="auth-footer">すでにアカウントをお持ちの方は <a href="login.html">ログイン</a></p>
   </div>
 </div>
@@ -34,15 +38,25 @@
   initData();
   if (getCurrentUser()) window.location.href = 'index.html';
 
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
   function handleSignup() {
     const name = document.getElementById('name').value.trim();
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
+    const confirm = document.getElementById('password-confirm').value;
     if (!name) { showError('名前を入力してください'); return; }
     if (!email) { showError('メールアドレスを入力してください'); return; }
     if (password.length < 6) { showError('パスワードは6文字以上で入力してください'); return; }
+    if (password !== confirm) { showError('パスワードが一致しません'); return; }
+    const btn = document.getElementById('signup-btn');
+    btn.disabled = true; btn.textContent = '登録中...';
     const user = signup(name, email, password);
-    if (!user) { showError('このメールアドレスはすでに使われています'); return; }
+    if (!user) { showError('このメールアドレスはすでに使われています'); btn.disabled = false; btn.textContent = '登録する'; return; }
     window.location.href = 'index.html';
   }
 </script>

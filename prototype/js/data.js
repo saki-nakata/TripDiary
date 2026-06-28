@@ -274,6 +274,7 @@ function initData() {
     localStorage.setItem('td_visited', JSON.stringify(INITIAL_DATA.visited));
     localStorage.setItem('td_follows', JSON.stringify(INITIAL_DATA.follows));
     localStorage.setItem('td_comments', JSON.stringify(INITIAL_DATA.comments));
+    if (!localStorage.getItem('td_plans')) localStorage.setItem('td_plans', '[]');
     localStorage.setItem('td_initialized', '1');
   }
 }
@@ -285,6 +286,7 @@ function getWishlists() { return JSON.parse(localStorage.getItem('td_wishlists')
 function getVisited() { return JSON.parse(localStorage.getItem('td_visited') || '[]'); }
 function getFollows() { return JSON.parse(localStorage.getItem('td_follows') || '[]'); }
 function getComments() { return JSON.parse(localStorage.getItem('td_comments') || '[]'); }
+function getPlans() { return JSON.parse(localStorage.getItem('td_plans') || '[]'); }
 
 function saveUsers(d) { localStorage.setItem('td_users', JSON.stringify(d)); }
 function savePosts(d) { localStorage.setItem('td_posts', JSON.stringify(d)); }
@@ -293,9 +295,15 @@ function saveWishlists(d) { localStorage.setItem('td_wishlists', JSON.stringify(
 function saveVisited(d) { localStorage.setItem('td_visited', JSON.stringify(d)); }
 function saveFollows(d) { localStorage.setItem('td_follows', JSON.stringify(d)); }
 function saveComments(d) { localStorage.setItem('td_comments', JSON.stringify(d)); }
+function savePlans(d) { localStorage.setItem('td_plans', JSON.stringify(d)); }
 
 function getUserById(id) { return getUsers().find(u => u.id === id); }
 function getPostById(id) { return getPosts().find(p => p.id === id); }
+function getPlanById(id) {
+  const plan = getPlans().find(p => p.id === id);
+  if (plan && !Array.isArray(plan.spotIds)) plan.spotIds = [];
+  return plan;
+}
 
 function getLikeCount(postId) { return getLikes().filter(l => l.postId === postId).length; }
 function getCommentCount(postId) { return getComments().filter(c => c.postId === postId).length; }
@@ -347,6 +355,13 @@ function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+const WEEK_DAYS = ['日', '月', '火', '水', '木', '金', '土'];
+function formatDateWithDay(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${WEEK_DAYS[d.getDay()]}）`;
 }
 
 function categoryBadge(category) {

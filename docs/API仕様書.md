@@ -1,7 +1,8 @@
 # TripDiary API仕様書
 
-**バージョン:** 1.0
+**バージョン:** 1.1
 **作成日:** 2026-06-27
+**更新日:** 2026-06-28
 **作成者:** Nakata Saki
 
 ---
@@ -325,6 +326,69 @@ Auth.js v5（セッションベース）を使用する。
   "url": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/..."
 }
 ```
+
+---
+
+---
+
+## 4.8 旅行プラン API
+
+| Method | エンドポイント | 説明 | 認証 |
+|--------|--------------|------|------|
+| GET | `/api/plans` | 自分のプラン一覧取得 | 必要 |
+| POST | `/api/plans` | プラン作成 | 必要 |
+| GET | `/api/plans/[id]` | プラン詳細取得 | 必要（本人のみ） |
+| PUT | `/api/plans/[id]` | プラン更新 | 必要（本人のみ） |
+| DELETE | `/api/plans/[id]` | プラン削除 | 必要（本人のみ） |
+| PATCH | `/api/plans/[id]/complete` | 完了フラグ切り替え | 必要（本人のみ） |
+
+**GET `/api/plans` レスポンス（200）**
+```json
+[
+  {
+    "id": "pl_xxx",
+    "title": "京都・奈良 2泊3日",
+    "startDate": "2026-08-10",
+    "endDate": "2026-08-12",
+    "budget": 50000,
+    "budgetBreakdown": [
+      { "label": "交通費", "amount": 20000 },
+      { "label": "宿泊費", "amount": 20000 },
+      { "label": "食費", "amount": 10000 }
+    ],
+    "memo": "抹茶スイーツを制覇する旅",
+    "completed": false,
+    "spotIds": ["p1", "p2", "p3"],
+    "createdAt": "2026-07-01T10:00:00Z"
+  }
+]
+```
+
+**POST `/api/plans` リクエスト**
+```json
+{
+  "title": "京都・奈良 2泊3日",
+  "startDate": "2026-08-10",
+  "endDate": "2026-08-12",
+  "budgetBreakdown": [
+    { "label": "交通費", "amount": 20000 }
+  ],
+  "memo": "抹茶スイーツを制覇する旅",
+  "spotIds": ["p1", "p2", "p3"]
+}
+```
+
+**PATCH `/api/plans/[id]/complete` リクエスト**
+```json
+{ "completed": true }
+```
+
+**エラーレスポンス**
+
+| ステータス | 条件 |
+|-----------|------|
+| 403 | 本人以外がアクセス |
+| 404 | プランが存在しない |
 
 ---
 
