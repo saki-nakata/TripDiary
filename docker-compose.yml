@@ -1,0 +1,16 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: tripdiary-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tripdiary
+      MYSQL_USER: tripdiary
+      MYSQL_PASSWORD: tripdiary
+    ports:
+      - "3306:3306"
+    volumes:
+      - tripdiary-db-data:/var/lib/mysql
+
+volumes:
+  tripdiary-db-data:

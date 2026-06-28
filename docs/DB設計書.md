@@ -1,6 +1,6 @@
 # TripDiary DB設計書
 
-**バージョン:** 1.1
+**バージョン:** 1.2
 **作成日:** 2026-06-27
 **更新日:** 2026-06-28
 **作成者:** Nakata Saki
@@ -14,7 +14,7 @@
 - 画像は AWS S3 に保存し、DB には URL のみ保持する
 - いいね・フォロー・訪問済み・行きたいリストは複合主キーで一意性を管理する
 - タイムスタンプは `createdAt` / `updatedAt` を全テーブルに持つ（`updatedAt` は変更があるテーブルのみ）
-- 認証テーブル（Account・Session・VerificationToken）は Auth.js v5 の仕様に準拠する
+- 認証テーブル（Account・VerificationToken）は Auth.js v5 の仕様に準拠する（JWT Strategy のため Session テーブルは不要）
 - 地図用の緯度・経度は Post テーブルに `latitude` / `longitude` として保持する（未定：実装時に確定）
 
 ---
@@ -392,23 +392,7 @@ erDiagram
 
 ---
 
-### 3.10 sessions テーブル（Auth.js v5 用）
-
-| カラム名 | 型 | NULL | デフォルト | 説明 |
-|---------|-----|------|-----------|------|
-| id | VARCHAR(30) | NOT NULL | cuid() | セッションID |
-| sessionToken | VARCHAR(255) | NOT NULL | - | セッショントークン（一意） |
-| userId | VARCHAR(30) | NOT NULL | - | ユーザーID |
-| expires | DATETIME(3) | NOT NULL | - | セッション有効期限 |
-
-**制約**
-- 主キー：`id`
-- 一意制約：`sessionToken`
-- 外部キー：`userId` → `users.id`（CASCADE DELETE）
-
----
-
-### 3.11 verification_tokens テーブル（Auth.js v5 用）
+### 3.10 verification_tokens テーブル（Auth.js v5 用）
 
 | カラム名 | 型 | NULL | デフォルト | 説明 |
 |---------|-----|------|-----------|------|
