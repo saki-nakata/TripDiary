@@ -27,6 +27,10 @@ Thumbs.db
 # playwright mcp artifacts
 .playwright-mcp/
 
+# playwright test results
+test-results/
+playwright-report/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
