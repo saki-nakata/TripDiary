@@ -83,7 +83,7 @@ Auth.js v5（セッションベース）を使用する。
 **リクエスト**
 ```json
 {
-  "name": "田中花子",
+  "nickname": "田中花子",
   "email": "hanako@example.com",
   "password": "password123"
 }
@@ -93,7 +93,7 @@ Auth.js v5（セッションベース）を使用する。
 ```json
 {
   "id": "cm_xxx",
-  "name": "田中花子",
+  "nickname": "田中花子",
   "email": "hanako@example.com"
 }
 ```
@@ -141,7 +141,7 @@ Auth.js v5（セッションベース）を使用する。
       "createdAt": "2026-06-27T10:00:00.000Z",
       "author": {
         "id": "u_xxx",
-        "name": "田中花子",
+        "nickname": "田中花子",
         "image": "https://res.cloudinary.com/..."
       },
       "images": [
@@ -218,7 +218,7 @@ Auth.js v5（セッションベース）を使用する。
   "createdAt": "2026-06-27T10:00:00.000Z",
   "author": {
     "id": "u_xxx",
-    "name": "田中花子",
+    "nickname": "田中花子",
     "image": "https://res.cloudinary.com/..."
   }
 }
@@ -269,7 +269,7 @@ Auth.js v5（セッションベース）を使用する。
   "users": [
     {
       "id": "u_xxx",
-      "name": "田中花子",
+      "nickname": "田中花子",
       "image": "https://res.cloudinary.com/...",
       "bio": "旅が好きです",
       "followedByCurrentUser": false
@@ -286,7 +286,7 @@ Auth.js v5（セッションベース）を使用する。
 ```json
 {
   "id": "u_xxx",
-  "name": "田中花子",
+  "nickname": "田中花子",
   "image": "https://res.cloudinary.com/...",
   "bio": "旅が好きです",
   "followerCount": 12,
@@ -301,7 +301,7 @@ Auth.js v5（セッションベース）を使用する。
 **リクエスト**
 ```json
 {
-  "name": "田中花子（更新）",
+  "nickname": "田中花子（更新）",
   "bio": "旅と写真が好きです"
 }
 ```

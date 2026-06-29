@@ -31,17 +31,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const isValid = await compare(password, user.password);
         if (!isValid) return null;
 
-        return { id: user.id, name: user.name, email: user.email, image: user.image ?? null };
+        return { id: user.id, nickname: user.nickname, email: user.email, image: user.image ?? null };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user?.id) token.id = user.id;
+      if (user?.nickname) token.nickname = user.nickname;
       return token;
     },
     async session({ session, token }) {
       if (token?.id) session.user.id = token.id as string;
+      if (token?.nickname) session.user.nickname = token.nickname as string;
       return session;
     },
   },
