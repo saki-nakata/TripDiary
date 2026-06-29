@@ -26,7 +26,7 @@ erDiagram
     User {
         String id PK
         String email UK
-        String name
+        String nickname
         String image
         String bio
         String password
@@ -157,7 +157,7 @@ erDiagram
 |---------|-----|------|-----------|------|
 | id | VARCHAR(30) | NOT NULL | cuid() | ユーザーID（cuid） |
 | email | VARCHAR(255) | NOT NULL | - | メールアドレス（一意） |
-| name | VARCHAR(100) | NOT NULL | - | 表示名 |
+| nickname | VARCHAR(20) | NOT NULL | - | ニックネーム |
 | image | TEXT | NULL | - | プロフィール画像URL（S3） |
 | bio | VARCHAR(200) | NULL | - | 自己紹介文 |
 | password | VARCHAR(255) | NULL | - | ハッシュ化済みパスワード（OAuth利用時はNULL） |

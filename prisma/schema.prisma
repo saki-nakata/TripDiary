@@ -10,7 +10,7 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  name      String
+  nickname  String   @db.VarChar(20)
   image     String?  @db.Text
   bio       String?  @db.VarChar(200)
   password  String?  @db.VarChar(255)
@@ -32,7 +32,7 @@ model User {
 
 model Post {
   id             String    @id @default(cuid())
-  title          String    @db.VarChar(100)
+  title          String    @db.VarChar(40)
   body           String    @db.Text
   areaTag        String    @db.VarChar(50)
   category       String?   @db.VarChar(50)
