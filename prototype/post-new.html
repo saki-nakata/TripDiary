@@ -82,21 +82,35 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(leafletMap);
-    leafletMap.on('click', e => {
+    leafletMap.on('click', async e => {
       pinLat = parseFloat(e.latlng.lat.toFixed(6));
       pinLng = parseFloat(e.latlng.lng.toFixed(6));
       if (leafletMarker) leafletMarker.setLatLng(e.latlng);
       else leafletMarker = L.marker(e.latlng).addTo(leafletMap);
-      document.getElementById('pin-label').textContent = `📍 ${pinLat}, ${pinLng}`;
-      document.getElementById('pin-clear').style.display = 'inline-flex';
+
+      const row = document.getElementById('pin-address-row');
+      const label = document.getElementById('pin-label');
+      row.style.display = 'flex';
+      label.textContent = '📍 取得中…';
+
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${pinLat}&lon=${pinLng}&format=json&accept-language=ja`,
+          { headers: { 'Accept-Language': 'ja' } }
+        );
+        const data = await res.json();
+        label.textContent = `📍 ${data.display_name ?? `${pinLat}, ${pinLng}`}`;
+      } catch {
+        label.textContent = `📍 ${pinLat}, ${pinLng}`;
+      }
     });
   }
 
   function clearPin() {
     pinLat = null; pinLng = null;
     if (leafletMarker) { leafletMarker.remove(); leafletMarker = null; }
-    document.getElementById('pin-label').textContent = '地図をクリックしてピンを設置';
-    document.getElementById('pin-clear').style.display = 'none';
+    document.getElementById('pin-label').textContent = '';
+    document.getElementById('pin-address-row').style.display = 'none';
   }
 
   function updateCounter(inputId, countId) {
@@ -206,11 +220,12 @@
         </div>
         <div class="form-group">
           <label class="form-label">場所（任意）</label>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-            <span id="pin-label" style="font-size:.85rem;color:var(--text-muted)">地図をクリックしてピンを設置</span>
-            <button id="pin-clear" class="btn btn-ghost btn-sm" onclick="clearPin()" style="display:none">✕ クリア</button>
-          </div>
+          <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:8px">地図をクリックしてピンを設置</p>
           <div id="pin-map" style="height:240px;border-radius:var(--radius);border:1px solid var(--border)"></div>
+          <div id="pin-address-row" style="display:none;align-items:center;gap:6px;margin-top:8px">
+            <span id="pin-label" style="font-size:.85rem;color:var(--text-muted)"></span>
+            <button id="pin-clear" onclick="clearPin()" style="background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--text-muted);padding:0;line-height:1">✕</button>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">画像（任意）</label>
