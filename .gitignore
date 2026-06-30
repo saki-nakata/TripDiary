@@ -19,6 +19,9 @@ build/
 # prisma
 prisma/migrations/dev.db
 
+# local docs
+実装計画書.md
+
 # misc
 .DS_Store
 *.pem

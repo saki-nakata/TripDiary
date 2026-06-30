@@ -26,10 +26,17 @@ export async function POST(req: NextRequest) {
 
   const hashedPassword = await hash(password, 12);
 
-  const user = await prisma.user.create({
-    data: { nickname, email, password: hashedPassword },
-    select: { id: true, nickname: true, email: true },
-  });
+  try {
+    const user = await prisma.user.create({
+      data: { nickname, email, password: hashedPassword },
+      select: { id: true, nickname: true, email: true },
+    });
 
-  return NextResponse.json(user, { status: 201 });
+    return NextResponse.json(user, { status: 201 });
+  } catch {
+    return NextResponse.json(
+      { error: "サーバーエラーが発生しました" },
+      { status: 500 }
+    );
+  }
 }
