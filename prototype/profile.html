@@ -14,7 +14,7 @@
 <script>
   initData();
 
-  const params = new URLSearchParams(location.search);
+  const params = new URLSearchParams(location.hash.slice(1));
   const userId = params.get('id');
   let targetUser = getUserById(userId);
   if (!targetUser) { location.href = 'index.html'; }
@@ -33,9 +33,9 @@
   function buildUserCard(u) {
     const following = me ? isFollowing(me.id, u.id) : false;
     return `<div class="user-item">
-      <a href="profile.html?id=${u.id}"><img src="${u.avatar}" alt="${u.name}" class="avatar-sm"></a>
+      <a href="profile.html#id=${u.id}"><img src="${u.avatar}" alt="${u.name}" class="avatar-sm"></a>
       <div class="user-item-info">
-        <a href="profile.html?id=${u.id}" class="user-item-name">${u.name}</a>
+        <a href="profile.html#id=${u.id}" class="user-item-name">${u.name}</a>
         <p class="user-item-bio">${u.bio || ''}</p>
       </div>
       ${me && me.id !== u.id ? `<button class="btn btn-sm ${following ? 'btn-ghost' : 'btn-primary'}" onclick="handleFollowUser('${u.id}', this)">${following ? 'フォロー中' : 'フォロー'}</button>` : ''}
@@ -138,7 +138,7 @@
       </div>
       <div id="tab-comments-sent" class="tab-panel ${activeTab==='comments-sent'?'active':''}">
         ${commentedPosts.length ? `<div class="comment-history-list">${commentedPosts.map(({ comment, post }) => `
-          <a href="post-detail.html?id=${post.id}" class="comment-history-item">
+          <a href="post-detail.html#id=${post.id}" class="comment-history-item">
             <div class="comment-history-thumb" style="${post.images && post.images.length ? `background-image:url('${post.images[0]}')` : 'background:#f1f5f9'}"></div>
             <div class="comment-history-body">
               <p class="comment-history-post-title">${post.title}</p>
@@ -151,7 +151,7 @@
       ${isMe ? `
       <div id="tab-comments-received" class="tab-panel ${activeTab==='comments-received'?'active':''}">
         ${receivedComments.length ? `<div class="comment-history-list">${receivedComments.map(({ comment, post, user }) => `
-          <a href="post-detail.html?id=${post.id}" class="comment-history-item">
+          <a href="post-detail.html#id=${post.id}" class="comment-history-item">
             <img src="${user.avatar}" alt="${user.name}" class="avatar-sm" style="flex-shrink:0">
             <div class="comment-history-body">
               <p class="comment-history-post-title"><strong>${user.name}</strong> · ${post.title}</p>

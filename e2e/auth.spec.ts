@@ -1,12 +1,18 @@
 import { test, expect } from "@playwright/test";
 
+const TEST_EMAIL = `test_playwright@example.com`;
 const TEST_USER = {
   nickname: "テストユーザー",
-  email: `test_${Date.now()}@example.com`,
+  email: TEST_EMAIL,
   password: "Password1234",
 };
 
 test.describe("認証フロー", () => {
+  test.beforeAll(async ({ request }) => {
+    // 既存ユーザーがいれば削除してからテスト用ユーザーを作成
+    await request.delete(`/api/test/cleanup?email=${encodeURIComponent(TEST_EMAIL)}`);
+  });
+
   test("新規登録 → ダッシュボード遷移", async ({ page }) => {
     await page.goto("/signup");
 
@@ -17,7 +23,7 @@ test.describe("認証フロー", () => {
     await page.click('button[type="submit"]');
 
     await expect(page).toHaveURL("/dashboard");
-    await expect(page.getByText(TEST_USER.nickname)).toBeVisible();
+    await expect(page.getByRole("button", { name: /テストユーザー/ })).toBeVisible();
   });
 
   test("ログイン → ダッシュボード遷移", async ({ page }) => {

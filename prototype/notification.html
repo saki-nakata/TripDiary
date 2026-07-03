@@ -29,15 +29,15 @@
           if (n.type === 'like') {
             icon = '👍';
             text = `<strong>${from.name}</strong> が「${n.post.title}」にいいねしました`;
-            link = `post-detail.html?id=${n.post.id}`;
+            link = `post-detail.html#id=${n.post.id}`;
           } else if (n.type === 'comment') {
             icon = '💬';
             text = `<strong>${from.name}</strong> が「${n.post.title}」にコメントしました<span class="notif-comment-body">「${n.body}」</span>`;
-            link = `post-detail.html?id=${n.post.id}`;
+            link = `post-detail.html#id=${n.post.id}`;
           } else if (n.type === 'follow') {
             icon = '👤';
             text = `<strong>${from.name}</strong> があなたをフォローしました`;
-            link = `profile.html?id=${from.id}`;
+            link = `profile.html#id=${from.id}`;
           }
           return `<a href="${link}" class="notif-item">
             <span class="notif-icon">${icon}</span>

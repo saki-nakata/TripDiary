@@ -23,7 +23,7 @@
           ${items.map((p, i) => {
             const user = getUserById(p.userId);
             const img = p.images && p.images.length ? p.images[0] : '';
-            return `<div class="featured-slide" onclick="location.href='post-detail.html?id=${p.id}'">
+            return `<div class="featured-slide" onclick="location.href='post-detail.html#id=${p.id}'">
               <img src="${img}" alt="${p.title}">
               <div class="featured-overlay">
                 <div class="featured-category">${categoryBadge(p.category)}</div>
@@ -64,13 +64,13 @@
       <section class="portal-section">
         <div class="portal-section-header">
           <h2 class="portal-section-title">📍 エリアから探す</h2>
-          <a href="search.html?tab=area" class="portal-more">都道府県で探す</a>
+          <a href="search.html#tab=area" class="portal-more">都道府県で探す</a>
         </div>
         <div class="area-tag-grid">
           ${tags.map(tag => {
             const count = getPosts().filter(p => p.areaTag === tag).length;
             const img = getPosts().find(p => p.areaTag === tag)?.images?.[0] || '';
-            return `<a href="tag.html?tag=${encodeURIComponent(tag)}" class="area-tag-card">
+            return `<a href="tag.html#tag=${encodeURIComponent(tag)}" class="area-tag-card">
               <div class="area-tag-img" style="background-image:url('${img}')"></div>
               <div class="area-tag-info">
                 <span class="area-tag-name">${tag}</span>
@@ -90,7 +90,7 @@
         <div class="category-grid">
           ${CATEGORIES.map(c => {
             const count = getPosts().filter(p => p.category === c).length;
-            return `<a href="index.html?category=${encodeURIComponent(c)}" class="category-card">
+            return `<a href="index.html#category=${encodeURIComponent(c)}" class="category-card">
               <span class="category-icon">${icons[c] || '📌'}</span>
               <span class="category-name">${c}</span>
               <span class="category-count">${count}件</span>
@@ -117,7 +117,7 @@
         <div class="top-rated-grid">
           ${topByCategory.map(({ cat, post: p }) => {
             const thumb = p.images && p.images.length ? p.images[0] : '';
-            return `<a href="post-detail.html?id=${p.id}" class="top-rated-card">
+            return `<a href="post-detail.html#id=${p.id}" class="top-rated-card">
               <div class="top-rated-thumb" style="background-image:url('${thumb}')">
                 <span class="top-rated-cat-badge">${categoryIcons[cat] || '📌'} ${cat}</span>
               </div>
@@ -153,7 +153,7 @@
       <section class="portal-section" style="margin-top:0">
         <div class="portal-section-header">
           <h2 class="portal-section-title">❤️ 人気の旅スポット</h2>
-          <a href="search.html?tab=spots&sort=popular" class="portal-more">もっと見る</a>
+          <a href="search.html#tab=spots&sort=popular" class="portal-more">もっと見る</a>
         </div>
         ${buildPostGrid(popularPosts)}
       </section>
@@ -167,7 +167,7 @@
       <section class="portal-section">
         <div class="portal-section-header">
           <h2 class="portal-section-title">🆕 新着の旅スポット</h2>
-          <a href="search.html?tab=spots" class="portal-more">もっと見る</a>
+          <a href="search.html#tab=spots" class="portal-more">もっと見る</a>
         </div>
         ${buildPostGrid(latestPosts)}
       </section>`;

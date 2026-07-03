@@ -10,14 +10,14 @@ function buildSidebar(activePage) {
     { href: 'search.html', icon: '🔍', label: '検索', key: 'search' },
     { divider: true, authRequired: true },
     { href: 'post-new.html', icon: '✏️', label: '投稿する', key: 'new', authRequired: true },
-    { href: `profile.html?id=${user?.id}`, icon: '🌐', label: 'プロフィール', key: 'profile', authRequired: true },
+    { href: `profile.html#id=${user?.id}`, icon: '🌐', label: 'プロフィール', key: 'profile', authRequired: true },
     { divider: true },
-    { href: 'mypage.html?tab=plans', icon: '🗺️', label: '旅行プラン', key: 'plans', authRequired: true },
-    { href: 'mypage.html?tab=myposts', icon: '✈️', label: '自分の投稿', key: 'myposts', authRequired: true },
-    { href: 'mypage.html?tab=report', icon: '📋', label: '旅行レポート', key: 'report', authRequired: true },
-    { href: 'mypage.html?tab=wishlist', icon: '🔖', label: '行きたい', key: 'wishlist', authRequired: true },
-    { href: 'mypage.html?tab=visited', icon: '✅', label: '訪問済み', key: 'visited', authRequired: true },
-    { href: 'mypage.html?tab=follow-feed', icon: '👥', label: 'フォロー中の投稿', key: 'follow-feed', authRequired: true },
+    { href: 'mypage.html#tab=plans', icon: '🗺️', label: '旅行プラン', key: 'plans', authRequired: true },
+    { href: 'mypage.html#tab=myposts', icon: '✈️', label: '自分の投稿', key: 'myposts', authRequired: true },
+    { href: 'mypage.html#tab=report', icon: '📋', label: '旅行レポート', key: 'report', authRequired: true },
+    { href: 'mypage.html#tab=wishlist', icon: '🔖', label: '行きたい', key: 'wishlist', authRequired: true },
+    { href: 'mypage.html#tab=visited', icon: '✅', label: '訪問済み', key: 'visited', authRequired: true },
+    { href: 'mypage.html#tab=follow-feed', icon: '👥', label: 'フォロー中の投稿', key: 'follow-feed', authRequired: true },
   ];
 
   const navHtml = navItems.map(item => {
@@ -139,23 +139,23 @@ function buildPostCard(post) {
 
   const isOwner = me && me.id === post.userId;
 
-  return `<article class="post-card" onclick="location.href='post-detail.html?id=${post.id}'">
+  return `<article class="post-card" onclick="location.href='post-detail.html#id=${post.id}'">
     <div class="post-card-image">
       <img src="${thumb}" alt="${post.title}" loading="lazy">
       ${categoryBadge(post.category)}
       ${photoCount > 1 ? `<span class="photo-count-badge">📷 ${photoCount}</span>` : ''}
       ${isOwner ? `<div class="mypost-actions">
-        <a href="post-edit.html?id=${post.id}" class="mypost-action-btn" title="編集" onclick="event.stopPropagation()">✏️</a>
+        <a href="post-edit.html#id=${post.id}" class="mypost-action-btn" title="編集" onclick="event.stopPropagation()">✏️</a>
         <button class="mypost-action-btn mypost-delete-btn" title="削除" onclick="event.stopPropagation();deleteOwnPost('${post.id}')">🗑️</button>
       </div>` : ''}
     </div>
     <div class="post-card-body">
       <div class="post-card-meta">
-        <a href="profile.html?id=${user.id}" class="post-author" onclick="event.stopPropagation()">
+        <a href="profile.html#id=${user.id}" class="post-author" onclick="event.stopPropagation()">
           <img src="${user.avatar}" alt="${user.name}" class="avatar-xs">
           <span>${user.name}</span>
         </a>
-        <a href="tag.html?tag=${encodeURIComponent(post.areaTag)}" class="area-tag" onclick="event.stopPropagation()">
+        <a href="tag.html#tag=${encodeURIComponent(post.areaTag)}" class="area-tag" onclick="event.stopPropagation()">
           📍 ${post.areaTag}
         </a>
       </div>

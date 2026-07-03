@@ -14,7 +14,7 @@
 <script>
   initData();
 
-  const params = new URLSearchParams(location.search);
+  const params = new URLSearchParams(location.hash.slice(1));
   let activeTab = params.get('tab') || 'spots';
   let query = '';
   let sortOrder = params.get('sort') || 'latest';
@@ -39,10 +39,10 @@
       const info = getScoreLabel(score);
       const postCount = getPosts().filter(p => p.userId === u.id).length;
       return `<div class="user-item">
-        <a href="profile.html?id=${u.id}"><img src="${u.avatar}" alt="${u.name}" class="avatar"></a>
+        <a href="profile.html#id=${u.id}"><img src="${u.avatar}" alt="${u.name}" class="avatar"></a>
         <div class="user-item-info">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <a href="profile.html?id=${u.id}" class="user-item-name">${u.name}</a>
+            <a href="profile.html#id=${u.id}" class="user-item-name">${u.name}</a>
             <span class="score-chip" style="background:${info.color}">✈️ ${score} pts</span>
           </div>
           <p class="user-item-bio">${u.bio || ''}</p>
@@ -61,7 +61,7 @@
       const thumb = p.images && p.images.length ? p.images[0] : '';
       const likes = getLikeCount(p.id);
       const color = rankColors[i] || '#6b7280';
-      return `<a href="post-detail.html?id=${p.id}" class="spot-ranking-item">
+      return `<a href="post-detail.html#id=${p.id}" class="spot-ranking-item">
         <div class="spot-rank-badge" style="background:${color}">${i + 1}</div>
         ${thumb ? `<div class="spot-rank-thumb" style="background-image:url('${thumb}')"></div>` : ''}
         <div class="spot-rank-info">

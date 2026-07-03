@@ -26,6 +26,8 @@ model User {
   visited   Visited[]
   plans     Plan[]
   accounts  Account[]
+  notificationsReceived Notification[] @relation("notificationRecipient")
+  notificationsSent     Notification[] @relation("notificationSender")
 
   @@map("users")
 }
@@ -34,15 +36,15 @@ model Post {
   id             String    @id @default(cuid())
   title          String    @db.VarChar(40)
   body           String    @db.Text
-  areaTag        String    @db.VarChar(50)
   category       String?   @db.VarChar(50)
   rating         Int?
   visitedAt      DateTime  @db.Date
   cost           Int?
   costBreakdown  Json?
+  prefecture     String    @db.VarChar(50)
   planId         String?   @db.VarChar(30)
-  latitude       Float?
-  longitude      Float?
+  lat            Float?
+  lng            Float?
   authorId       String
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -57,7 +59,7 @@ model Post {
   planSpots  PlanSpot[]
 
   @@index([authorId])
-  @@index([areaTag])
+  @@index([prefecture])
   @@index([category])
   @@index([rating])
   @@index([createdAt(sort: Desc)])
@@ -172,6 +174,24 @@ model PlanSpot {
 
   @@id([planId, postId])
   @@map("plan_spots")
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  fromUserId  String
+  type        String   @db.VarChar(20)
+  postId      String?
+  commentBody String?  @db.VarChar(200)
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user     User @relation("notificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  fromUser User @relation("notificationSender", fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
 }
 
 model Account {

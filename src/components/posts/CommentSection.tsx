@@ -1,0 +1,175 @@
+"use client";
+
+import { useState, useEffect, type FormEvent } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/contexts/toast-context";
+import type { Comment } from "@/types/post";
+
+type Props = {
+  postId: string;
+  currentUserId?: string;
+  postAuthorId: string;
+};
+
+export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [body, setBody] = useState("");
+  const { showToast } = useToast();
+  const router = useRouter();
+
+  useEffect(() => {
+    loadComments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId]);
+
+  async function loadComments(cursor?: string) {
+    try {
+      const url = `/api/posts/${postId}/comments${cursor ? `?cursor=${cursor}` : ""}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setComments((prev) => cursor ? [...prev, ...data.comments] : data.comments);
+      setNextCursor(data.nextCursor);
+      setHasMore(data.hasMore);
+    } catch {
+      showToast("コメントの読み込みに失敗しました", "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!currentUserId) {
+      router.push("/login");
+      return;
+    }
+    if (!body.trim() || submitting) return;
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/posts/${postId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: body.trim() }),
+      });
+      if (!res.ok) throw new Error();
+      setBody("");
+      await loadComments();
+      showToast("コメントを投稿しました", "success", 500);
+    } catch {
+      showToast("コメントの投稿に失敗しました", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      const res = await fetch(`/api/comments/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setComments((prev) => prev.filter((c) => c.id !== id));
+    } catch {
+      showToast("削除に失敗しました", "error");
+    }
+  }
+
+  return (
+    <>
+    <section className="mt-8">
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-base font-semibold text-zinc-800">
+          💬 コメント {comments.length > 0 && <span className="text-zinc-400 font-normal text-sm">({comments.length}件)</span>}
+        </h2>
+        <span className="text-xs text-zinc-400 ml-auto">{body.length} / 2000 文字</span>
+      </div>
+
+      <form onSubmit={handleSubmit} className="mb-6">
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder={currentUserId ? "コメントを入力..." : "コメントするにはログインしてください"}
+          maxLength={2000}
+          rows={3}
+          disabled={!currentUserId || submitting}
+          className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-zinc-50 disabled:text-zinc-400"
+        />
+        <div className="flex items-center justify-end mt-2">
+          <button
+            type="submit"
+            disabled={!body.trim() || submitting || !currentUserId}
+            className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? "送信中..." : "コメントを投稿"}
+          </button>
+        </div>
+      </form>
+
+      {loading ? (
+        <p className="text-sm text-zinc-400">読み込み中...</p>
+      ) : comments.length === 0 ? (
+        <p className="text-sm text-zinc-400">まだコメントはありません。最初のコメントを投稿しましょう！</p>
+      ) : (
+        <ul className="space-y-4">
+          {comments.map((comment) => {
+            const canDelete =
+              currentUserId === comment.author.id || currentUserId === postAuthorId;
+            return (
+              <li key={comment.id} className="flex gap-3">
+                <div className="relative w-9 h-9 rounded-full overflow-hidden bg-zinc-200 shrink-0">
+                  {comment.author.image ? (
+                    <Image
+                      src={comment.author.image}
+                      alt={comment.author.nickname}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="w-full h-full flex items-center justify-center text-xs font-medium text-zinc-500">
+                      {comment.author.nickname[0]}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-zinc-800">{comment.author.nickname}</span>
+                  <p className="mt-1 text-sm text-zinc-700 whitespace-pre-wrap">{comment.body}</p>
+                  <div className="flex items-center mt-1">
+                    <span className="text-xs text-zinc-400">
+                      {new Date(comment.createdAt).toLocaleDateString("ja-JP")}
+                    </span>
+                    {canDelete && (
+                      <>
+                        <span className="mx-2 text-zinc-200 text-xs">|</span>
+                        <button
+                          onClick={() => handleDelete(comment.id)}
+                          className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          削除
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {hasMore && (
+        <button
+          onClick={() => loadComments(nextCursor ?? undefined)}
+          className="mt-4 text-sm text-green-600 hover:underline"
+        >
+          もっと見る
+        </button>
+      )}
+    </section>
+    </>
+  );
+}

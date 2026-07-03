@@ -1,8 +1,8 @@
 # TripDiary DB設計書
 
-**バージョン:** 1.2
+**バージョン:** 1.4
 **作成日:** 2026-06-27
-**更新日:** 2026-06-28
+**更新日:** 2026-07-04
 **作成者:** Nakata Saki
 
 ---
@@ -15,7 +15,7 @@
 - いいね・フォロー・訪問済み・行きたいリストは複合主キーで一意性を管理する
 - タイムスタンプは `createdAt` / `updatedAt` を全テーブルに持つ（`updatedAt` は変更があるテーブルのみ）
 - 認証テーブル（Account・VerificationToken）は Auth.js v5 の仕様に準拠する（JWT Strategy のため Session テーブルは不要）
-- 地図用の緯度・経度は Post テーブルに `latitude` / `longitude` として保持する（未定：実装時に確定）
+- 地図用の緯度・経度は Post テーブルに `lat` / `lng` として保持する
 
 ---
 
@@ -38,7 +38,6 @@ erDiagram
         String id PK
         String title
         String body
-        String areaTag
         String prefecture
         String category
         Int rating
@@ -48,9 +47,20 @@ erDiagram
         String planId FK
         Float lat
         Float lng
-        String userId FK
+        String authorId FK
         DateTime createdAt
         DateTime updatedAt
+    }
+
+    Notification {
+        String id PK
+        String userId FK
+        String fromUserId FK
+        String type
+        String postId FK
+        String commentBody
+        Boolean read
+        DateTime createdAt
     }
 
     Plan {
@@ -128,6 +138,8 @@ erDiagram
         DateTime expires
     }
 
+    User ||--o{ Notification : "通知を受け取る（recipient）"
+    User ||--o{ Notification : "通知を送る（sender）"
     User ||--o{ Post : "投稿する"
     User ||--o{ Comment : "コメントする"
     User ||--o{ Like : "いいねする"
@@ -182,29 +194,27 @@ erDiagram
 | id | VARCHAR(30) | NOT NULL | cuid() | 投稿ID（cuid） |
 | title | VARCHAR(40) | NOT NULL | - | スポット名・タイトル（最大40文字） |
 | body | TEXT | NOT NULL | - | 感想・説明文 |
-| areaTag | VARCHAR(50) | NOT NULL | - | エリアタグ（例：北海道、京都） |
-| category | VARCHAR(20) | NULL | - | カテゴリ（観光/グルメ/宿・ホテル/自然/アクティビティ/歴史・文化/その他）。アプリレベルで値を制限 |
+| category | VARCHAR(50) | NULL | - | カテゴリ（観光/グルメ/宿・ホテル/自然/アクティビティ/歴史・文化/その他）。アプリレベルで値を制限 |
 | rating | INT | NULL | - | 評価（1〜5）。アプリレベルで 1〜5 に制限 |
 | visitedAt | DATE | NOT NULL | - | 訪問日（必須） |
-| prefecture | VARCHAR(10) | NULL | - | 都道府県（値域：47都道府県＋「海外」、または NULL）。旅行レポートの集計・検索エリアタブの絞り込みに使用 |
+| prefecture | VARCHAR(50) | NOT NULL | - | 都道府県（値域：47都道府県＋「海外」）。旅行レポートの集計・検索エリアタブの絞り込みに使用 |
 | cost | INT | NULL | - | 費用合計（costBreakdown の自動集計値） |
 | costBreakdown | JSON | NULL | - | 費用内訳。`[{"label":"交通費","amount":3000}, ...]` 形式。自分のみ表示 |
 | planId | VARCHAR(30) | NULL | - | 旅行プランから投稿した場合のプランID |
-| lat | DOUBLE | NULL | - | 緯度（任意・地図ピン設置時に設定） |
-| lng | DOUBLE | NULL | - | 経度（任意・地図ピン設置時に設定） |
-| userId | VARCHAR(30) | NOT NULL | - | 投稿者のユーザーID |
+| lat | FLOAT | NULL | - | 緯度（任意・地図ピン設置時に設定） |
+| lng | FLOAT | NULL | - | 経度（任意・地図ピン設置時に設定） |
+| authorId | VARCHAR(30) | NOT NULL | - | 投稿者のユーザーID |
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
 | updatedAt | DATETIME(3) | NOT NULL | - | 更新日時 |
 
 **制約**
 - 主キー：`id`
-- 外部キー：`userId` → `users.id`（CASCADE DELETE）
+- 外部キー：`authorId` → `users.id`（CASCADE DELETE）
 
 **インデックス**
 | インデックス名 | カラム | 目的 |
 |-------------|-------|------|
-| posts_userId_idx | userId | ユーザー別投稿一覧取得 |
-| posts_areaTag_idx | areaTag | エリアタグ絞り込み |
+| posts_authorId_idx | authorId | ユーザー別投稿一覧取得 |
 | posts_category_idx | category | カテゴリ絞り込み |
 | posts_rating_idx | rating | 評価絞り込み |
 | posts_createdAt_idx | createdAt DESC | 新着順フィード取得 |
@@ -249,7 +259,7 @@ erDiagram
 
 **制約**
 - 主キー：`id`
-- 外部キー：`userId` → `users.id`（CASCADE DELETE）
+- 外部キー：`authorId` → `users.id`（CASCADE DELETE）
 - 外部キー：`postId` → `posts.id`（CASCADE DELETE）
 
 **インデックス**
@@ -363,7 +373,33 @@ erDiagram
 
 ---
 
-### 3.11 accounts テーブル（Auth.js v5 用）
+### 3.11 notifications テーブル
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|-----|------|-----------|------|
+| id | VARCHAR(30) | NOT NULL | cuid() | 通知ID（cuid） |
+| userId | VARCHAR(30) | NOT NULL | - | 通知受信者のユーザーID |
+| fromUserId | VARCHAR(30) | NOT NULL | - | 通知送信者のユーザーID |
+| type | VARCHAR(20) | NOT NULL | - | 通知種別（like / comment / follow） |
+| postId | VARCHAR(30) | NULL | - | 対象投稿ID（like / comment 時） |
+| commentBody | VARCHAR(200) | NULL | - | コメント本文プレビュー（comment 時） |
+| read | BOOLEAN | NOT NULL | false | 既読フラグ |
+| createdAt | DATETIME(3) | NOT NULL | now() | 通知日時 |
+
+**制約**
+- 主キー：`id`
+- 外部キー：`userId` → `users.id`（CASCADE DELETE）
+- 外部キー：`fromUserId` → `users.id`（CASCADE DELETE）
+
+**インデックス**
+| インデックス名 | カラム | 目的 |
+|-------------|-------|------|
+| notifications_userId_read_idx | (userId, read) | 未読通知の取得 |
+| notifications_createdAt_idx | createdAt DESC | 通知の新着順取得 |
+
+---
+
+### 3.12 accounts テーブル（Auth.js v5 用）
 
 | カラム名 | 型 | NULL | デフォルト | 説明 |
 |---------|-----|------|-----------|------|
@@ -380,6 +416,8 @@ erDiagram
 | id_token | TEXT | NULL | - | ID トークン |
 | session_state | TEXT | NULL | - | セッション状態 |
 
+※ Auth.js v5 の仕様に準拠。`createdAt` は Auth.js が管理しないため不要。
+
 **制約**
 - 主キー：`id`
 - 一意制約：`(provider, providerAccountId)`
@@ -387,7 +425,7 @@ erDiagram
 
 ---
 
-### 3.12 verification_tokens テーブル（Auth.js v5 用）
+### 3.13 verification_tokens テーブル（Auth.js v5 用）
 
 | カラム名 | 型 | NULL | デフォルト | 説明 |
 |---------|-----|------|-----------|------|
