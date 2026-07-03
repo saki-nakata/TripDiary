@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import { signOut } from "next-auth/react";
 
 type User = {
   id: string;
@@ -36,7 +37,7 @@ const BOTTOM_NAV_ITEMS = [
   { href: "/mypage", icon: "👤", label: "マイページ" },
 ];
 
-export function Sidebar({ user, onSignOut }: { user: User; onSignOut: () => void }) {
+export function Sidebar({ user }: { user: User }) {
   const pathname = usePathname();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -67,18 +68,18 @@ export function Sidebar({ user, onSignOut }: { user: User; onSignOut: () => void
     <>
       {/* Sidebar (desktop / tablet) */}
       <aside className="hidden md:flex flex-col fixed top-0 left-0 h-full bg-white border-r border-[#e2e8f0] z-30
-        w-16 lg:w-60 transition-all overflow-y-auto">
+        w-16 sidebar:w-60 transition-all overflow-y-auto">
         {/* Logo */}
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 px-4 pt-6 mb-5 text-[#1e8449] font-bold hover:opacity-80 transition-opacity shrink-0 lg:justify-start justify-center"
+          className="flex items-center gap-2 px-3 sidebar:px-5 pt-6 mb-5 text-[#1e8449] font-bold hover:opacity-80 transition-opacity shrink-0 justify-start"
         >
           <span className="text-2xl shrink-0">✈️</span>
-          <span className="hidden lg:inline text-[1.35rem]">TripDiary</span>
+          <span className="hidden sidebar:inline text-[1.35rem]">TripDiary</span>
         </Link>
 
         {/* Nav */}
-        <nav className="flex-1 px-4 flex flex-col gap-[4px]">
+        <nav className="flex-1 px-2 sidebar:px-5 flex flex-col gap-[4px]">
           {NAV_ITEMS.map((item, i) => {
             if ("divider" in item) {
               return <div key={i} className="border-t border-[#e2e8f0] my-2" />;
@@ -90,34 +91,34 @@ export function Sidebar({ user, onSignOut }: { user: User; onSignOut: () => void
                 key={item.key}
                 href={href}
                 title={item.label}
-                className={`flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] transition-colors lg:justify-start justify-center
+                className={`flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] transition-colors justify-start
                   ${active
                     ? "bg-[#dcfce7] text-[#16a34a] font-semibold"
                     : "text-[#1e293b] hover:bg-[#f8fafc]"
                   }`}
               >
                 <span className="text-[1.1rem] w-6 text-center shrink-0">{item.icon}</span>
-                <span className="hidden lg:block">{item.label}</span>
+                <span className="hidden sidebar:block">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
         {/* Bottom section — プロトタイプ準拠: divider → 通知 → ユーザー */}
-        <div className="px-4 mt-auto pb-6">
+        <div className="px-2 sidebar:px-5 mt-auto pb-6">
           <div className="border-t border-[#e2e8f0] my-2" />
           {/* Notification */}
           <Link
             href="/notification"
             title="通知"
-            className={`flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] transition-colors lg:justify-start justify-center
+            className={`flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] transition-colors justify-start
               ${pathname === "/notification"
                 ? "bg-[#dcfce7] text-[#16a34a] font-semibold"
                 : "text-[#1e293b] hover:bg-[#f8fafc]"
               }`}
           >
             <span className="text-[1.1rem] w-6 text-center shrink-0">🔔</span>
-            <span className="hidden lg:block">通知</span>
+            <span className="hidden sidebar:block">通知</span>
           </Link>
 
           <div className="h-1" />
@@ -126,12 +127,12 @@ export function Sidebar({ user, onSignOut }: { user: User; onSignOut: () => void
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={(e) => { e.stopPropagation(); setDropdownOpen((o) => !o); }}
-              className="w-full flex items-center gap-[10px] px-2 py-[6px] rounded-[10px] hover:bg-[#f8fafc] transition-colors lg:justify-start justify-center"
+              className="w-full flex items-center gap-[10px] px-2 py-[6px] rounded-[10px] hover:bg-[#f8fafc] transition-colors justify-start"
             >
               <div className="w-8 h-8 rounded-full bg-[#16a34a]/10 flex items-center justify-center shrink-0 text-sm font-semibold text-[#16a34a]">
                 {user.nickname[0]}
               </div>
-              <span className="hidden lg:block text-[0.9rem] font-semibold text-[#1e293b] truncate">
+              <span className="hidden sidebar:block text-[0.9rem] font-semibold text-[#1e293b] truncate">
                 {user.nickname}
               </span>
             </button>
@@ -146,7 +147,7 @@ export function Sidebar({ user, onSignOut }: { user: User; onSignOut: () => void
                   プロフィール編集
                 </Link>
                 <button
-                  onClick={() => { setDropdownOpen(false); onSignOut(); }}
+                  onClick={() => { setDropdownOpen(false); signOut({ callbackUrl: "/" }); }}
                   className="w-full text-left px-4 py-[11px] text-[0.9rem] text-red-500 hover:bg-[#fff5f5] border-t border-[#e2e8f0] transition-colors"
                 >
                   ログアウト

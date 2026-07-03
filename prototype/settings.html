@@ -46,7 +46,7 @@
     saveUsers(users);
     setCurrentUser(users[idx]);
     showToast('プロフィールを更新しました');
-    setTimeout(() => location.href = `profile.html?id=${users[idx].id}`, 800);
+    setTimeout(() => location.href = `profile.html#id=${users[idx].id}`, 800);
   }
 
   function render() {
@@ -83,7 +83,7 @@
         </div>
         <div style="display:flex;gap:10px;margin-top:8px">
           <button class="btn btn-primary" onclick="handleSave()">保存する</button>
-          <a href="profile.html?id=${me.id}" class="btn btn-ghost">キャンセル</a>
+          <a href="profile.html#id=${me.id}" class="btn btn-ghost">キャンセル</a>
         </div>
       </div>`;
 

@@ -76,7 +76,7 @@
     plans.push(plan);
     savePlans(plans);
     showToast('プランを作成しました');
-    setTimeout(() => location.href = `plan-detail.html?id=${plan.id}`, 600);
+    setTimeout(() => location.href = `plan-detail.html#id=${plan.id}`, 600);
   }
 
   function buildCandidateItem(p, isWishlist) {

@@ -142,10 +142,10 @@ Auth.js v5（セッションベース）を使用する。
       "author": {
         "id": "u_xxx",
         "nickname": "田中花子",
-        "image": "https://res.cloudinary.com/..."
+        "image": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/..."
       },
       "images": [
-        { "url": "https://res.cloudinary.com/...", "displayOrder": 0 }
+        { "url": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/...", "displayOrder": 0 }
       ],
       "likeCount": 5,
       "commentCount": 2,
@@ -177,8 +177,8 @@ Auth.js v5（セッションベース）を使用する。
   "latitude": 35.0116,
   "longitude": 135.6681,
   "images": [
-    { "url": "https://res.cloudinary.com/...", "displayOrder": 0 },
-    { "url": "https://res.cloudinary.com/...", "displayOrder": 1 }
+    { "url": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/...", "displayOrder": 0 },
+    { "url": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/...", "displayOrder": 1 }
   ]
 }
 ```
@@ -219,7 +219,7 @@ Auth.js v5（セッションベース）を使用する。
   "author": {
     "id": "u_xxx",
     "nickname": "田中花子",
-    "image": "https://res.cloudinary.com/..."
+    "image": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/..."
   }
 }
 ```
@@ -270,7 +270,7 @@ Auth.js v5（セッションベース）を使用する。
     {
       "id": "u_xxx",
       "nickname": "田中花子",
-      "image": "https://res.cloudinary.com/...",
+      "image": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/...",
       "bio": "旅が好きです",
       "followedByCurrentUser": false
     }
@@ -287,7 +287,7 @@ Auth.js v5（セッションベース）を使用する。
 {
   "id": "u_xxx",
   "nickname": "田中花子",
-  "image": "https://res.cloudinary.com/...",
+  "image": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/...",
   "bio": "旅が好きです",
   "followerCount": 12,
   "followingCount": 8,
@@ -308,7 +308,9 @@ Auth.js v5（セッションベース）を使用する。
 
 ---
 
-### 4.6 画像アップロード
+### 4.6 画像アップロード（Phase 2 実装予定）
+
+> ⚠️ Phase 1 では未実装。Phase 2 で AWS S3 を使って実装予定。
 
 | Method | エンドポイント | 説明 | 認証 |
 |--------|--------------|------|------|

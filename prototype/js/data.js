@@ -503,7 +503,7 @@ const INITIAL_DATA = {
 };
 
 function initData() {
-  if (!localStorage.getItem('td_initialized_v2')) {
+  if (!localStorage.getItem('td_initialized_v3')) {
     localStorage.setItem('td_users', JSON.stringify(INITIAL_DATA.users));
     localStorage.setItem('td_posts', JSON.stringify(INITIAL_DATA.posts));
     localStorage.setItem('td_likes', JSON.stringify(INITIAL_DATA.likes));
@@ -513,7 +513,8 @@ function initData() {
     localStorage.setItem('td_comments', JSON.stringify(INITIAL_DATA.comments));
     localStorage.setItem('td_plans', JSON.stringify(INITIAL_DATA.plans));
     localStorage.removeItem('td_initialized');
-    localStorage.setItem('td_initialized_v2', '1');
+    localStorage.removeItem('td_initialized_v2');
+    localStorage.setItem('td_initialized_v3', '1');
   }
 }
 

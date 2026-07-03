@@ -14,7 +14,7 @@
 | ORM | Prisma 7.8.0 |
 | 認証 | Auth.js（next-auth v5 beta.31） |
 | データベース | MySQL（Railway） |
-| 画像ストレージ | Cloudinary |
+| 画像ストレージ | AWS S3 |
 | 地図 | Leaflet + OpenStreetMap |
 | ホスティング | Vercel（アプリ）+ Railway（MySQL） |
 
@@ -72,7 +72,7 @@ TripDiary/
 │   │   ├── (main)/                # メイン画面
 │   │   └── api/                   # Route Handlers
 │   ├── components/                # 共通コンポーネント
-│   ├── lib/                       # ユーティリティ（prisma / auth / cloudinary）
+│   ├── lib/                       # ユーティリティ（prisma / auth / s3）
 │   └── types/                     # 型定義
 ├── prisma/
 │   └── schema.prisma
@@ -90,7 +90,7 @@ TripDiary/
 
 - Node.js 20 以上
 - MySQL（または Railway への接続情報）
-- Cloudinary アカウント
+- AWS アカウント（S3 バケット・IAM ユーザー）
 - Leaflet + OpenStreetMap（APIキー不要）
 
 ### 手順
@@ -139,11 +139,12 @@ pnpm prisma migrate dev  # マイグレーション実行
 | 変数名 | 説明 |
 |--------|------|
 | `DATABASE_URL` | MySQL 接続 URL（Railway） |
-| `NEXTAUTH_SECRET` | Auth.js のシークレットキー |
-| `NEXTAUTH_URL` | アプリの URL（開発時は http://localhost:3000） |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary クラウド名 |
-| `CLOUDINARY_API_KEY` | Cloudinary API キー |
-| `CLOUDINARY_API_SECRET` | Cloudinary API シークレット |
+| `AUTH_SECRET` | Auth.js のシークレットキー |
+| `AUTH_URL` | アプリの URL（開発時は http://localhost:3000） |
+| `AWS_REGION` | S3 バケットのリージョン（例: ap-northeast-1） |
+| `AWS_S3_BUCKET_NAME` | S3 バケット名 |
+| `AWS_ACCESS_KEY_ID` | IAM ユーザーのアクセスキー |
+| `AWS_SECRET_ACCESS_KEY` | IAM ユーザーのシークレットキー |
 | ~~`NEXT_PUBLIC_MAPBOX_TOKEN`~~ | 不要（Leaflet + OpenStreetMap に変更） |
 
 ---

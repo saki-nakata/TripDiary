@@ -17,7 +17,7 @@
   initData();
   if (!requireAuth()) { /* redirect handled */ }
 
-  const urlParams = new URLSearchParams(location.search);
+  const urlParams = new URLSearchParams(location.hash.slice(1));
   const fromPlan = urlParams.get('fromPlan');
   const presetTitle = urlParams.get('title') || '';
   const presetAreaTag = urlParams.get('areaTag') || '';
@@ -161,7 +161,7 @@
     posts.unshift(newPost);
     savePosts(posts);
     showToast('投稿しました！');
-    setTimeout(() => location.href = fromPlan ? `plan-detail.html?id=${fromPlan}` : `post-detail.html?id=${newPost.id}`, 600);
+    setTimeout(() => location.href = fromPlan ? `plan-detail.html#id=${fromPlan}` : `post-detail.html#id=${newPost.id}`, 600);
   }
 
   function render() {

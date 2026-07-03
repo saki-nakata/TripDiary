@@ -22,6 +22,10 @@ prisma/migrations/dev.db
 # local docs
 実装計画書.md
 
+# uploaded images (local dev only, replaced by S3 in production)
+public/uploads/*
+!public/uploads/.gitkeep
+
 # misc
 .DS_Store
 *.pem

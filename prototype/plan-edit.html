@@ -16,7 +16,7 @@
   if (!requireAuth()) { /* redirect */ }
 
   const me = getCurrentUser();
-  const params = new URLSearchParams(location.search);
+  const params = new URLSearchParams(location.hash.slice(1));
   const planId = params.get('id');
   const plan = getPlanById(planId);
   if (!plan || plan.userId !== me.id) { location.href = 'mypage.html'; }
@@ -75,7 +75,7 @@
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '保存中...'; }
     savePlans(plans);
     showToast('プランを更新しました');
-    setTimeout(() => location.href = `plan-detail.html?id=${planId}`, 600);
+    setTimeout(() => location.href = `plan-detail.html#id=${planId}`, 600);
   }
 
   function buildCandidateItem(p, isWishlist) {
@@ -172,7 +172,7 @@
           ${buildWishlistPicker()}
         </div>
         <div style="display:flex;gap:10px">
-          <a href="plan-detail.html?id=${planId}" class="btn btn-ghost" style="flex:1;text-align:center">キャンセル</a>
+          <a href="plan-detail.html#id=${planId}" class="btn btn-ghost" style="flex:1;text-align:center">キャンセル</a>
           <button class="btn btn-primary" style="flex:2" onclick="savePlan()">保存する</button>
         </div>
       </div>`;

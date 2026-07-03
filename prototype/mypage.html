@@ -16,7 +16,7 @@
   if (!requireAuth()) { /* redirect */ }
 
   const me = getCurrentUser();
-  const tabParam = new URLSearchParams(location.search).get('tab');
+  const tabParam = new URLSearchParams(location.hash.slice(1)).get('tab');
   let activeTab = tabParam || 'follow-feed';
   let reportYear = new Date().getFullYear();
 
@@ -37,15 +37,15 @@
       const likeCount = getLikeCount(p.id);
       const commentCount = getCommentCount(p.id);
       return `<div class="post-card mypost-card">
-        <div class="post-card-image" onclick="location.href='post-detail.html?id=${p.id}'" style="cursor:pointer">
+        <div class="post-card-image" onclick="location.href='post-detail.html#id=${p.id}'" style="cursor:pointer">
           <img src="${thumb}" alt="${p.title}" loading="lazy">
           ${categoryBadge(p.category)}
           <div class="mypost-actions">
-            <a href="post-edit.html?id=${p.id}" class="mypost-action-btn" title="編集" onclick="event.stopPropagation()">✏️</a>
+            <a href="post-edit.html#id=${p.id}" class="mypost-action-btn" title="編集" onclick="event.stopPropagation()">✏️</a>
             <button class="mypost-action-btn mypost-delete-btn" title="削除" onclick="event.stopPropagation();deleteMyPost('${p.id}')">🗑️</button>
           </div>
         </div>
-        <div class="post-card-body" onclick="location.href='post-detail.html?id=${p.id}'" style="cursor:pointer">
+        <div class="post-card-body" onclick="location.href='post-detail.html#id=${p.id}'" style="cursor:pointer">
           <h3 class="post-card-title">${p.title}</h3>
           <div class="post-card-meta">
             <span class="area-tag">📍 ${p.areaTag}</span>
@@ -65,7 +65,7 @@
     const dateRange = p.startDate
       ? `${formatDate(p.startDate)}${p.endDate ? ' 〜 ' + formatDate(p.endDate) : ''}`
       : '日程未定';
-    return `<a href="plan-detail.html?id=${p.id}" class="plan-card ${p.completed ? 'plan-card-completed' : ''}">
+    return `<a href="plan-detail.html#id=${p.id}" class="plan-card ${p.completed ? 'plan-card-completed' : ''}">
       <div class="plan-card-header">
         <h3 class="plan-card-title">🗺️ ${p.title}</h3>
         <span class="plan-card-count">${p.spotIds.length}スポット</span>
@@ -262,7 +262,7 @@
               const uid = 'tl_' + y;
               const postHtml = p => {
                 const thumb = p.images && p.images.length ? p.images[0] : '';
-                return `<div class="report-timeline-post" onclick="location.href='post-detail.html?id=${p.id}'">
+                return `<div class="report-timeline-post" onclick="location.href='post-detail.html#id=${p.id}'">
                   ${thumb ? `<img src="${thumb}" class="report-timeline-thumb" alt="">` : `<div class="report-timeline-thumb"></div>`}
                   <div class="report-timeline-info">
                     <div class="report-timeline-title">${p.title}</div>

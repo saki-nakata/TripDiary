@@ -17,7 +17,7 @@
   initData();
   if (!requireAuth()) { /* redirect */ }
 
-  const params = new URLSearchParams(location.search);
+  const params = new URLSearchParams(location.hash.slice(1));
   const postId = params.get('id');
   const post = getPostById(postId);
   const me = getCurrentUser();
@@ -137,7 +137,7 @@
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '保存中...'; }
     savePosts(posts);
     showToast('更新しました！');
-    setTimeout(() => location.href = `post-detail.html?id=${post.id}`, 600);
+    setTimeout(() => location.href = `post-detail.html#id=${post.id}`, 600);
   }
 
   function render() {

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { signupSchema } from "@/lib/validations/auth";
+import { signupApiSchema } from "@/lib/validations/auth";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  const parsed = signupSchema.safeParse(body);
+  const parsed = signupApiSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "入力内容に誤りがあります", details: parsed.error.flatten() },

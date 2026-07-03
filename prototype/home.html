@@ -27,24 +27,24 @@
     let link = '';
     if (act.type === 'post') {
       label = `<strong>${user.name}</strong> が旅スポットを投稿しました`;
-      link = `post-detail.html?id=${act.post.id}`;
+      link = `post-detail.html#id=${act.post.id}`;
     } else if (act.type === 'like') {
       label = `<strong>${user.name}</strong> が <em>${act.post.title}</em> にいいね！しました`;
-      link = `post-detail.html?id=${act.post.id}`;
+      link = `post-detail.html#id=${act.post.id}`;
     } else if (act.type === 'comment') {
       label = `<strong>${user.name}</strong> が <em>${act.post.title}</em> にコメントしました`;
-      link = `post-detail.html?id=${act.post.id}`;
+      link = `post-detail.html#id=${act.post.id}`;
     } else if (act.type === 'follow') {
       const target = getUserById(act.targetId);
       label = `<strong>${user.name}</strong> が <strong>${target ? target.name : ''}</strong> をフォローしました`;
-      link = `profile.html?id=${act.userId}`;
+      link = `profile.html#id=${act.userId}`;
     }
 
     const typeIcon = { post: '✈️', like: '👍', comment: '💬', follow: '👤' }[act.type];
 
     return `<div class="activity-item" onclick="location.href='${link}'">
       <div class="activity-icon">${typeIcon}</div>
-      <a href="profile.html?id=${user.id}" onclick="event.stopPropagation()">
+      <a href="profile.html#id=${user.id}" onclick="event.stopPropagation()">
         <img src="${user.avatar}" alt="${user.name}" class="avatar-sm">
       </a>
       <div class="activity-body">

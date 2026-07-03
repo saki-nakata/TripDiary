@@ -14,7 +14,7 @@
 <script>
   initData();
 
-  const params = new URLSearchParams(location.search);
+  const params = new URLSearchParams(location.hash.slice(1));
   const tag = params.get('tag') || '';
 
   function render() {
@@ -31,7 +31,7 @@
         <span class="text-muted">${posts.length}件の投稿</span>
       </div>
       <div class="filter-bar" style="margin-bottom:24px">
-        ${allTags.map(t => `<a href="tag.html?tag=${encodeURIComponent(t)}" class="filter-btn ${t === tag ? 'active' : ''}">${t}</a>`).join('')}
+        ${allTags.map(t => `<a href="tag.html#tag=${encodeURIComponent(t)}" class="filter-btn ${t === tag ? 'active' : ''}">${t}</a>`).join('')}
       </div>
       ${buildPostGrid(posts)}`;
 
