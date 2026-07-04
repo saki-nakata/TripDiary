@@ -9,7 +9,7 @@ export const costBreakdownItemSchema = z.object({
 export const postSchema = z.object({
   title: z.string().min(1, "スポット名を入力してください").max(40, "スポット名は40文字以内で入力してください"),
   body: z.string().min(1, "感想・メモを入力してください").max(2000, "感想・メモは2000文字以内で入力してください"),
-  prefecture: z.string().min(1, "都道府県を選択してください").max(50),
+  location: z.string().min(1, "都道府県を選択してください").max(50),
   category: z.enum(CATEGORIES, { message: "カテゴリを選択してください" }),
   rating: z.number().int().min(1).max(5).optional(),
   visitedAt: z.string().min(1, "訪問日を入力してください"),
@@ -17,6 +17,7 @@ export const postSchema = z.object({
   lat: z.number().optional().nullable(),
   lng: z.number().optional().nullable(),
   planId: z.string().optional().nullable(),
+  imageUrls: z.array(z.string()).optional(),
 });
 
 export type PostInput = z.infer<typeof postSchema>;

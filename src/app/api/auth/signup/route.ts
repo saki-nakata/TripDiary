@@ -1,42 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { hash } from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { signupService } from "@/lib/services/auth.service";
 import { signupApiSchema } from "@/lib/validations/auth";
+import { handleApiError } from "@/lib/api-error";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-
-  const parsed = signupApiSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "入力内容に誤りがあります", details: parsed.error.flatten() },
-      { status: 400 }
-    );
-  }
-
-  const { nickname, email, password } = parsed.data;
-
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    return NextResponse.json(
-      { error: "このメールアドレスはすでに使用されています" },
-      { status: 409 }
-    );
-  }
-
-  const hashedPassword = await hash(password, 12);
-
   try {
-    const user = await prisma.user.create({
-      data: { nickname, email, password: hashedPassword },
-      select: { id: true, nickname: true, email: true },
-    });
+    const body = await req.json();
 
+    const parsed = signupApiSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "入力内容に誤りがあります", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const user = await signupService(parsed.data);
     return NextResponse.json(user, { status: 201 });
-  } catch {
-    return NextResponse.json(
-      { error: "サーバーエラーが発生しました" },
-      { status: 500 }
-    );
+  } catch (e) {
+    return handleApiError(e);
   }
 }

@@ -41,7 +41,7 @@ model Post {
   visitedAt      DateTime  @db.Date
   cost           Int?
   costBreakdown  Json?
-  prefecture     String    @db.VarChar(50)
+  location       String    @db.VarChar(50)
   planId         String?   @db.VarChar(30)
   lat            Float?
   lng            Float?
@@ -59,7 +59,7 @@ model Post {
   planSpots  PlanSpot[]
 
   @@index([authorId])
-  @@index([prefecture])
+  @@index([location])
   @@index([category])
   @@index([rating])
   @@index([createdAt(sort: Desc)])

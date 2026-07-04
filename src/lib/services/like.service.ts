@@ -1,6 +1,16 @@
 import { toggleLike } from "@/lib/repositories/like.repository";
+import { findPostAuthorId } from "@/lib/repositories/post.repository";
+import { createLikeNotification } from "@/lib/services/notification.service";
 
 export async function toggleLikeService(userId: string, postId: string) {
-  // TODO: Phase 2 — いいね時に投稿者へ通知を生成する
-  return toggleLike(userId, postId);
+  const [result, authorId] = await Promise.all([
+    toggleLike(userId, postId),
+    findPostAuthorId(postId),
+  ]);
+
+  if (result.liked && authorId) {
+    await createLikeNotification(userId, authorId, postId);
+  }
+
+  return result;
 }

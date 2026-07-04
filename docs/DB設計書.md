@@ -38,7 +38,7 @@ erDiagram
         String id PK
         String title
         String body
-        String prefecture
+        String location
         String category
         Int rating
         Date visitedAt
@@ -197,7 +197,7 @@ erDiagram
 | category | VARCHAR(50) | NULL | - | カテゴリ（観光/グルメ/宿・ホテル/自然/アクティビティ/歴史・文化/その他）。アプリレベルで値を制限 |
 | rating | INT | NULL | - | 評価（1〜5）。アプリレベルで 1〜5 に制限 |
 | visitedAt | DATE | NOT NULL | - | 訪問日（必須） |
-| prefecture | VARCHAR(50) | NOT NULL | - | 都道府県（値域：47都道府県＋「海外」）。旅行レポートの集計・検索エリアタブの絞り込みに使用 |
+| location | VARCHAR(50) | NOT NULL | - | エリア（値域：47都道府県＋「海外」）。旅行レポートの集計・検索エリアタブの絞り込みに使用。フィールド名は `location` だが実質的にエリア＋海外を表す |
 | cost | INT | NULL | - | 費用合計（costBreakdown の自動集計値） |
 | costBreakdown | JSON | NULL | - | 費用内訳。`[{"label":"交通費","amount":3000}, ...]` 形式。自分のみ表示 |
 | planId | VARCHAR(30) | NULL | - | 旅行プランから投稿した場合のプランID |
@@ -219,7 +219,7 @@ erDiagram
 | posts_rating_idx | rating | 評価絞り込み |
 | posts_createdAt_idx | createdAt DESC | 新着順フィード取得 |
 | posts_planId_idx | planId | プラン別投稿取得 |
-| posts_prefecture_idx | prefecture | 旅行レポート都道府県集計 |
+| posts_location_idx | location | 旅行レポートエリア集計 |
 
 **外部キー追加**
 - `planId` → `plans.id`（SET NULL on DELETE）

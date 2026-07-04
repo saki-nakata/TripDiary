@@ -8,7 +8,7 @@ export const CATEGORIES = [
   "その他",
 ] as const;
 
-export const PREFECTURES = [
+export const LOCATIONS = [
   "北海道",
   "青森県",
   "岩手県",
@@ -59,7 +59,7 @@ export const PREFECTURES = [
   "海外",
 ] as const;
 
-export type Prefecture = (typeof PREFECTURES)[number];
+export type Location = (typeof LOCATIONS)[number];
 
 export const SORT_OPTIONS = [
   { value: "latest", label: "新着順" },

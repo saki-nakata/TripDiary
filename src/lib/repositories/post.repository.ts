@@ -5,7 +5,7 @@ const POST_SELECT = {
   id: true,
   title: true,
   body: true,
-  prefecture: true,
+  location: true,
   category: true,
   rating: true,
   visitedAt: true,
@@ -29,6 +29,14 @@ const POST_SELECT = {
   },
 } as const;
 
+export async function findPostAuthorId(postId: string): Promise<string | null> {
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { authorId: true },
+  });
+  return post?.authorId ?? null;
+}
+
 export async function findPostById(id: string, userId?: string) {
   const post = await prisma.post.findUnique({
     where: { id },
@@ -48,19 +56,19 @@ export async function findExplorePosts({
   limit = 20,
   sort = "latest",
   category,
-  prefecture,
+  location,
   userId,
 }: {
   cursor?: string;
   limit?: number;
   sort?: "latest" | "popular";
   category?: string;
-  prefecture?: string;
+  location?: string;
   userId?: string;
 }) {
   const where = {
     ...(category && { category }),
-    ...(prefecture && { prefecture }),
+    ...(location && { location }),
   };
 
   const posts = await prisma.post.findMany({
@@ -142,9 +150,76 @@ export async function findLatestPosts(limit = 6) {
   return posts.map((p) => formatPost(p));
 }
 
-export async function findRelatedPosts(postId: string, prefecture: string, limit = 3) {
+export async function findLocationCounts() {
+  const [groups, posts] = await Promise.all([
+    prisma.post.groupBy({
+      by: ["location"],
+      _count: { _all: true },
+    }),
+    prisma.post.findMany({
+      orderBy: [{ likes: { _count: "desc" } }, { createdAt: "desc" }],
+      select: {
+        location: true,
+        images: { take: 1, orderBy: { displayOrder: "asc" }, select: { url: true } },
+      },
+    }),
+  ]);
+
+  const thumbnailByLocation = new Map<string, string | null>();
+  for (const post of posts) {
+    if (!thumbnailByLocation.has(post.location)) {
+      thumbnailByLocation.set(post.location, post.images[0]?.url ?? null);
+    }
+  }
+
+  return groups
+    .map((g) => ({
+      location: g.location,
+      count: g._count._all,
+      thumbnailUrl: thumbnailByLocation.get(g.location) ?? null,
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
+export async function findCategoryCounts() {
+  const groups = await prisma.post.groupBy({
+    by: ["category"],
+    _count: { _all: true },
+    where: { category: { not: null } },
+  });
+  return groups.map((g) => ({ category: g.category!, count: g._count._all }));
+}
+
+export async function findTopRatedByCategory(excludeIds: string[] = []) {
+  const posts = await prisma.post.findMany({
+    where: {
+      category: { not: null },
+      rating: { not: null },
+      ...(excludeIds.length > 0 && { id: { notIn: excludeIds } }),
+    },
+    orderBy: [{ rating: "desc" }, { likes: { _count: "desc" } }],
+    select: {
+      ...POST_SELECT,
+      likes: false,
+      wishlists: false,
+      visited: false,
+    },
+  });
+
+  const seen = new Set<string>();
+  const result: (typeof posts)[number][] = [];
+  for (const post of posts) {
+    if (post.category && !seen.has(post.category)) {
+      seen.add(post.category);
+      result.push(post);
+    }
+  }
+  return result.map((p) => formatPost(p));
+}
+
+export async function findRelatedPosts(postId: string, location: string, limit = 3) {
   return prisma.post.findMany({
-    where: { prefecture, id: { not: postId } },
+    where: { location, id: { not: postId } },
     take: limit,
     orderBy: [{ likes: { _count: "desc" } }, { createdAt: "desc" }],
     select: {
@@ -157,7 +232,7 @@ export async function findRelatedPosts(postId: string, prefecture: string, limit
 }
 
 export async function createPost(authorId: string, data: PostInput) {
-  const { costBreakdown, ...rest } = data;
+  const { costBreakdown, imageUrls, ...rest } = data;
   const cost = costBreakdown?.reduce((sum, item) => sum + item.amount, 0) ?? null;
 
   return prisma.post.create({
@@ -167,24 +242,40 @@ export async function createPost(authorId: string, data: PostInput) {
       cost,
       costBreakdown: costBreakdown ?? undefined,
       visitedAt: new Date(rest.visitedAt),
+      ...(imageUrls && imageUrls.length > 0 && {
+        images: {
+          create: imageUrls.map((url, displayOrder) => ({ url, displayOrder })),
+        },
+      }),
     },
     select: { id: true },
   });
 }
 
 export async function updatePost(id: string, data: PostInput) {
-  const { costBreakdown, ...rest } = data;
+  const { costBreakdown, imageUrls, ...rest } = data;
   const cost = costBreakdown?.reduce((sum, item) => sum + item.amount, 0) ?? null;
 
-  return prisma.post.update({
-    where: { id },
-    data: {
-      ...rest,
-      cost,
-      costBreakdown: costBreakdown ?? undefined,
-      visitedAt: new Date(rest.visitedAt),
-    },
-    select: { id: true },
+  return prisma.$transaction(async (tx) => {
+    if (imageUrls !== undefined) {
+      await tx.postImage.deleteMany({ where: { postId: id } });
+    }
+
+    return tx.post.update({
+      where: { id },
+      data: {
+        ...rest,
+        cost,
+        costBreakdown: costBreakdown ?? undefined,
+        visitedAt: new Date(rest.visitedAt),
+        ...(imageUrls && imageUrls.length > 0 && {
+          images: {
+            create: imageUrls.map((url, displayOrder) => ({ url, displayOrder })),
+          },
+        }),
+      },
+      select: { id: true },
+    });
   });
 }
 

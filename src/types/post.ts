@@ -28,7 +28,7 @@ export type Post = {
   id: string;
   title: string;
   body: string;
-  prefecture: string;
+  location: string;
   category: string | null;
   rating: number | null;
   visitedAt: string;
@@ -73,7 +73,7 @@ export type CommentsResponse = {
 export type PostFormData = {
   title: string;
   body: string;
-  prefecture: string;
+  location: string;
   category: string;
   rating: number;
   visitedAt: string;
