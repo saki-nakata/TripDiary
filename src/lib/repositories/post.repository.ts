@@ -235,7 +235,7 @@ export async function createPost(authorId: string, data: PostInput) {
   const { costBreakdown, imageUrls, ...rest } = data;
   const cost = costBreakdown?.reduce((sum, item) => sum + item.amount, 0) ?? null;
 
-  return prisma.post.create({
+  const post = await prisma.post.create({
     data: {
       ...rest,
       authorId,
@@ -248,8 +248,14 @@ export async function createPost(authorId: string, data: PostInput) {
         },
       }),
     },
-    select: { id: true },
+    select: {
+      ...POST_SELECT,
+      likes: false,
+      wishlists: false,
+      visited: false,
+    },
   });
+  return formatPost(post);
 }
 
 export async function updatePost(id: string, data: PostInput) {

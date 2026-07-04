@@ -105,6 +105,7 @@ Auth.js v5（セッションベース）を使用する。
 | Method | エンドポイント | 説明 | 認証 |
 |--------|--------------|------|------|
 | GET | `/api/posts/explore` | 探索ページ用全体フィード取得 | 不要 |
+| GET | `/api/posts/portal` | ホーム画面用ポータルフィード取得（人気/新着/エリア/カテゴリ/トップ評価） | 不要 |
 | GET | `/api/posts` | フォロー中フィード取得 | 必要 |
 | POST | `/api/posts` | 投稿作成 | 必要 |
 | GET | `/api/posts/[id]` | 投稿詳細取得 | 不要 |
@@ -158,6 +159,27 @@ Auth.js v5（セッションベース）を使用する。
 
 > **N+1 対策**：`author` と `images` は Prisma の `include` で一括取得する（`prisma.post.findMany({ include: { author: true, images: true, _count: { select: { likes: true, comments: true } } } })`）。
 
+#### GET `/api/posts/portal`
+
+ホーム画面（`/`）専用のポータルフィード取得API。未認証でもアクセス可能、クエリパラメータなし。
+
+**レスポンス（200）**
+```json
+{
+  "popular": [ /* Post[]（いいね数降順6件） */ ],
+  "latest": [ /* Post[]（createdAt降順6件） */ ],
+  "locations": [
+    { "location": "京都府", "count": 12, "thumbnailUrl": "https://..." }
+  ],
+  "categories": [
+    { "category": "観光", "count": 8 }
+  ],
+  "topRated": [ /* Post[]（カテゴリごとの最高評価1件、人気に含む投稿は除外） */ ]
+}
+```
+
+> ホーム画面（`src/app/(public)/page.tsx`）は初回SSRでこのAPIと同じrepository関数を直接呼び出し、その結果を`initialData`としてクライアントコンポーネント`ExploreFeed.tsx`に渡す。`ExploreFeed.tsx`はTanStack Queryの`useQuery({queryKey: ["explore-feed"], staleTime: 180_000, refetchInterval: 60_000})`でこのAPIをポーリングし、以後のフィード更新（60秒間隔）を担う。
+
 #### GET `/api/posts`
 
 フォロー中ユーザーの投稿を返す。認証必須。クエリパラメータは `explore` と同様（`sort` / `cursor` / `limit`）。
@@ -185,12 +207,31 @@ Auth.js v5（セッションベース）を使用する。
 > `imageUrls` は `POST /api/upload/post` で事前にアップロードした画像URLの配列。配列の順序がそのまま `displayOrder` になる。
 
 **レスポンス（201）**
+
+投稿一覧APIと同じ形式の投稿オブジェクト全体（`title`・`body`・`images`・`author`・`likeCount`・`commentCount`等を含む）を返す。以前は`{ id }`のみだったが、フロントエンドがホーム画面のキャッシュへ即座に反映する（`setQueryData`で「新着」配列の先頭に追加）ために全データを返すよう変更した。
 ```json
 {
   "id": "cm_xxx",
-  "title": "嵐山 竹林の道"
+  "title": "嵐山 竹林の道",
+  "body": "朝早くに行くと人が少なくておすすめです。",
+  "location": "京都府",
+  "category": "観光",
+  "rating": 5,
+  "visitedAt": "2026-03-15",
+  "createdAt": "2026-06-27T10:00:00.000Z",
+  "author": {
+    "id": "u_xxx",
+    "nickname": "田中花子",
+    "image": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/..."
+  },
+  "images": [
+    { "id": "img_xxx", "url": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/...", "displayOrder": 0 }
+  ],
+  "_count": { "likes": 0, "comments": 0 }
 }
 ```
+
+> フロントエンドは新規投稿成功時、このレスポンスをそのまま`queryClient.setQueryData(["explore-feed"], ...)`で「新着」配列の先頭に追加し、`/?highlighted=<id>`へ遷移してホーム画面上で該当投稿までスクロール＆ハイライトする（詳細は画面遷移図・シーケンス図を参照）。
 
 ---
 
