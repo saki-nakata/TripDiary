@@ -5,10 +5,11 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/contexts/toast-context";
 import { StarRating } from "./StarRating";
-import { CATEGORIES, PREFECTURES } from "@/lib/constants";
+import { CATEGORIES, LOCATIONS } from "@/lib/constants";
 import { postSchema, type PostInput } from "@/lib/validations/post";
 import type { Post, CostBreakdownItem } from "@/types/post";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   initialData?: Post;
@@ -27,11 +28,18 @@ function parseAmount(value: string): number {
 export function PostForm({ initialData, planId }: Props) {
   const router = useRouter();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const isEdit = !!initialData;
 
   const [costBreakdown, setCostBreakdown] = useState<CostBreakdownItem[]>(
     initialData?.costBreakdown ?? []
   );
+  const [imageUrls, setImageUrls] = useState<string[]>(
+    initialData?.images?.map((img) => img.url) ?? []
+  );
+  const [uploadingCount, setUploadingCount] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -44,7 +52,7 @@ export function PostForm({ initialData, planId }: Props) {
     defaultValues: {
       title: initialData?.title ?? "",
       body: initialData?.body ?? "",
-      prefecture: initialData?.prefecture ?? "",
+      location: initialData?.location ?? "",
       category: (initialData?.category as PostInput["category"]) ?? undefined,
       rating: initialData?.rating ?? undefined,
       visitedAt: initialData?.visitedAt ? initialData.visitedAt.slice(0, 10) : "",
@@ -73,9 +81,58 @@ export function PostForm({ initialData, planId }: Props) {
     setCostBreakdown(costBreakdown.filter((_, i) => i !== index));
   }
 
+  async function uploadFiles(files: File[]) {
+    if (files.length === 0) return;
+
+    setUploadingCount((c) => c + files.length);
+    const uploaded: string[] = [];
+
+    await Promise.all(
+      files.map(async (file) => {
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch("/api/upload/post", { method: "POST", body: form });
+        if (res.ok) {
+          const { url } = await res.json();
+          uploaded.push(url);
+        } else {
+          const err = await res.json();
+          showToast(err.error ?? "アップロードに失敗しました", "error");
+        }
+        setUploadingCount((c) => c - 1);
+      })
+    );
+
+    setImageUrls((prev) => [...prev, ...uploaded]);
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    await uploadFiles(files);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function handleDragOver(e: React.DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+  }
+
+  async function handleDrop(e: React.DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
+    await uploadFiles(files);
+  }
+
   async function onSubmit(data: PostInput) {
     const payload = {
       ...data,
+      imageUrls,
       costBreakdown: costBreakdown.filter((i) => i.label.trim()),
     };
 
@@ -94,7 +151,8 @@ export function PostForm({ initialData, planId }: Props) {
       }
 
       showToast(isEdit ? "投稿を更新しました" : "投稿しました！");
-      router.push("/dashboard");
+      await queryClient.invalidateQueries({ queryKey: ["explore-feed"] });
+      router.push("/");
       router.refresh();
     } catch (err) {
       showToast(err instanceof Error ? err.message : "エラーが発生しました", "error");
@@ -141,11 +199,59 @@ export function PostForm({ initialData, planId }: Props) {
         </div>
 
         {/* 写真 */}
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label className="text-base font-bold text-zinc-700">写真</label>
-          <div className="w-full h-28 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 flex items-center justify-center text-sm text-zinc-400">
-            📷 写真アップロードは今後実装予定です
-          </div>
+          {imageUrls.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {imageUrls.map((url, i) => (
+                <div key={url} className="relative group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt={`写真 ${i + 1}`}
+                    className="w-20 h-20 object-cover rounded-lg border border-zinc-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setImageUrls((prev) => prev.filter((u) => u !== url))}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              {uploadingCount > 0 && (
+                <div className="w-20 h-20 rounded-lg border border-zinc-200 bg-zinc-50 flex items-center justify-center text-xs text-zinc-400">
+                  uploading…
+                </div>
+              )}
+            </div>
+          )}
+          <label
+            className={`w-full h-14 rounded-xl border border-dashed flex items-center justify-center text-sm cursor-pointer transition-colors ${
+              isDragging
+                ? "border-green-500 bg-green-50 text-green-600"
+                : "border-zinc-300 bg-zinc-50 text-zinc-400 hover:bg-zinc-100"
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {uploadingCount > 0
+              ? "アップロード中…"
+              : isDragging
+                ? "📷 ここにドロップして追加"
+                : "📷 クリックまたはドラッグ&ドロップで写真を追加"}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </label>
+          <p className="text-xs text-zinc-400">JPEG・PNG・WebP・GIF、各10MB以内、複数選択可</p>
         </div>
 
         {/* 訪問日・エリア */}
@@ -167,15 +273,15 @@ export function PostForm({ initialData, planId }: Props) {
               エリア <span className="text-red-500">*</span>
             </label>
             <select
-              {...register("prefecture")}
-              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${errors.prefecture ? "border-red-400" : "border-zinc-200"}`}
+              {...register("location")}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${errors.location ? "border-red-400" : "border-zinc-200"}`}
             >
               <option value="">選択してください</option>
-              {PREFECTURES.map((p) => (
+              {LOCATIONS.map((p) => (
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
-            {errors.prefecture && <p className="text-xs text-red-500">{errors.prefecture.message}</p>}
+            {errors.location && <p className="text-xs text-red-500">{errors.location.message}</p>}
           </div>
         </div>
 

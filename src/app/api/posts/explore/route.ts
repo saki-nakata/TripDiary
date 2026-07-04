@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { findExplorePosts } from "@/lib/repositories/post.repository";
+import { handleApiError } from "@/lib/api-error";
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,20 +12,19 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(Number(searchParams.get("limit") ?? 20), 50);
     const sort = (searchParams.get("sort") ?? "latest") as "latest" | "popular";
     const category = searchParams.get("category") ?? undefined;
-    const prefecture = searchParams.get("prefecture") ?? undefined;
+    const location = searchParams.get("location") ?? undefined;
 
     const result = await findExplorePosts({
       cursor,
       limit,
       sort,
       category,
-      prefecture,
+      location,
       userId: session?.user?.id,
     });
 
     return NextResponse.json(result);
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return handleApiError(e);
   }
 }

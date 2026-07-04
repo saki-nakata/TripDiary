@@ -119,10 +119,9 @@ Auth.js v5（セッションベース）を使用する。
 
 | パラメータ | 型 | 必須 | 説明 |
 |-----------|-----|------|------|
-| sort | string | 任意 | `newest`（デフォルト）または `popular`（いいね数降順） |
+| sort | string | 任意 | `latest`（デフォルト）または `popular`（いいね数降順） |
 | category | string | 任意 | カテゴリで絞り込み（例：`グルメ`） |
-| areaTag | string | 任意 | エリアタグで絞り込み |
-| prefecture | string | 任意 | 都道府県で絞り込み（例：`京都府`、`海外`） |
+| location | string | 任意 | エリアで絞り込み（47都道府県＋`海外`の固定選択肢。フィールド名は `location` だが実質的にエリア＋海外を表す） |
 | cursor | string | 任意 | ページネーション用カーソル（前回レスポンスの `nextCursor`） |
 | limit | number | 任意 | 取得件数（デフォルト：20） |
 
@@ -134,7 +133,7 @@ Auth.js v5（セッションベース）を使用する。
       "id": "cm_xxx",
       "title": "嵐山 竹林の道",
       "body": "朝早くに行くと人が少なくておすすめです。",
-      "areaTag": "京都",
+      "location": "京都府",
       "category": "観光",
       "rating": 5,
       "visitedAt": "2026-03-15",
@@ -170,18 +169,20 @@ Auth.js v5（セッションベース）を使用する。
 {
   "title": "嵐山 竹林の道",
   "body": "朝早くに行くと人が少なくておすすめです。",
-  "areaTag": "京都",
+  "location": "京都府",
   "category": "観光",
   "rating": 5,
   "visitedAt": "2026-03-15",
-  "latitude": 35.0116,
-  "longitude": 135.6681,
-  "images": [
-    { "url": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/...", "displayOrder": 0 },
-    { "url": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/...", "displayOrder": 1 }
+  "lat": 35.0116,
+  "lng": 135.6681,
+  "imageUrls": [
+    "/uploads/xxxx1.png",
+    "/uploads/xxxx2.png"
   ]
 }
 ```
+
+> `imageUrls` は `POST /api/upload/post` で事前にアップロードした画像URLの配列。配列の順序がそのまま `displayOrder` になる。
 
 **レスポンス（201）**
 ```json
@@ -308,29 +309,63 @@ Auth.js v5（セッションベース）を使用する。
 
 ---
 
-### 4.6 画像アップロード（Phase 2 実装予定）
+### 4.6 画像アップロード
 
-> ⚠️ Phase 1 では未実装。Phase 2 で AWS S3 を使って実装予定。
+| Method | エンドポイント | 説明 | 認証 | 実装状況 |
+|--------|--------------|------|------|---------|
+| POST | `/api/upload/post` | 投稿写真をローカルにアップロード | 必要 | ✅ 実装済み |
+| POST | `/api/upload/avatar` | プロフィール画像をアップロード | 必要 | ❌ 未実装（Phase 3-B 予定） |
 
-| Method | エンドポイント | 説明 | 認証 |
-|--------|--------------|------|------|
-| POST | `/api/upload/post` | 投稿写真を S3 にアップロード | 必要 |
-| POST | `/api/upload/avatar` | プロフィール画像を S3 にアップロード | 必要 |
+> ⚠️ 現状はローカルの `public/uploads/` に保存する実装（`src/lib/services/upload.service.ts`）。AWS S3 等クラウドストレージへの移行は今回のスコープ外。
 
 **リクエスト（multipart/form-data）**
 
 | フィールド | 型 | 説明 |
 |-----------|-----|------|
-| file | File | アップロードする画像ファイル |
+| file | File | アップロードする画像ファイル（JPEG・PNG・WebP・GIF、10MB以内） |
 
 **レスポンス（200）**
 ```json
 {
-  "url": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/..."
+  "url": "/uploads/3f2a1b9c-....png"
 }
 ```
 
+エラー時（400）は `{ "error": "JPEG・PNG・WebP・GIF のみアップロードできます" }` 等のメッセージを返す。
+
 ---
+
+### 4.7 通知
+
+| Method | エンドポイント | 説明 | 認証 |
+|--------|--------------|------|------|
+| GET | `/api/notifications` | 通知一覧取得（新着順、最大50件） | 必要 |
+| GET | `/api/notifications/unread-count` | 未読件数取得 | 必要 |
+| PATCH | `/api/notifications/[id]/read` | 通知を個別に既読化 | 必要（本人のみ） |
+
+> 既読方式は「画面を開いたら全件既読」ではなく、**通知アイテムがスクロールで画面内に入った時点で個別に既読化**する方式（`IntersectionObserver` を使用）。一括既読エンドポイント（`PUT /api/notifications/read`）は存在しない。
+
+**GET `/api/notifications` レスポンス（200）**
+```json
+{
+  "notifications": [
+    {
+      "id": "cm_xxx",
+      "type": "like",
+      "postId": "cm_yyy",
+      "commentBody": null,
+      "read": false,
+      "createdAt": "2026-06-27T10:00:00.000Z",
+      "fromUser": { "id": "u_xxx", "nickname": "田中花子", "image": null }
+    }
+  ]
+}
+```
+
+**GET `/api/notifications/unread-count` レスポンス（200）**
+```json
+{ "count": 3 }
+```
 
 ---
 

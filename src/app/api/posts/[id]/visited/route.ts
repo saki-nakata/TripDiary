@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { toggleVisited } from "@/lib/repositories/visited.repository";
+import { toggleVisitedService } from "@/lib/services/visited.service";
+import { handleApiError } from "@/lib/api-error";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -12,10 +13,9 @@ export async function POST(_req: NextRequest, { params }: Params) {
     }
 
     const { id } = await params;
-    const result = await toggleVisited(session.user.id, id);
+    const result = await toggleVisitedService(session.user.id, id);
     return NextResponse.json(result);
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return handleApiError(e);
   }
 }

@@ -35,6 +35,22 @@ export default async function PublicLayout({ children }: { children: React.React
             <span className="text-2xl">✈️</span>
             <span className="text-[1.35rem]">TripDiary</span>
           </Link>
+          <nav className="px-4 flex flex-col gap-1">
+            <Link
+              href="/"
+              className="flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
+            >
+              <span className="text-[1.1rem] w-6 text-center">🏠</span>
+              <span>ホーム</span>
+            </Link>
+            <Link
+              href="/search"
+              className="flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
+            >
+              <span className="text-[1.1rem] w-6 text-center">🔍</span>
+              <span>検索</span>
+            </Link>
+          </nav>
           <div className="mt-auto px-4 pb-8 flex flex-col gap-3">
             <Link
               href="/login"
@@ -50,7 +66,28 @@ export default async function PublicLayout({ children }: { children: React.React
             </Link>
           </div>
         </aside>
-        <div className="md:ml-60">
+
+        {/* Bottom nav (mobile, unauthenticated) */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] z-30 flex">
+          <Link href="/" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
+            <span className="text-xl">🏠</span>
+            <span>ホーム</span>
+          </Link>
+          <Link href="/search" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
+            <span className="text-xl">🔍</span>
+            <span>検索</span>
+          </Link>
+          <Link href="/login" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
+            <span className="text-xl">🔑</span>
+            <span>ログイン</span>
+          </Link>
+          <Link href="/signup" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
+            <span className="text-xl">✍️</span>
+            <span>新規登録</span>
+          </Link>
+        </nav>
+
+        <div className="md:ml-60 pb-16 md:pb-0">
           <main>{children}</main>
         </div>
       </div>

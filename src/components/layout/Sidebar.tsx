@@ -4,6 +4,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
+import { useQuery } from "@tanstack/react-query";
+
+async function fetchUnreadCount(): Promise<number> {
+  const res = await fetch("/api/notifications/unread-count");
+  if (!res.ok) return 0;
+  const data = await res.json();
+  return data.count ?? 0;
+}
+
+function useUnreadCount() {
+  const { data } = useQuery({
+    queryKey: ["unread-count"],
+    queryFn: fetchUnreadCount,
+    refetchInterval: 60_000,
+  });
+
+  return { count: data ?? 0 };
+}
 
 type User = {
   id: string;
@@ -16,7 +34,7 @@ type NavItem = { divider: true } | NavLink;
 
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", icon: "🏠", label: "ホーム", key: "dashboard" },
+  { href: "/", icon: "🏠", label: "ホーム", key: "dashboard" },
   { href: "/search", icon: "🔍", label: "検索", key: "search" },
   { divider: true },
   { href: "/posts/new", icon: "✏️", label: "新規投稿", key: "posts-new" },
@@ -31,7 +49,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const BOTTOM_NAV_ITEMS = [
-  { href: "/dashboard", icon: "🏠", label: "ホーム" },
+  { href: "/", icon: "🏠", label: "ホーム" },
   { href: "/search", icon: "🔍", label: "検索" },
   { href: "/posts/new", icon: "✏️", label: "新規投稿" },
   { href: "/mypage", icon: "👤", label: "マイページ" },
@@ -41,6 +59,7 @@ export function Sidebar({ user }: { user: User }) {
   const pathname = usePathname();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { count: unreadCount } = useUnreadCount();
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -60,7 +79,7 @@ export function Sidebar({ user }: { user: User }) {
 
   function isActive(item: NavLink) {
     const href = resolveHref(item);
-    if (href === "/dashboard") return pathname === "/dashboard";
+    if (href === "/") return pathname === "/";
     return pathname.startsWith(href.split("?")[0]);
   }
 
@@ -71,7 +90,7 @@ export function Sidebar({ user }: { user: User }) {
         w-16 sidebar:w-60 transition-all overflow-y-auto">
         {/* Logo */}
         <Link
-          href="/dashboard"
+          href="/"
           className="flex items-center gap-2 px-3 sidebar:px-5 pt-6 mb-5 text-[#1e8449] font-bold hover:opacity-80 transition-opacity shrink-0 justify-start"
         >
           <span className="text-2xl shrink-0">✈️</span>
@@ -117,7 +136,14 @@ export function Sidebar({ user }: { user: User }) {
                 : "text-[#1e293b] hover:bg-[#f8fafc]"
               }`}
           >
-            <span className="text-[1.1rem] w-6 text-center shrink-0">🔔</span>
+            <span className="relative text-[1.1rem] w-6 text-center shrink-0">
+              🔔
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-[3px] leading-none">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </span>
             <span className="hidden sidebar:block">通知</span>
           </Link>
 

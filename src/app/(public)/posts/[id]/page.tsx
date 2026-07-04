@@ -28,7 +28,7 @@ export default async function PostDetailPage({ params }: Props) {
   const post = await findPostById(id, userId);
   if (!post) notFound();
 
-  const related = await findRelatedPosts(id, post.prefecture, 3);
+  const related = await findRelatedPosts(id, post.location, 4);
 
   const isAuthor = userId === post.authorId;
 
@@ -36,6 +36,7 @@ export default async function PostDetailPage({ params }: Props) {
     year: "numeric",
     month: "long",
     day: "numeric",
+    weekday: "short",
   });
 
   return (
@@ -53,7 +54,7 @@ export default async function PostDetailPage({ params }: Props) {
                 {CATEGORY_ICONS[post.category] ?? "📍"} {post.category}
               </span>
             )}
-            <span className="text-zinc-500 text-sm">📍 {post.prefecture}</span>
+            <span className="text-zinc-500 text-sm">📍 {post.location}</span>
             <span className="text-zinc-400 text-sm ml-auto">訪問日：{visitedDate}</span>
           </div>
           <h1 className="text-3xl font-bold text-zinc-900 leading-snug">{post.title}</h1>
@@ -89,13 +90,15 @@ export default async function PostDetailPage({ params }: Props) {
         </div>
 
         {/* Images */}
-        {post.images.length > 0 ? (
-          <ImageCarousel images={post.images} title={post.title} />
-        ) : (
-          <div className="border border-dashed border-zinc-200 rounded-xl bg-zinc-50/30 h-48 flex items-center justify-center text-xs text-zinc-300">
-            📷 写真なし
-          </div>
-        )}
+        <div className="max-w-4xl mx-auto">
+          {post.images.length > 0 ? (
+            <ImageCarousel images={post.images} title={post.title} />
+          ) : (
+            <div className="border border-dashed border-zinc-200 rounded-xl bg-zinc-50/30 h-64 flex items-center justify-center text-xs text-zinc-300">
+              📷 写真なし
+            </div>
+          )}
+        </div>
 
         {/* Actions */}
         <div className="flex gap-3 flex-wrap">
@@ -142,9 +145,9 @@ export default async function PostDetailPage({ params }: Props) {
         {related.length > 0 ? (
           <div>
             <p className="text-base font-semibold text-zinc-800 mb-3">
-              📍 {post.prefecture}の関連スポット
+              📍 {post.location}の関連スポット
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {related.map((r) => (
                 <PostCard key={r.id} post={r as unknown as Post} />
               ))}
@@ -152,7 +155,7 @@ export default async function PostDetailPage({ params }: Props) {
           </div>
         ) : (
           <div className="border border-dashed border-zinc-200 rounded-xl p-4 bg-zinc-50/30">
-            <p className="text-base font-semibold text-zinc-400 mb-2">📍 {post.prefecture}の関連スポット</p>
+            <p className="text-base font-semibold text-zinc-400 mb-2">📍 {post.location}の関連スポット</p>
             <p className="text-xs text-zinc-300">関連スポットなし</p>
           </div>
         )}

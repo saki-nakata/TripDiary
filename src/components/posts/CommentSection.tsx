@@ -49,20 +49,35 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
       router.push("/login");
       return;
     }
-    if (!body.trim() || submitting) return;
+    const trimmed = body.trim();
+    if (!trimmed || submitting) return;
 
+    const optimisticComment: Comment = {
+      id: `optimistic-${Date.now()}`,
+      body: trimmed,
+      createdAt: new Date().toISOString(),
+      author: { id: currentUserId, nickname: "...", image: null },
+    };
+
+    setComments((prev) => [...prev, optimisticComment]);
+    setBody("");
     setSubmitting(true);
+
     try {
       const res = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: body.trim() }),
+        body: JSON.stringify({ body: trimmed }),
       });
       if (!res.ok) throw new Error();
-      setBody("");
-      await loadComments();
+      const saved = await res.json();
+      setComments((prev) =>
+        prev.map((c) => (c.id === optimisticComment.id ? { ...saved } : c))
+      );
       showToast("コメントを投稿しました", "success", 500);
     } catch {
+      setComments((prev) => prev.filter((c) => c.id !== optimisticComment.id));
+      setBody(trimmed);
       showToast("コメントの投稿に失敗しました", "error");
     } finally {
       setSubmitting(false);

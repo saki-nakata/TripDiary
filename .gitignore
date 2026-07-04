@@ -33,6 +33,21 @@ Thumbs.db
 
 # playwright mcp artifacts
 .playwright-mcp/
+before-badge.png
+final-check-location.png
+home-after-fix.png
+home-final-check.png
+lightbox-multi.png
+multi-photo-detail.png
+multi-photo-slide2.png
+notif-before-scroll.png
+notif-narrow-before.png
+notif-real-before-scroll.png
+notif-scrolled-bottom.png
+notif-scrolled-final.png
+notif-scrolled-mid.png
+post-detail-final.png
+post-detail-photo-size.png
 
 # playwright test results
 test-results/

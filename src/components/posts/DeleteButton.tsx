@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/contexts/toast-context";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   postId: string;
@@ -11,12 +12,14 @@ export function DeleteButton({ postId }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
   async function handleConfirm() {
     setIsDeleting(true);
     const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
     if (res.ok) {
       showToast("投稿を削除しました", "success");
+      queryClient.invalidateQueries({ queryKey: ["explore-feed"] });
       setTimeout(() => { window.location.href = "/"; }, 1200);
     } else {
       showToast("削除に失敗しました", "error");

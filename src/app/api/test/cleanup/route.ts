@@ -7,6 +7,11 @@ export async function DELETE(req: NextRequest) {
   }
   const email = req.nextUrl.searchParams.get("email");
   if (!email) return NextResponse.json({ error: "email required" }, { status: 400 });
-  await prisma.user.deleteMany({ where: { email } });
-  return NextResponse.json({ ok: true });
+  try {
+    await prisma.user.deleteMany({ where: { email } });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

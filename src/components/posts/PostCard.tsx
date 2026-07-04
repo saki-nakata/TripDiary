@@ -63,7 +63,7 @@ export function PostCard({ post }: Props) {
             <span className="truncate">{post.author.nickname}</span>
           </div>
           <span className="text-[0.78rem] text-zinc-500 shrink-0 ml-2">
-            📍 {post.prefecture}
+            📍 {post.location}
           </span>
         </div>
 
