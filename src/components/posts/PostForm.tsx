@@ -10,6 +10,7 @@ import { postSchema, type PostInput } from "@/lib/validations/post";
 import type { Post, CostBreakdownItem } from "@/types/post";
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import type { PortalFeedData } from "@/components/explore/ExploreFeed";
 
 type Props = {
   initialData?: Post;
@@ -151,9 +152,18 @@ export function PostForm({ initialData, planId }: Props) {
       }
 
       showToast(isEdit ? "投稿を更新しました" : "投稿しました！");
-      await queryClient.invalidateQueries({ queryKey: ["explore-feed"] });
-      router.push("/");
-      router.refresh();
+
+      if (isEdit) {
+        await queryClient.invalidateQueries({ queryKey: ["explore-feed"] });
+        router.push("/");
+        router.refresh();
+      } else {
+        const created: Post = await res.json();
+        queryClient.setQueryData<PortalFeedData>(["explore-feed"], (old) =>
+          old ? { ...old, latest: [created, ...old.latest].slice(0, 6) } : old
+        );
+        router.push(`/?highlighted=${created.id}`);
+      }
     } catch (err) {
       showToast(err instanceof Error ? err.message : "エラーが発生しました", "error");
     }
