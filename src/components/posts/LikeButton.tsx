@@ -47,6 +47,7 @@ export function LikeButton({ postId, initialLiked, initialCount, isLoggedIn }: P
     <button
       onClick={handleClick}
       disabled={loading}
+      data-testid="like-button"
       className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
         liked
           ? "bg-red-50 text-red-500 hover:bg-red-100"
