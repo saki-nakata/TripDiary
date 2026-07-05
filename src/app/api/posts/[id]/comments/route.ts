@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { findCommentsByPostId } from "@/lib/repositories/comment.repository";
 import { createCommentService } from "@/lib/services/comment.service";
 import { handleApiError } from "@/lib/api-error";
+import { ValidationError } from "@/lib/errors";
 import { z } from "zod";
 
 type Params = { params: Promise<{ id: string }> };
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const body = await req.json();
     const parsed = commentSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+      throw new ValidationError("Validation failed", parsed.error.flatten().fieldErrors);
     }
 
     const comment = await createCommentService(session.user.id, id, parsed.data.body);

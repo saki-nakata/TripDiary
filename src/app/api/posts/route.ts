@@ -4,6 +4,7 @@ import { findFollowingPosts } from "@/lib/repositories/post.repository";
 import { createPostService } from "@/lib/services/post.service";
 import { postSchema } from "@/lib/validations/post";
 import { handleApiError } from "@/lib/api-error";
+import { ValidationError } from "@/lib/errors";
 
 export async function GET(req: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = postSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+      throw new ValidationError("Validation failed", parsed.error.flatten().fieldErrors);
     }
 
     const post = await createPostService(session.user.id, parsed.data);

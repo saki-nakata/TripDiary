@@ -4,6 +4,7 @@ import { findPostById } from "@/lib/repositories/post.repository";
 import { updatePostService, deletePostService } from "@/lib/services/post.service";
 import { postSchema } from "@/lib/validations/post";
 import { handleApiError } from "@/lib/api-error";
+import { ValidationError } from "@/lib/errors";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -30,7 +31,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const body = await req.json();
     const parsed = postSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+      throw new ValidationError("Validation failed", parsed.error.flatten().fieldErrors);
     }
 
     const updated = await updatePostService(session.user.id, id, parsed.data);

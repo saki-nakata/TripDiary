@@ -13,9 +13,12 @@ export class ForbiddenError extends Error {
 }
 
 export class ValidationError extends Error {
-  constructor(message = "Validation failed") {
+  details?: Record<string, string[] | undefined>;
+
+  constructor(message = "Validation failed", details?: Record<string, string[] | undefined>) {
     super(message);
     this.name = "ValidationError";
+    this.details = details;
   }
 }
 
