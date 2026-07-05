@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Prototype code (plain HTML/JS, not part of Next.js app)
     "prototype/**",
+    // Vitest coverage report (generated)
+    "coverage/**",
   ]),
 ]);
 
