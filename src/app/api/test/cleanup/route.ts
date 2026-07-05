@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function DELETE(req: NextRequest) {
   if (process.env.NODE_ENV === "production") {
@@ -11,7 +12,7 @@ export async function DELETE(req: NextRequest) {
     await prisma.user.deleteMany({ where: { email } });
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error(e);
+    logger.error({ err: e }, "test cleanup failed");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

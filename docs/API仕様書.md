@@ -7,6 +7,15 @@
 
 ---
 
+> ⚠️ **2026-07-05 更新：** Phase 2.5-A にて `@asteasolutions/zod-to-openapi` による API仕様の自動生成を導入した。実装済みエンドポイントの最新かつ正確な仕様は、実際のRoute HandlerのZodスキーマから自動生成される以下を参照する。
+>
+> - Swagger UI: `/api-docs`
+> - OpenAPI JSON: `/api/openapi.json`
+>
+> 本ドキュメント（手書き）は設計時点の参考情報として残すが、実装との差異が生じた場合は自動生成された仕様を正とする。
+
+---
+
 ## 1. 概要
 
 本アプリの API は Next.js App Router の Route Handlers として実装する。
@@ -491,8 +500,8 @@ Auth.js v5（セッションベース）を使用する。
   "totalPosts": 5,
   "totalPhotos": 9,
   "totalCost": 125000,
-  "visitedPrefectures": ["沖縄県", "奈良県", "静岡県"],
-  "topPrefecture": "沖縄県",
+  "visitedLocations": ["沖縄県", "奈良県", "静岡県"],
+  "topLocation": "沖縄県",
   "categoryBreakdown": [
     { "category": "アクティビティ", "count": 2 },
     { "category": "歴史・文化", "count": 2 },

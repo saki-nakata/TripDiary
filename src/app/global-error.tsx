@@ -11,6 +11,10 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error(error);
+    // ── エラー監視SaaS（Sentry等）連携ポイント（Phase 2.5-D） ──
+    // フロントエンドの致命的クラッシュを捕捉する唯一の箇所。
+    // 監視SaaS導入時はここに Sentry.captureException(error) 等を追加する。
+    // 現状はDSN未設定のため console.error のみ。
   }, [error]);
 
   return (

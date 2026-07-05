@@ -1,3 +1,10 @@
+export class UnauthorizedError extends Error {
+  constructor(message = "Unauthorized") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
+
 export class NotFoundError extends Error {
   constructor(message = "Not found") {
     super(message);
@@ -13,9 +20,12 @@ export class ForbiddenError extends Error {
 }
 
 export class ValidationError extends Error {
-  constructor(message = "Validation failed") {
+  details?: Record<string, string[] | undefined>;
+
+  constructor(message = "Validation failed", details?: Record<string, string[] | undefined>) {
     super(message);
     this.name = "ValidationError";
+    this.details = details;
   }
 }
 

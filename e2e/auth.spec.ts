@@ -13,7 +13,7 @@ test.describe("認証フロー", () => {
     await request.delete(`/api/test/cleanup?email=${encodeURIComponent(TEST_EMAIL)}`);
   });
 
-  test("新規登録 → ダッシュボード遷移", async ({ page }) => {
+  test("新規登録 → ホーム画面遷移", async ({ page }) => {
     await page.goto("/signup");
 
     await page.fill("#nickname", TEST_USER.nickname);
@@ -22,18 +22,19 @@ test.describe("認証フロー", () => {
     await page.fill("#confirmPassword", TEST_USER.password);
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL("/dashboard");
+    // `/dashboard` は認証済みなら `/`（ホーム）へリダイレクトするだけのスタブ（実装計画書 Phase 1-E/2-A 参照）
+    await expect(page).toHaveURL("/");
     await expect(page.getByRole("button", { name: /テストユーザー/ })).toBeVisible();
   });
 
-  test("ログイン → ダッシュボード遷移", async ({ page }) => {
+  test("ログイン → ホーム画面遷移", async ({ page }) => {
     await page.goto("/login");
 
     await page.fill("#email", TEST_USER.email);
     await page.fill("#password", TEST_USER.password);
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL("/dashboard");
+    await expect(page).toHaveURL("/");
   });
 
   test("誤パスワード → エラーメッセージ表示", async ({ page }) => {

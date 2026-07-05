@@ -112,6 +112,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
           maxLength={2000}
           rows={3}
           disabled={!currentUserId || submitting}
+          data-testid="comment-textarea"
           className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-zinc-50 disabled:text-zinc-400"
         />
         <div className="flex items-center justify-end mt-2">
@@ -135,7 +136,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
             const canDelete =
               currentUserId === comment.author.id || currentUserId === postAuthorId;
             return (
-              <li key={comment.id} className="flex gap-3">
+              <li key={comment.id} className="flex gap-3" data-testid="comment-item">
                 <div className="relative w-9 h-9 rounded-full overflow-hidden bg-zinc-200 shrink-0">
                   {comment.author.image ? (
                     <Image

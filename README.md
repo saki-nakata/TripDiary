@@ -11,12 +11,12 @@
 | フロントエンド | Next.js 16.2.9 + TypeScript |
 | スタイリング | Tailwind CSS 4.3.1 |
 | バックエンド | Next.js Route Handlers |
-| ORM | Prisma 7.8.0 |
+| ORM | Prisma 5.22.0 |
 | 認証 | Auth.js（next-auth v5 beta.31） |
-| データベース | MySQL（Railway） |
-| 画像ストレージ | AWS S3 |
+| データベース | MySQL（開発: Docker / 本番: AWS RDS 予定） |
+| 画像ストレージ | ローカル保存（開発時点）→ AWS S3 移行予定（実装計画書 Phase 6） |
 | 地図 | Leaflet + OpenStreetMap |
-| ホスティング | Vercel（アプリ）+ Railway（MySQL） |
+| ホスティング | 未デプロイ（想定構成: AWS EC2 + RDS + S3。詳細は [インフラ構成書](docs/インフラ構成書.md)） |
 
 ---
 
@@ -45,10 +45,11 @@
 ```
 TripDiary/
 ├── docs/                          # ドキュメント類
-│   ├── project-plan.md            # プロジェクト計画書
 │   ├── 要件定義書.md
 │   ├── DB設計書.md
 │   ├── API仕様書.md
+│   ├── テスト設計書.md
+│   ├── ログ運用設計書.md
 │   ├── 画面設計書.md
 │   ├── 画面遷移図.md
 │   ├── シーケンス図.md
@@ -68,14 +69,17 @@ TripDiary/
 │       └── 通知機能定義書.md
 ├── src/
 │   ├── app/
-│   │   ├── (auth)/                # 認証画面
-│   │   ├── (main)/                # メイン画面
-│   │   └── api/                   # Route Handlers
+│   │   ├── (auth)/                # 認証・サインアップ画面
+│   │   ├── (app)/                 # 認証済み画面（サイドバーレイアウト）
+│   │   ├── (public)/              # 未認証でも閲覧可能な画面（探索フィード・投稿詳細等）
+│   │   ├── api/                   # Route Handlers
+│   │   └── api-docs/              # Swagger UI（Phase 2.5-A）
 │   ├── components/                # 共通コンポーネント
-│   ├── lib/                       # ユーティリティ（prisma / auth / s3）
+│   ├── lib/                       # ユーティリティ（prisma / auth / logger / openapi 等）
 │   └── types/                     # 型定義
 ├── prisma/
 │   └── schema.prisma
+├── e2e/                           # Playwright E2Eテスト
 ├── public/
 ├── .env.local
 ├── .env.sample
@@ -88,10 +92,10 @@ TripDiary/
 
 ### 前提条件
 
-- Node.js 20 以上
-- MySQL（または Railway への接続情報）
-- AWS アカウント（S3 バケット・IAM ユーザー）
+- Node.js 20 以上 / pnpm
+- Docker（開発用MySQLコンテナの起動に使用）
 - Leaflet + OpenStreetMap（APIキー不要）
+- ※ AWS（S3等）は現時点では不要（画像はローカル保存。S3移行は実装計画書 Phase 6 で対応予定）
 
 ### 手順
 
@@ -107,10 +111,13 @@ pnpm install
 cp .env.sample .env.local
 # .env.local を編集して各値を設定
 
-# 4. DB マイグレーション
+# 4. 開発用DBを起動
+docker compose up -d db
+
+# 5. DB マイグレーション
 pnpm prisma migrate dev
 
-# 5. 開発サーバー起動
+# 6. 開発サーバー起動
 pnpm dev
 ```
 
@@ -126,9 +133,23 @@ pnpm dev
 pnpm dev             # 開発サーバー起動
 pnpm build           # 本番ビルド
 pnpm lint            # ESLint 実行
+pnpm typecheck       # 型チェック（tsc --noEmit）
 pnpm prisma studio       # Prisma Studio（DB GUI）
 pnpm prisma migrate dev  # マイグレーション実行
+
+# テスト（詳細は docs/テスト設計書.md 参照）
+pnpm test                    # Vitest（単体・統合テスト）を実行
+pnpm test:coverage           # カバレッジ計測付きで実行
+pnpm prisma:migrate:test     # テスト用DBにスキーマ適用（事前に docker compose up -d mysql-test が必要）
+pnpm playwright test         # E2Eテスト（認証フロー・投稿の主要フロー）
 ```
+
+### API仕様書（Swagger）
+
+実装済みAPIの最新仕様は、開発サーバー起動中に以下で確認できる（Phase 2.5-Aで自動生成を導入）。
+
+- Swagger UI: http://localhost:3000/api-docs
+- OpenAPI JSON: http://localhost:3000/api/openapi.json
 
 ---
 
@@ -138,25 +159,20 @@ pnpm prisma migrate dev  # マイグレーション実行
 
 | 変数名 | 説明 |
 |--------|------|
-| `DATABASE_URL` | MySQL 接続 URL（Railway） |
+| `DATABASE_URL` | MySQL 接続 URL（開発時は `docker compose up -d db` のコンテナ、本番は AWS RDS 予定） |
 | `AUTH_SECRET` | Auth.js のシークレットキー |
 | `AUTH_URL` | アプリの URL（開発時は http://localhost:3000） |
-| `AWS_REGION` | S3 バケットのリージョン（例: ap-northeast-1） |
-| `AWS_S3_BUCKET_NAME` | S3 バケット名 |
-| `AWS_ACCESS_KEY_ID` | IAM ユーザーのアクセスキー |
-| `AWS_SECRET_ACCESS_KEY` | IAM ユーザーのシークレットキー |
+| `AWS_REGION` | S3 バケットのリージョン（例: ap-northeast-1）※現時点では未使用（S3移行＝実装計画書 Phase 6 まで画像はローカル保存） |
+| `AWS_S3_BUCKET_NAME` | S3 バケット名 ※現時点では未使用 |
+| `AWS_ACCESS_KEY_ID` | IAM ユーザーのアクセスキー ※現時点では未使用 |
+| `AWS_SECRET_ACCESS_KEY` | IAM ユーザーのシークレットキー ※現時点では未使用 |
 | ~~`NEXT_PUBLIC_MAPBOX_TOKEN`~~ | 不要（Leaflet + OpenStreetMap に変更） |
 
 ---
 
 ## 本番環境へのデプロイ
 
-本番環境は Vercel（アプリ）+ Railway（MySQL）で構成する。インフラの詳細は [docs/インフラ構成書.md](docs/インフラ構成書.md) を参照。
-
-```bash
-# Vercel CLI でデプロイ
-vercel --prod
-```
+現時点で本番デプロイは未実施（ローカル開発環境のみ）。本番環境は AWS EC2（アプリ）+ AWS RDS（MySQL）+ AWS S3（画像ストレージ）で構成予定。デプロイ手順・画像ストレージのS3移行は実装計画書 Phase 6 で実施する。インフラの詳細は [docs/インフラ構成書.md](docs/インフラ構成書.md) を参照。
 
 ---
 
@@ -170,7 +186,9 @@ vercel --prod
 | [画面設計書](docs/画面設計書.md) | ワイヤーフレーム（全画面） |
 | [画面遷移図](docs/画面遷移図.md) | 画面間の遷移フロー |
 | [シーケンス図](docs/シーケンス図.md) | 認証・投稿・ソーシャル機能のシーケンス |
-| [インフラ構成書](docs/インフラ構成書.md) | Vercel + Railway 構成・デプロイフロー |
+| [インフラ構成書](docs/インフラ構成書.md) | AWS（EC2 + RDS + S3）構成・デプロイフロー |
+| [テスト設計書](docs/テスト設計書.md) | テスト方針・層別戦略・テストケース一覧（Phase 2.5-B） |
+| [ログ運用設計書](docs/ログ運用設計書.md) | 構造化ログ方針・監視項目・障害対応フロー・エラー監視連携（Phase 2.5-C/D） |
 | [認証機能定義書](docs/機能定義書/認証機能定義書.md) | 認証機能の詳細仕様 |
 | [投稿機能定義書](docs/機能定義書/投稿機能定義書.md) | 投稿機能の詳細仕様 |
 | [いいね機能定義書](docs/機能定義書/いいね機能定義書.md) | いいね機能の詳細仕様 |

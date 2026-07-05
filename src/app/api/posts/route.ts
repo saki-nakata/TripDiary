@@ -4,12 +4,13 @@ import { findFollowingPosts } from "@/lib/repositories/post.repository";
 import { createPostService } from "@/lib/services/post.service";
 import { postSchema } from "@/lib/validations/post";
 import { handleApiError } from "@/lib/api-error";
+import { UnauthorizedError, ValidationError } from "@/lib/errors";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw new UnauthorizedError();
     }
 
     const { searchParams } = req.nextUrl;
@@ -27,13 +28,13 @@ export async function POST(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw new UnauthorizedError();
     }
 
     const body = await req.json();
     const parsed = postSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+      throw new ValidationError("Validation failed", parsed.error.flatten().fieldErrors);
     }
 
     const post = await createPostService(session.user.id, parsed.data);
