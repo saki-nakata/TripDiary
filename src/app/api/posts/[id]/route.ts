@@ -4,7 +4,7 @@ import { findPostById } from "@/lib/repositories/post.repository";
 import { updatePostService, deletePostService } from "@/lib/services/post.service";
 import { postSchema } from "@/lib/validations/post";
 import { handleApiError } from "@/lib/api-error";
-import { ValidationError } from "@/lib/errors";
+import { UnauthorizedError, NotFoundError, ValidationError } from "@/lib/errors";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const { id } = await params;
     const session = await auth();
     const post = await findPostById(id, session?.user?.id);
-    if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!post) throw new NotFoundError();
     return NextResponse.json(post);
   } catch (e) {
     return handleApiError(e);
@@ -24,7 +24,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw new UnauthorizedError();
     }
 
     const { id } = await params;
@@ -45,7 +45,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw new UnauthorizedError();
     }
 
     const { id } = await params;

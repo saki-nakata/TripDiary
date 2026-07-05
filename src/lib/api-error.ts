@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { logger } from "./logger";
 import { captureException } from "./monitoring";
-import { NotFoundError, ForbiddenError, ValidationError, ConflictError } from "./errors";
+import { UnauthorizedError, NotFoundError, ForbiddenError, ValidationError, ConflictError } from "./errors";
 
 export function handleApiError(e: unknown): NextResponse {
+  if (e instanceof UnauthorizedError) {
+    logger.warn({ errorType: "UnauthorizedError", message: e.message }, "API request failed: unauthorized");
+    return NextResponse.json({ error: e.message }, { status: 401 });
+  }
   if (e instanceof NotFoundError) {
     logger.warn({ errorType: "NotFoundError", message: e.message }, "API request failed: not found");
     return NextResponse.json({ error: e.message }, { status: 404 });

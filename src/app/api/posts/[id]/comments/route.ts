@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { findCommentsByPostId } from "@/lib/repositories/comment.repository";
 import { createCommentService } from "@/lib/services/comment.service";
 import { handleApiError } from "@/lib/api-error";
-import { ValidationError } from "@/lib/errors";
+import { UnauthorizedError, ValidationError } from "@/lib/errors";
 import { z } from "zod";
 
 type Params = { params: Promise<{ id: string }> };
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw new UnauthorizedError();
     }
 
     const { id } = await params;

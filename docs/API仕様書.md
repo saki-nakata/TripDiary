@@ -500,8 +500,8 @@ Auth.js v5（セッションベース）を使用する。
   "totalPosts": 5,
   "totalPhotos": 9,
   "totalCost": 125000,
-  "visitedPrefectures": ["沖縄県", "奈良県", "静岡県"],
-  "topPrefecture": "沖縄県",
+  "visitedLocations": ["沖縄県", "奈良県", "静岡県"],
+  "topLocation": "沖縄県",
   "categoryBreakdown": [
     { "category": "アクティビティ", "count": 2 },
     { "category": "歴史・文化", "count": 2 },
