@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { logger } from "./logger";
+import { captureException } from "./monitoring";
 import { NotFoundError, ForbiddenError, ValidationError, ConflictError } from "./errors";
 
 export function handleApiError(e: unknown): NextResponse {
@@ -20,5 +21,7 @@ export function handleApiError(e: unknown): NextResponse {
     return NextResponse.json({ error: e.message }, { status: 409 });
   }
   logger.error({ err: e }, "API request failed: unhandled error");
+  // 5xx（未捕捉例外）のみ監視SaaSへ送信（現状はDSN未設定のためno-op）
+  captureException(e);
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 }
