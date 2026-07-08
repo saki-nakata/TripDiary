@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/contexts/toast-context";
 import type { Comment } from "@/types/post";
@@ -21,6 +22,12 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
   const [body, setBody] = useState("");
   const { showToast } = useToast();
   const router = useRouter();
+  // コメント一覧の取得(loadComments)は非同期のため、投稿・削除など後から始まった操作の方が
+  // 先に完了することがある。その状態で古いfetchの結果を無条件に適用すると、投稿直後の
+  // 一覧が「投稿前の空の状態」で上書きされてしまう（2026-07-06 E2Eテストで発覚）。
+  // 各操作の開始時にこの値をインクリメントし、fetch完了時に値が変わっていれば
+  // （＝自分より新しい操作が始まっていれば）自分の結果は古いものとして破棄する。
+  const opSeqRef = useRef(0);
 
   useEffect(() => {
     loadComments();
@@ -28,17 +35,20 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
   }, [postId]);
 
   async function loadComments(cursor?: string) {
+    const mySeq = ++opSeqRef.current;
     try {
       const url = `/api/posts/${postId}/comments${cursor ? `?cursor=${cursor}` : ""}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error();
       const data = await res.json();
+      if (mySeq !== opSeqRef.current) return;
       setComments((prev) => cursor ? [...prev, ...data.comments] : data.comments);
       setNextCursor(data.nextCursor);
       setHasMore(data.hasMore);
     } catch {
-      showToast("コメントの読み込みに失敗しました", "error");
+      if (mySeq === opSeqRef.current) showToast("コメントの読み込みに失敗しました", "error");
     } finally {
+      // 新しい操作（投稿・削除）に追い越されていても、初回ロードのスピナーは必ず解除する
       setLoading(false);
     }
   }
@@ -59,6 +69,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
       author: { id: currentUserId, nickname: "...", image: null },
     };
 
+    opSeqRef.current++;
     setComments((prev) => [...prev, optimisticComment]);
     setBody("");
     setSubmitting(true);
@@ -88,6 +99,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
     try {
       const res = await fetch(`/api/comments/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
+      opSeqRef.current++;
       setComments((prev) => prev.filter((c) => c.id !== id));
     } catch {
       showToast("削除に失敗しました", "error");
@@ -97,34 +109,44 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
   return (
     <>
     <section className="mt-8">
-      <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-base font-semibold text-zinc-800">
-          💬 コメント {comments.length > 0 && <span className="text-zinc-400 font-normal text-sm">({comments.length}件)</span>}
-        </h2>
-        <span className="text-xs text-zinc-400 ml-auto">{body.length} / 2000 文字</span>
-      </div>
+      <h2 className="text-base font-semibold text-zinc-800 mb-4">💬 コメント</h2>
 
-      <form onSubmit={handleSubmit} className="mb-6">
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder={currentUserId ? "コメントを入力..." : "コメントするにはログインしてください"}
-          maxLength={2000}
-          rows={3}
-          disabled={!currentUserId || submitting}
-          data-testid="comment-textarea"
-          className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-zinc-50 disabled:text-zinc-400"
-        />
-        <div className="flex items-center justify-end mt-2">
-          <button
-            type="submit"
-            disabled={!body.trim() || submitting || !currentUserId}
-            className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? "送信中..." : "コメントを投稿"}
-          </button>
-        </div>
-      </form>
+      {currentUserId ? (
+        <form onSubmit={handleSubmit} className="mb-6">
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="コメントを入力..."
+            maxLength={2000}
+            rows={3}
+            disabled={submitting}
+            data-testid="comment-textarea"
+            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-zinc-50 disabled:text-zinc-400"
+          />
+          <div className="flex items-center justify-end mt-2">
+            {comments.length > 0 && (
+              <span className="text-base font-semibold text-zinc-600 mr-auto ml-5 translate-y-2">{comments.length}件</span>
+            )}
+            <span className={`text-xs mr-16 translate-x-4 -translate-y-3 ${body.length > 2000 ? "text-red-500" : "text-zinc-400"}`}>
+              {body.length} / 2000 文字
+            </span>
+            <button
+              type="submit"
+              disabled={!body.trim() || submitting}
+              className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? "送信中..." : "コメントを投稿"}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <p className="mb-6 text-sm text-zinc-500">
+          <Link href="/login" className="text-green-600 hover:underline font-medium">
+            ログインする
+          </Link>
+          とコメントできます
+        </p>
+      )}
 
       {loading ? (
         <p className="text-sm text-zinc-400">読み込み中...</p>
@@ -143,6 +165,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
                       src={comment.author.image}
                       alt={comment.author.nickname}
                       fill
+                      sizes="36px"
                       className="object-cover"
                     />
                   ) : (
@@ -152,7 +175,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
                   )}
                 </div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium text-zinc-800">{comment.author.nickname}</span>
+                  <span className="text-sm font-bold text-zinc-800">{comment.author.nickname}</span>
                   <p className="mt-1 text-sm text-zinc-700 whitespace-pre-wrap">{comment.body}</p>
                   <div className="flex items-center mt-1">
                     <span className="text-xs text-zinc-400">

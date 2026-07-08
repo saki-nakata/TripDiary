@@ -4,16 +4,13 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }));
-vi.mock("@/lib/repositories/post.repository", () => ({
-  findFollowingPosts: vi.fn(),
-}));
 vi.mock("@/lib/services/post.service", () => ({
+  findFollowingPostsService: vi.fn(),
   createPostService: vi.fn(),
 }));
 
 import { auth } from "@/lib/auth";
-import { findFollowingPosts } from "@/lib/repositories/post.repository";
-import { createPostService } from "@/lib/services/post.service";
+import { findFollowingPostsService, createPostService } from "@/lib/services/post.service";
 import { GET, POST } from "@/app/api/posts/route";
 
 // `auth()` はミドルウェア呼び出しとセッション取得の2形態でオーバーロードされており、
@@ -36,19 +33,19 @@ describe("GET /api/posts", () => {
     const res = await GET(makeRequest("http://localhost/api/posts"));
 
     expect(res.status).toBe(401);
-    expect(findFollowingPosts).not.toHaveBeenCalled();
+    expect(findFollowingPostsService).not.toHaveBeenCalled();
   });
 
   it("GET_認証済み_200かつ投稿一覧を返す", async () => {
     authMock.mockResolvedValue({ user: { id: USER_ID } } as never);
-    vi.mocked(findFollowingPosts).mockResolvedValue({ posts: [], nextCursor: null, hasMore: false });
+    vi.mocked(findFollowingPostsService).mockResolvedValue({ posts: [], nextCursor: null, hasMore: false });
 
     const res = await GET(makeRequest("http://localhost/api/posts"));
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body).toEqual({ posts: [], nextCursor: null, hasMore: false });
-    expect(findFollowingPosts).toHaveBeenCalledWith(expect.objectContaining({ userId: USER_ID }));
+    expect(findFollowingPostsService).toHaveBeenCalledWith(expect.objectContaining({ userId: USER_ID }));
   });
 });
 

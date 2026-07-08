@@ -32,6 +32,7 @@ export function DeleteButton({ postId }: Props) {
     <>
       <button
         onClick={() => setShowModal(true)}
+        data-testid="delete-post-button"
         className="px-3 py-1 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50"
       >
         削除

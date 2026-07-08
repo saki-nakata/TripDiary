@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/contexts/toast-context";
 import { StarRating } from "./StarRating";
+import { LocationPickerWrapper } from "@/components/map/LocationPickerWrapper";
 import { CATEGORIES, LOCATIONS } from "@/lib/constants";
 import { postSchema, type PostInput } from "@/lib/validations/post";
 import type { Post, CostBreakdownItem } from "@/types/post";
@@ -134,7 +135,7 @@ export function PostForm({ initialData, planId }: Props) {
     const payload = {
       ...data,
       imageUrls,
-      costBreakdown: costBreakdown.filter((i) => i.label.trim()),
+      costBreakdown: costBreakdown.filter((i) => i.amount > 0),
     };
 
     try {
@@ -155,7 +156,7 @@ export function PostForm({ initialData, planId }: Props) {
 
       if (isEdit) {
         await queryClient.invalidateQueries({ queryKey: ["explore-feed"] });
-        router.push("/");
+        router.push("/mypage?tab=myposts");
         router.refresh();
       } else {
         const created: Post = await res.json();
@@ -179,7 +180,9 @@ export function PostForm({ initialData, planId }: Props) {
             <label className="text-base font-bold text-zinc-700">
               スポット名 <span className="text-red-500">*</span>
             </label>
-            <span className="text-xs text-zinc-400">{titleValue.length} / 40 文字</span>
+            <span className={`text-xs ${titleValue.length > 40 ? "text-red-500" : "text-zinc-400"}`}>
+              {titleValue.length} / 40 文字
+            </span>
           </div>
           <input
             {...register("title")}
@@ -196,7 +199,9 @@ export function PostForm({ initialData, planId }: Props) {
             <label className="text-base font-bold text-zinc-700">
               感想・メモ <span className="text-red-500">*</span>
             </label>
-            <span className="text-xs text-zinc-400">{bodyValue.length} / 2000 文字</span>
+            <span className={`text-xs ${bodyValue.length > 2000 ? "text-red-500" : "text-zinc-400"}`}>
+              {bodyValue.length} / 2000 文字
+            </span>
           </div>
           <textarea
             {...register("body")}
@@ -327,11 +332,16 @@ export function PostForm({ initialData, planId }: Props) {
         </div>
 
         {/* 費用内訳 */}
-        <div className="space-y-2">
-          <label className="block text-base font-bold text-zinc-700">費用内訳（自分のみ表示）</label>
-          {totalCost > 0 && (
-            <p className="text-sm font-semibold text-zinc-700 mb-3">合計：¥{totalCost.toLocaleString()}</p>
-          )}
+        <div className="space-y-2 border border-amber-200 rounded-xl p-4">
+          <div className="flex items-center gap-2">
+            <label className="block text-base font-bold text-zinc-700">費用内訳</label>
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium px-2 py-0.5">
+              🔒 自分のみ表示
+            </span>
+          </div>
+          <p className="text-sm font-semibold text-zinc-700 mb-3">
+            合計：{totalCost > 0 ? `¥${totalCost.toLocaleString()}` : "—"}
+          </p>
           {costBreakdown.map((item, i) => (
             <div key={i} className="flex gap-2">
               <input
@@ -367,17 +377,33 @@ export function PostForm({ initialData, planId }: Props) {
           </button>
         </div>
 
-        {/* 地図（今後実装予定） */}
+        {/* 地図 */}
         <div className="space-y-2">
-          <label className="block text-base font-bold text-zinc-700">📍 場所・地図</label>
-          <div className="w-full h-44 rounded-xl border border-zinc-200 bg-zinc-50 flex flex-col items-center justify-center gap-2 text-zinc-400">
-            <span className="text-3xl">🗺️</span>
-            <span className="text-sm">地図機能は今後実装予定です</span>
-          </div>
+          <Controller
+            name="lat"
+            control={control}
+            render={({ field: latField }) => (
+              <Controller
+                name="lng"
+                control={control}
+                render={({ field: lngField }) => (
+                  <LocationPickerWrapper
+                    lat={latField.value ?? null}
+                    lng={lngField.value ?? null}
+                    onChange={(lat, lng) => {
+                      latField.onChange(lat);
+                      lngField.onChange(lng);
+                    }}
+                    label="📍 地図（任意）"
+                  />
+                )}
+              />
+            )}
+          />
         </div>
 
         {/* 送信ボタン */}
-        <div className="flex gap-3 pt-2 max-w-md mx-auto">
+        <div className="flex gap-6 pt-2 max-w-md mx-auto">
           <button
             type="button"
             onClick={() => router.back()}

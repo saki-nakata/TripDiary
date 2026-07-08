@@ -1,7 +1,11 @@
-import { createComment, findCommentById, deleteComment } from "@/lib/repositories/comment.repository";
+import { createComment, findCommentById, deleteComment, findCommentsByPostId } from "@/lib/repositories/comment.repository";
 import { findPostAuthorId } from "@/lib/repositories/post.repository";
 import { createCommentNotification } from "@/lib/services/notification.service";
 import { NotFoundError, ForbiddenError } from "@/lib/errors";
+
+export async function findCommentsByPostIdService(options: Parameters<typeof findCommentsByPostId>[0]) {
+  return findCommentsByPostId(options);
+}
 
 export async function createCommentService(userId: string, postId: string, body: string) {
   const [comment, authorId] = await Promise.all([

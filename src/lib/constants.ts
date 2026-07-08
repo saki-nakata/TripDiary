@@ -75,3 +75,13 @@ export const CATEGORY_ICONS: Record<string, string> = {
   "歴史・文化": "⛩️",
   その他: "📍",
 };
+
+export const CATEGORY_COLORS: Record<string, string> = {
+  観光: "bg-orange-50 text-orange-800",
+  グルメ: "bg-amber-100 text-amber-800",
+  "宿・ホテル": "bg-pink-100 text-pink-800",
+  自然: "bg-green-100 text-green-800",
+  アクティビティ: "bg-sky-100 text-sky-800",
+  "歴史・文化": "bg-purple-100 text-purple-800",
+  その他: "bg-slate-100 text-slate-600",
+};

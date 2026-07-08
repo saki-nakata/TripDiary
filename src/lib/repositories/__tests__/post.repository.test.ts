@@ -1,6 +1,15 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { findFollowingPosts, findLocationCounts, createPost } from "@/lib/repositories/post.repository";
+import {
+  findFollowingPosts,
+  findLocationCounts,
+  createPost,
+  findPostsByAuthorId,
+  findWishlistedPosts,
+  findVisitedPosts,
+  countFollowingFeedPosts,
+  findExplorePosts,
+} from "@/lib/repositories/post.repository";
 
 async function cleanDatabase() {
   await prisma.$executeRawUnsafe("SET FOREIGN_KEY_CHECKS = 0");
@@ -30,7 +39,7 @@ describe("post.repository", () => {
   });
 
   // ─── findFollowingPosts ───
-  it("findFollowingPosts_フォロー中ユーザーと自分の投稿のみ取得される", async () => {
+  it("findFollowingPosts_フォロー中ユーザーの投稿のみ取得され自分の投稿は含まれない", async () => {
     const me = await createTestUser("me@example.com", "自分");
     const following = await createTestUser("following@example.com", "フォロー中");
     const stranger = await createTestUser("stranger@example.com", "他人");
@@ -49,15 +58,16 @@ describe("post.repository", () => {
 
     const result = await findFollowingPosts({ userId: me.id });
 
-    expect(result.posts).toHaveLength(2);
-    const titles = result.posts.map((p) => p.title).sort();
-    expect(titles).toEqual(["フォロー中の投稿", "自分の投稿"].sort());
+    expect(result.posts).toHaveLength(1);
+    expect(result.posts[0].title).toBe("フォロー中の投稿");
   });
 
   it("findFollowingPosts_フォロー中の投稿が新着順で並ぶ", async () => {
     const me = await createTestUser("me2@example.com", "自分2");
-    await createPost(me.id, { title: "古い投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
-    await createPost(me.id, { title: "新しい投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-02" });
+    const following = await createTestUser("following3@example.com", "フォロー中3");
+    await prisma.follow.create({ data: { followerId: me.id, followingId: following.id } });
+    await createPost(following.id, { title: "古い投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    await createPost(following.id, { title: "新しい投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-02" });
 
     const result = await findFollowingPosts({ userId: me.id });
 
@@ -78,5 +88,96 @@ describe("post.repository", () => {
 
     expect(tokyo?.count).toBe(2);
     expect(osaka?.count).toBe(1);
+  });
+
+  // ─── findPostsByAuthorId ───
+  it("findPostsByAuthorId_指定ユーザーの投稿のみ取得される", async () => {
+    const me = await createTestUser("me4@example.com", "自分4");
+    const other = await createTestUser("other4@example.com", "他人4");
+    await createPost(me.id, { title: "自分の投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    await createPost(other.id, { title: "他人の投稿", body: "本文", location: "大阪府", category: "観光", visitedAt: "2026-01-02" });
+
+    const result = await findPostsByAuthorId({ authorId: me.id });
+
+    expect(result.posts).toHaveLength(1);
+    expect(result.posts[0].title).toBe("自分の投稿");
+  });
+
+  // ─── findWishlistedPosts / findVisitedPosts ───
+  it("findWishlistedPosts_行きたい登録した投稿のみ取得される", async () => {
+    const me = await createTestUser("me5@example.com", "自分5");
+    const post = await createPost(me.id, { title: "行きたい投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    await createPost(me.id, { title: "未登録の投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-02" });
+    await prisma.wishlist.create({ data: { userId: me.id, postId: post.id } });
+
+    const result = await findWishlistedPosts({ userId: me.id });
+
+    expect(result.posts).toHaveLength(1);
+    expect(result.posts[0].title).toBe("行きたい投稿");
+  });
+
+  it("findVisitedPosts_訪問済み登録した投稿のみ取得される", async () => {
+    const me = await createTestUser("me6@example.com", "自分6");
+    const post = await createPost(me.id, { title: "訪問済み投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    await createPost(me.id, { title: "未登録の投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-02" });
+    await prisma.visited.create({ data: { userId: me.id, postId: post.id } });
+
+    const result = await findVisitedPosts({ userId: me.id });
+
+    expect(result.posts).toHaveLength(1);
+    expect(result.posts[0].title).toBe("訪問済み投稿");
+  });
+
+  // ─── countFollowingFeedPosts ───
+  it("countFollowingFeedPosts_フォロー中ユーザーの投稿数のみで自分の投稿は含まれない", async () => {
+    const me = await createTestUser("me7@example.com", "自分7");
+    const following = await createTestUser("following2@example.com", "フォロー中2");
+    await prisma.follow.create({ data: { followerId: me.id, followingId: following.id } });
+    await createPost(me.id, { title: "自分の投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    await createPost(following.id, { title: "フォロー中の投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-02" });
+
+    expect(await countFollowingFeedPosts(me.id)).toBe(1);
+  });
+
+  // ─── findExplorePosts（キーワード検索） ───
+  it("findExplorePosts_qがタイトルに部分一致_一致する投稿のみ取得される", async () => {
+    const me = await createTestUser("me8@example.com", "自分8");
+    await createPost(me.id, { title: "嵐山の竹林", body: "本文", location: "京都府", category: "自然", visitedAt: "2026-01-01" });
+    await createPost(me.id, { title: "金閣寺の紅葉", body: "本文", location: "京都府", category: "歴史・文化", visitedAt: "2026-01-02" });
+
+    const result = await findExplorePosts({ q: "竹林" });
+
+    expect(result.posts).toHaveLength(1);
+    expect(result.posts[0].title).toBe("嵐山の竹林");
+  });
+
+  it("findExplorePosts_qが本文に部分一致_一致する投稿のみ取得される", async () => {
+    const me = await createTestUser("me9@example.com", "自分9");
+    await createPost(me.id, { title: "投稿A", body: "美味しいたこ焼きを食べました", location: "大阪府", category: "グルメ", visitedAt: "2026-01-01" });
+    await createPost(me.id, { title: "投稿B", body: "静かな竹林を散策しました", location: "京都府", category: "自然", visitedAt: "2026-01-02" });
+
+    const result = await findExplorePosts({ q: "たこ焼き" });
+
+    expect(result.posts).toHaveLength(1);
+    expect(result.posts[0].title).toBe("投稿A");
+  });
+
+  it("findExplorePosts_qが空文字_絞り込みなしで全件取得される(境界値)", async () => {
+    const me = await createTestUser("me10@example.com", "自分10");
+    await createPost(me.id, { title: "投稿C", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    await createPost(me.id, { title: "投稿D", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-02" });
+
+    const result = await findExplorePosts({ q: "" });
+
+    expect(result.posts).toHaveLength(2);
+  });
+
+  it("findExplorePosts_qが一致なし_空配列", async () => {
+    const me = await createTestUser("me11@example.com", "自分11");
+    await createPost(me.id, { title: "投稿E", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+
+    const result = await findExplorePosts({ q: "存在しないキーワード" });
+
+    expect(result.posts).toHaveLength(0);
   });
 });

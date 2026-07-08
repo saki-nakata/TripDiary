@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
@@ -29,7 +29,7 @@ type User = {
   email: string;
 };
 
-type NavLink = { href: string; icon: string; label: string; key: string };
+type NavLink = { href: string; icon: string; label: string; key: string; disabled?: boolean };
 type NavItem = { divider: true } | NavLink;
 
 
@@ -40,9 +40,9 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/posts/new", icon: "✏️", label: "新規投稿", key: "posts-new" },
   { href: "/users/[id]", icon: "👤", label: "プロフィール", key: "profile" },
   { divider: true },
-  { href: "/mypage?tab=plans", icon: "🗺️", label: "旅行プラン", key: "plans" },
+  { href: "/mypage?tab=plans", icon: "🗺️", label: "旅行プラン", key: "plans", disabled: true },
   { href: "/mypage?tab=myposts", icon: "✈️", label: "自分の投稿", key: "myposts" },
-  { href: "/mypage?tab=report", icon: "📋", label: "旅行レポート", key: "report" },
+  { href: "/mypage?tab=report", icon: "📋", label: "旅行レポート", key: "report", disabled: true },
   { href: "/mypage?tab=wishlist", icon: "🔖", label: "行きたい", key: "wishlist" },
   { href: "/mypage?tab=visited", icon: "✅", label: "訪問済み", key: "visited" },
   { href: "/mypage?tab=follow-feed", icon: "👥", label: "フォロー中の投稿", key: "follow-feed" },
@@ -57,6 +57,7 @@ const BOTTOM_NAV_ITEMS = [
 
 export function Sidebar({ user }: { user: User }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { count: unreadCount } = useUnreadCount();
@@ -80,7 +81,13 @@ export function Sidebar({ user }: { user: User }) {
   function isActive(item: NavLink) {
     const href = resolveHref(item);
     if (href === "/") return pathname === "/";
-    return pathname.startsWith(href.split("?")[0]);
+
+    const [path, query] = href.split("?");
+    if (!pathname.startsWith(path)) return false;
+
+    const itemTab = new URLSearchParams(query).get("tab");
+    if (itemTab === null) return true;
+    return (searchParams.get("tab") ?? "myposts") === itemTab;
   }
 
   return (
@@ -102,6 +109,18 @@ export function Sidebar({ user }: { user: User }) {
           {NAV_ITEMS.map((item, i) => {
             if ("divider" in item) {
               return <div key={i} className="border-t border-[#e2e8f0] my-2" />;
+            }
+            if (item.disabled) {
+              return (
+                <span
+                  key={item.key}
+                  title="Phase 4 実装後に有効化"
+                  className="flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] text-zinc-300 cursor-not-allowed justify-start"
+                >
+                  <span className="text-[1.1rem] w-6 text-center shrink-0">{item.icon}</span>
+                  <span className="hidden sidebar:block">{item.label}</span>
+                </span>
+              );
             }
             const href = resolveHref(item);
             const active = isActive(item);

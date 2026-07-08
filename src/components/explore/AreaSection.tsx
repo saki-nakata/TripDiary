@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 type AreaItem = { location: string; count: number; thumbnailUrl: string | null };
 
@@ -7,7 +8,12 @@ export function AreaSection({ areas }: { areas: AreaItem[] }) {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-base font-bold text-zinc-800">📍 エリアから探す</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-zinc-800">📍 エリアから探す</h2>
+        <Link href="/search?tab=area" className="text-sm text-[#16a34a] font-medium hover:underline">
+          エリア検索
+        </Link>
+      </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
         {areas.map((area) => (
           <div
@@ -20,6 +26,7 @@ export function AreaSection({ areas }: { areas: AreaItem[] }) {
                   src={area.thumbnailUrl}
                   alt={area.location}
                   fill
+                  sizes="140px"
                   className="object-cover"
                 />
               )}

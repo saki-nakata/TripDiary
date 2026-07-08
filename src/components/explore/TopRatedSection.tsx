@@ -8,7 +8,7 @@ export function TopRatedSection({ posts }: { posts: Post[] }) {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-base font-bold text-zinc-800">⭐ カテゴリ別高評価スポット</h2>
+      <h2 className="text-lg font-bold text-zinc-800">⭐ カテゴリ別高評価スポット</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {posts.map((post) => (
           <Link
@@ -18,7 +18,13 @@ export function TopRatedSection({ posts }: { posts: Post[] }) {
           >
             <div className="relative aspect-[4/3] bg-zinc-100">
               {post.images[0] && (
-                <Image src={post.images[0].url} alt={post.title} fill className="object-cover" />
+                <Image
+                  src={post.images[0].url}
+                  alt={post.title}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className="object-cover"
+                />
               )}
               {post.category && (
                 <span className="absolute top-2 left-2 bg-white/90 px-2 py-0.5 rounded-full text-xs font-semibold">

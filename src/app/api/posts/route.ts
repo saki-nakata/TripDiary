@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { findFollowingPosts } from "@/lib/repositories/post.repository";
-import { createPostService } from "@/lib/services/post.service";
+import { createPostService, findFollowingPostsService } from "@/lib/services/post.service";
 import { postSchema } from "@/lib/validations/post";
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError, ValidationError } from "@/lib/errors";
@@ -17,7 +16,7 @@ export async function GET(req: NextRequest) {
     const cursor = searchParams.get("cursor") ?? undefined;
     const limit = Math.min(Number(searchParams.get("limit") ?? 20), 50);
 
-    const result = await findFollowingPosts({ userId: session.user.id, cursor, limit });
+    const result = await findFollowingPostsService({ userId: session.user.id, cursor, limit });
     return NextResponse.json(result);
   } catch (e) {
     return handleApiError(e);

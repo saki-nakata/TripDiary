@@ -18,9 +18,11 @@ export default async function EditPostPage({ params }: Props) {
   if (post.authorId !== session.user.id) notFound();
 
   return (
-    <div className="max-w-4xl mx-auto bg-white border border-zinc-200 rounded-2xl shadow-sm p-8">
-      <h1 className="text-2xl font-bold text-zinc-900 mb-6">✏️ 投稿を編集する</h1>
-      <PostForm initialData={post as Post} />
+    <div className="max-w-4xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold text-zinc-900">✏️ 投稿を編集する</h1>
+      <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-8">
+        <PostForm initialData={post as Post} />
+      </div>
     </div>
   );
 }

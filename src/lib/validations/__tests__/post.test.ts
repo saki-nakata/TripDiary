@@ -68,4 +68,84 @@ describe("postSchema", () => {
     const result = postSchema.safeParse({ ...validPost, body: "あ".repeat(2001) });
     expect(result.success).toBe(false);
   });
+
+  // ─── lat（境界値） ───
+  it("lat_-90_成功", () => {
+    const result = postSchema.safeParse({ ...validPost, lat: -90 });
+    expect(result.success).toBe(true);
+  });
+
+  it("lat_90_成功", () => {
+    const result = postSchema.safeParse({ ...validPost, lat: 90 });
+    expect(result.success).toBe(true);
+  });
+
+  it("lat_-90.1_失敗", () => {
+    const result = postSchema.safeParse({ ...validPost, lat: -90.1 });
+    expect(result.success).toBe(false);
+  });
+
+  it("lat_90.1_失敗", () => {
+    const result = postSchema.safeParse({ ...validPost, lat: 90.1 });
+    expect(result.success).toBe(false);
+  });
+
+  it("lat_未指定_成功（任意項目）", () => {
+    const result = postSchema.safeParse(validPost);
+    expect(result.success).toBe(true);
+  });
+
+  // ─── lng（境界値） ───
+  it("lng_-180_成功", () => {
+    const result = postSchema.safeParse({ ...validPost, lng: -180 });
+    expect(result.success).toBe(true);
+  });
+
+  it("lng_180_成功", () => {
+    const result = postSchema.safeParse({ ...validPost, lng: 180 });
+    expect(result.success).toBe(true);
+  });
+
+  it("lng_-180.1_失敗", () => {
+    const result = postSchema.safeParse({ ...validPost, lng: -180.1 });
+    expect(result.success).toBe(false);
+  });
+
+  it("lng_180.1_失敗", () => {
+    const result = postSchema.safeParse({ ...validPost, lng: 180.1 });
+    expect(result.success).toBe(false);
+  });
+
+  // ─── costBreakdown ───
+  it("costBreakdown_labelが空文字でamountが1以上_成功（境界値）", () => {
+    const result = postSchema.safeParse({
+      ...validPost,
+      costBreakdown: [{ label: "", amount: 1 }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("costBreakdown_amountが0_成功（境界値）", () => {
+    const result = postSchema.safeParse({
+      ...validPost,
+      costBreakdown: [{ label: "交通費", amount: 0 }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("costBreakdown_amountが負の数_失敗（境界値）", () => {
+    const result = postSchema.safeParse({
+      ...validPost,
+      costBreakdown: [{ label: "交通費", amount: -1 }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("costBreakdown_labelが51文字_失敗", () => {
+    const result = postSchema.safeParse({
+      ...validPost,
+      costBreakdown: [{ label: "あ".repeat(51), amount: 100 }],
+    });
+    expect(result.success).toBe(false);
+  });
 });

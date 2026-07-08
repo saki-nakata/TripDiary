@@ -6,12 +6,18 @@ import { ValidationError } from "@/lib/errors";
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
-export async function saveUploadedFile(file: File): Promise<{ url: string }> {
-  if (!ALLOWED_TYPES.includes(file.type)) {
-    throw new ValidationError("JPEG・PNG・WebP・GIF のみアップロードできます");
+export async function saveUploadedFile(
+  file: File,
+  opts?: { maxSize?: number; allowedTypes?: string[] }
+): Promise<{ url: string }> {
+  const allowedTypes = opts?.allowedTypes ?? ALLOWED_TYPES;
+  const maxSize = opts?.maxSize ?? MAX_SIZE;
+
+  if (!allowedTypes.includes(file.type)) {
+    throw new ValidationError(`アップロードできる形式: ${allowedTypes.join(", ")}`);
   }
-  if (file.size > MAX_SIZE) {
-    throw new ValidationError("ファイルサイズは10MB以内にしてください");
+  if (file.size > maxSize) {
+    throw new ValidationError(`ファイルサイズは${Math.floor(maxSize / (1024 * 1024))}MB以内にしてください`);
   }
 
   const ext = file.name.split(".").pop() ?? "jpg";

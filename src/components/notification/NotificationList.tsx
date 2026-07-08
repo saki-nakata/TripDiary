@@ -78,7 +78,7 @@ function NotificationItem({
   const href = postId ? `/posts/${postId}` : `/users/${fromUser.id}`;
 
   if (type === "like") {
-    icon = "👍";
+    icon = "❤️";
     text = `${fromUser.nickname} さんがあなたの投稿にいいねしました`;
   } else if (type === "comment") {
     icon = "💬";

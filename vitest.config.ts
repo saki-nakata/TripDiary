@@ -17,6 +17,10 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    // Repositoryテストは実DBに対して全件deleteManyでクリーンアップするため、
+    // 複数テストファイルを並列実行すると共有テーブルの競合でFK制約違反等が発生する。
+    // ファイル間は直列実行する（ファイル内のテストはこれまで通り高速）。
+    fileParallelism: false,
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

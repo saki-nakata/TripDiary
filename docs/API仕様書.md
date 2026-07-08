@@ -156,9 +156,8 @@ Auth.js v5（セッションベース）を使用する。
       "images": [
         { "url": "https://s3.ap-northeast-1.amazonaws.com/tripdiary/...", "displayOrder": 0 }
       ],
-      "likeCount": 5,
-      "commentCount": 2,
-      "likedByCurrentUser": false
+      "_count": { "likes": 5, "comments": 2 },
+      "isLiked": false
     }
   ],
   "nextCursor": "cm_yyy",
@@ -217,7 +216,7 @@ Auth.js v5（セッションベース）を使用する。
 
 **レスポンス（201）**
 
-投稿一覧APIと同じ形式の投稿オブジェクト全体（`title`・`body`・`images`・`author`・`likeCount`・`commentCount`等を含む）を返す。以前は`{ id }`のみだったが、フロントエンドがホーム画面のキャッシュへ即座に反映する（`setQueryData`で「新着」配列の先頭に追加）ために全データを返すよう変更した。
+投稿一覧APIと同じ形式の投稿オブジェクト全体（`title`・`body`・`images`・`author`・`_count.likes`・`_count.comments`等を含む）を返す。以前は`{ id }`のみだったが、フロントエンドがホーム画面のキャッシュへ即座に反映する（`setQueryData`で「新着」配列の先頭に追加）ために全データを返すよう変更した。
 ```json
 {
   "id": "cm_xxx",
@@ -288,10 +287,10 @@ Auth.js v5（セッションベース）を使用する。
 **レスポンス例（like toggle）**
 ```json
 {
-  "liked": true,
-  "likeCount": 6
+  "liked": true
 }
 ```
+> `wishlist`・`visited` も同様に `{ "wishlisted": boolean }` / `{ "visited": boolean }` のみを返す（件数は含まない。クライアント側で楽観的UI更新する設計のため）。
 
 ---
 
@@ -364,7 +363,7 @@ Auth.js v5（セッションベース）を使用する。
 | Method | エンドポイント | 説明 | 認証 | 実装状況 |
 |--------|--------------|------|------|---------|
 | POST | `/api/upload/post` | 投稿写真をローカルにアップロード | 必要 | ✅ 実装済み |
-| POST | `/api/upload/avatar` | プロフィール画像をアップロード | 必要 | ❌ 未実装（Phase 3-B 予定） |
+| POST | `/api/upload/avatar` | プロフィール画像をアップロード | 必要 | ✅ 実装済み（Phase 3-B） |
 
 > ⚠️ 現状はローカルの `public/uploads/` に保存する実装（`src/lib/services/upload.service.ts`）。AWS S3 等クラウドストレージへの移行は今回のスコープ外。
 

@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { findPostById } from "@/lib/repositories/post.repository";
-import { updatePostService, deletePostService } from "@/lib/services/post.service";
+import { findPostByIdService, updatePostService, deletePostService } from "@/lib/services/post.service";
 import { postSchema } from "@/lib/validations/post";
 import { handleApiError } from "@/lib/api-error";
-import { UnauthorizedError, NotFoundError, ValidationError } from "@/lib/errors";
+import { UnauthorizedError, ValidationError } from "@/lib/errors";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -12,8 +11,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
     const session = await auth();
-    const post = await findPostById(id, session?.user?.id);
-    if (!post) throw new NotFoundError();
+    const post = await findPostByIdService(id, session?.user?.id);
     return NextResponse.json(post);
   } catch (e) {
     return handleApiError(e);

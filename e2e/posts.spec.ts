@@ -16,7 +16,10 @@ const POST = {
 
 let postId = "";
 
-test.describe("投稿の主要フロー（作成 → 詳細表示 → いいね → コメント）", () => {
+// 各テストがモジュールレベルの `postId` を共有しているため、同一ワーカーでの順次実行を保証する
+// （通常のdescribeだとテスト失敗時にPlaywrightが後続テストを別ワーカーへ再割り当てすることがあり、
+// その場合 `postId` が空文字にリセットされ意図しない404が発生する。2026-07-06 調査で判明）
+test.describe.serial("投稿の主要フロー（作成 → 詳細表示 → いいね → コメント）", () => {
   test.beforeAll(async ({ request }) => {
     // 既存ユーザーがいれば削除してからテスト用ユーザーを作成（他E2Eと同じ隔離方式）
     await request.delete(`/api/test/cleanup?email=${encodeURIComponent(TEST_EMAIL)}`);
@@ -28,7 +31,7 @@ test.describe("投稿の主要フロー（作成 → 詳細表示 → いいね 
     await page.fill("#email", TEST_USER.email);
     await page.fill("#password", TEST_USER.password);
     await page.click('button[type="submit"]');
-    await expect(page).toHaveURL("/");
+    await expect(page).toHaveURL("/", { timeout: 15000 });
   });
 
   test("投稿作成 → ホーム画面にハイライト表示される", async ({ page }) => {
@@ -56,6 +59,16 @@ test.describe("投稿の主要フロー（作成 → 詳細表示 → いいね 
 
     await expect(page.getByRole("heading", { name: POST.title })).toBeVisible();
     await expect(page.getByText(POST.body)).toBeVisible();
+  });
+
+  test("ホームのカードの💬アイコンをクリック → 投稿詳細のコメント欄へ遷移する", async ({ page }) => {
+    await page.goto("/");
+
+    const card = page.locator(`[data-post-id="${postId}"]`).first();
+    await card.getByTestId("comment-icon-link").click();
+
+    await expect(page).toHaveURL(new RegExp(`/posts/${postId}#comments`));
+    await expect(page.getByRole("heading", { name: "💬 コメント" })).toBeInViewport();
   });
 
   test("いいね → トグルされ件数が1増える", async ({ page }) => {
@@ -90,7 +103,7 @@ test.describe("投稿の主要フロー（作成 → 詳細表示 → いいね 
   test("投稿削除 → ホーム画面へ遷移する", async ({ page }) => {
     await page.goto(`/posts/${postId}`);
 
-    await page.getByRole("button", { name: "削除", exact: true }).click();
+    await page.getByTestId("delete-post-button").click();
     await page.getByRole("button", { name: "削除する" }).click();
 
     await expect(page).toHaveURL("/", { timeout: 5000 });

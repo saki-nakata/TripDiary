@@ -118,6 +118,48 @@ export const userResponseSchema = z
   })
   .openapi("User");
 
+// signup専用の userResponseSchema は email を含むため、認証不要で公開する
+// GET /api/users/{id} 等の公開プロフィール用途には流用しない（メールアドレス漏洩防止）
+export const userProfileResponseSchema = z
+  .object({
+    id: z.string(),
+    nickname: z.string(),
+    image: z.string().nullable(),
+    bio: z.string().nullable(),
+    postCount: z.number().int(),
+    followerCount: z.number().int(),
+    followingCount: z.number().int(),
+    followedByCurrentUser: z.boolean(),
+    tabiScore: z.number().int(),
+    tabiRank: z.string(),
+  })
+  .openapi("UserProfile");
+
+export const followToggleResponseSchema = z
+  .object({
+    following: z.boolean(),
+  })
+  .openapi("FollowToggleResult");
+
+export const userListResponseSchema = z
+  .object({
+    users: z.array(
+      z.object({
+        id: z.string(),
+        nickname: z.string(),
+        image: z.string().nullable(),
+        bio: z.string().nullable(),
+        _count: z.object({ posts: z.number().int(), followers: z.number().int() }),
+        followedByCurrentUser: z.boolean(),
+        tabiScore: z.number().int(),
+        tabiRank: z.string(),
+      })
+    ),
+    nextCursor: z.string().nullable(),
+    hasMore: z.boolean(),
+  })
+  .openapi("UserSearchList");
+
 export const messageResponseSchema = z
   .object({
     message: z.string(),

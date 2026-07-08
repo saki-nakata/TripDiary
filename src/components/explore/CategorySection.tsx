@@ -7,7 +7,7 @@ export function CategorySection({ categories }: { categories: CategoryItem[] }) 
 
   return (
     <section className="space-y-4">
-      <h2 className="text-base font-bold text-zinc-800">🗂️ カテゴリから探す</h2>
+      <h2 className="text-lg font-bold text-zinc-800">🗂️ カテゴリから探す</h2>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
         {categories.map((c) => (
           <div
