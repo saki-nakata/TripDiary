@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { findCommentsByPostId } from "@/lib/repositories/comment.repository";
-import { createCommentService } from "@/lib/services/comment.service";
+import { findCommentsByPostIdService, createCommentService } from "@/lib/services/comment.service";
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError, ValidationError } from "@/lib/errors";
 import { z } from "zod";
@@ -15,7 +14,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     const cursor = searchParams.get("cursor") ?? undefined;
     const limit = Math.min(Number(searchParams.get("limit") ?? 20), 50);
 
-    const result = await findCommentsByPostId({ postId: id, cursor, limit });
+    const result = await findCommentsByPostIdService({ postId: id, cursor, limit });
     return NextResponse.json(result);
   } catch (e) {
     return handleApiError(e);

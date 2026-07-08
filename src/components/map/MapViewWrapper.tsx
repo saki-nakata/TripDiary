@@ -11,6 +11,7 @@ type Props = {
   lat: number;
   lng: number;
   label?: string;
+  heading?: string;
   className?: string;
 };
 

@@ -27,7 +27,8 @@ export function ImageCarousel({ images, title }: Props) {
             src={images[current].url}
             alt={title}
             fill
-            className="object-cover cursor-pointer"
+            sizes="(max-width: 1024px) 100vw, 1024px"
+            className="object-contain cursor-pointer"
             onClick={() => setLightboxIndex(current)}
           />
         </div>
@@ -61,7 +62,7 @@ export function ImageCarousel({ images, title }: Props) {
       </div>
 
       {images.length > 1 && (
-        <div className="flex gap-1.5 mt-2 overflow-x-auto pb-0.5">
+        <div className="flex gap-1.5 mt-2 overflow-x-auto overflow-y-hidden pb-0.5">
           {images.map((img, i) => (
             <button
               key={img.id}
@@ -70,7 +71,7 @@ export function ImageCarousel({ images, title }: Props) {
                 i === current ? "border-green-500" : "border-transparent opacity-85 hover:opacity-100"
               }`}
             >
-              <Image src={img.url} alt="" fill className="object-cover" />
+              <Image src={img.url} alt="" fill sizes="72px" className="object-cover" />
             </button>
           ))}
         </div>

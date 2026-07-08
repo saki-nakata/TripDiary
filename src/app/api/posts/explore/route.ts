@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { findExplorePosts } from "@/lib/repositories/post.repository";
+import { findExplorePostsService } from "@/lib/services/post.service";
 import { handleApiError } from "@/lib/api-error";
 
 export async function GET(req: NextRequest) {
@@ -13,13 +13,15 @@ export async function GET(req: NextRequest) {
     const sort = (searchParams.get("sort") ?? "latest") as "latest" | "popular";
     const category = searchParams.get("category") ?? undefined;
     const location = searchParams.get("location") ?? undefined;
+    const q = searchParams.get("q") ?? undefined;
 
-    const result = await findExplorePosts({
+    const result = await findExplorePostsService({
       cursor,
       limit,
       sort,
       category,
       location,
+      q,
       userId: session?.user?.id,
     });
 

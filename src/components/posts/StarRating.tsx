@@ -11,7 +11,7 @@ const SIZE = { sm: "text-sm", md: "text-xl", lg: "text-2xl" };
 
 export function StarRating({ value, onChange, readonly = false, size = "md" }: Props) {
   return (
-    <div className="flex gap-0.5">
+    <div className="flex gap-px">
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}

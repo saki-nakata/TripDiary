@@ -3,6 +3,7 @@ import { OpenAPIRegistry, OpenApiGeneratorV3 } from "@asteasolutions/zod-to-open
 import { z } from "zod";
 import { postSchema } from "@/lib/validations/post";
 import { signupApiSchema, loginSchema } from "@/lib/validations/auth";
+import { userUpdateSchema } from "@/lib/validations/user";
 import {
   errorResponseSchema,
   validationErrorResponseSchema,
@@ -14,6 +15,9 @@ import {
   notificationListResponseSchema,
   uploadResponseSchema,
   userResponseSchema,
+  userProfileResponseSchema,
+  followToggleResponseSchema,
+  userListResponseSchema,
   messageResponseSchema,
 } from "./schemas";
 
@@ -126,6 +130,7 @@ registry.registerPath({
       sort: z.enum(["latest", "popular"]).optional(),
       category: z.string().optional(),
       location: z.string().optional(),
+      q: z.string().optional(),
     }),
   },
   responses: {
@@ -263,11 +268,95 @@ registry.registerPath({
   },
 });
 
+// ─── users ───
+registry.registerPath({
+  method: "get",
+  path: "/api/users/{id}",
+  summary: "ユーザープロフィール取得（認証不要、email非公開）",
+  tags: ["Users"],
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    200: { description: "ユーザープロフィール", content: { "application/json": { schema: userProfileResponseSchema } } },
+    404: commonErrors[404],
+  },
+});
+
+registry.registerPath({
+  method: "put",
+  path: "/api/users/{id}",
+  summary: "プロフィール編集（本人のみ）",
+  tags: ["Users"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({ id: z.string() }),
+    body: { content: { "application/json": { schema: userUpdateSchema } } },
+  },
+  responses: {
+    200: { description: "更新後のユーザー情報", content: { "application/json": { schema: userResponseSchema } } },
+    400: commonErrors[400],
+    401: commonErrors[401],
+    403: commonErrors[403],
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/users/{id}/follow",
+  summary: "フォロー／アンフォロー トグル",
+  tags: ["Users"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    200: { description: "トグル結果", content: { "application/json": { schema: followToggleResponseSchema } } },
+    400: commonErrors[400],
+    401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/users/search",
+  summary: "ユーザー検索（ニックネーム部分一致・qを省略した場合は全ユーザーが対象）。結果はTabiScoreの降順、ログイン中の場合は自分自身を除外",
+  tags: ["Users"],
+  request: {
+    query: z.object({
+      q: z.string().optional(),
+      cursor: z.string().optional(),
+      limit: z.string().optional(),
+    }),
+  },
+  responses: {
+    200: { description: "ユーザー一覧", content: { "application/json": { schema: userListResponseSchema } } },
+  },
+});
+
 // ─── upload ───
 registry.registerPath({
   method: "post",
   path: "/api/upload/post",
   summary: "投稿画像アップロード",
+  tags: ["Upload"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    body: {
+      content: {
+        "multipart/form-data": {
+          schema: z.object({ file: z.string().openapi({ format: "binary" }) }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: { description: "アップロード結果", content: { "application/json": { schema: uploadResponseSchema } } },
+    400: commonErrors[400],
+    401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/upload/avatar",
+  summary: "プロフィール画像アップロード（jpeg/png/webp・5MB以内）",
   tags: ["Upload"],
   security: [{ [bearerAuth.name]: [] }],
   request: {

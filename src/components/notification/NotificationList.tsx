@@ -78,7 +78,7 @@ function NotificationItem({
   const href = postId ? `/posts/${postId}` : `/users/${fromUser.id}`;
 
   if (type === "like") {
-    icon = "👍";
+    icon = "❤️";
     text = `${fromUser.nickname} さんがあなたの投稿にいいねしました`;
   } else if (type === "comment") {
     icon = "💬";
@@ -105,11 +105,13 @@ function NotificationItem({
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-[#1e293b]">{text}</p>
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-sm text-[#1e293b]">{text}</p>
+          <span className="text-xs text-[#94a3b8] shrink-0 mr-1">{formatRelativeDate(notification.createdAt)}</span>
+        </div>
         {type === "comment" && commentBody && (
           <p className="text-xs text-[#64748b] mt-0.5 line-clamp-1">「{commentBody}」</p>
         )}
-        <p className="text-xs text-[#94a3b8] mt-1">{formatRelativeDate(notification.createdAt)}</p>
       </div>
       {!notification.read && (
         <span className="w-2 h-2 rounded-full bg-red-500 shrink-0 mt-2" />
@@ -151,13 +153,15 @@ export function NotificationList() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-16 text-[#94a3b8]">読み込み中…</div>
+      <div className="rounded-xl border border-[#e2e8f0] flex justify-center py-16 text-[#94a3b8]">
+        読み込み中…
+      </div>
     );
   }
 
   if (notifications.length === 0) {
     return (
-      <div className="flex flex-col items-center py-16 text-[#94a3b8]">
+      <div className="rounded-xl border border-[#e2e8f0] flex flex-col items-center py-16 text-[#94a3b8]">
         <span className="text-5xl mb-3">🔔</span>
         <p>まだ通知はありません</p>
       </div>

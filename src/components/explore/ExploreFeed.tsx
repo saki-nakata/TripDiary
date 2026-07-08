@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { PostCard } from "@/components/posts/PostCard";
 import { AreaSection } from "@/components/explore/AreaSection";
 import { CategorySection } from "@/components/explore/CategorySection";
@@ -25,7 +26,7 @@ async function fetchPortalFeed(): Promise<PortalFeedData> {
   return res.json();
 }
 
-export function ExploreFeed({ initialData }: { initialData: PortalFeedData }) {
+export function ExploreFeed({ initialData, viewerId }: { initialData: PortalFeedData; viewerId?: string }) {
   const { data } = useQuery({
     queryKey: ["explore-feed"],
     queryFn: fetchPortalFeed,
@@ -39,10 +40,15 @@ export function ExploreFeed({ initialData }: { initialData: PortalFeedData }) {
   return (
     <div className="px-4 pb-4 pt-2 md:px-8 md:pb-8 md:pt-4 space-y-10">
       <section className="space-y-4">
-        <h2 className="text-base font-bold text-zinc-800">❤️ 人気の旅スポット</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-zinc-800">❤️ 人気の旅スポット</h2>
+          <Link href="/search?tab=post&sort=popular" className="text-sm text-[#16a34a] font-medium hover:underline">
+            もっと見る
+          </Link>
+        </div>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
           {popular.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <PostCard key={post.id} post={post} viewerId={viewerId} />
           ))}
         </div>
       </section>
@@ -54,10 +60,15 @@ export function ExploreFeed({ initialData }: { initialData: PortalFeedData }) {
       <TopRatedSection posts={topRated} />
 
       <section className="space-y-4">
-        <h2 className="text-base font-bold text-zinc-800">🆕 新着の旅スポット</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-zinc-800">🆕 新着の旅スポット</h2>
+          <Link href="/search?tab=post" className="text-sm text-[#16a34a] font-medium hover:underline">
+            もっと見る
+          </Link>
+        </div>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
           {latest.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <PostCard key={post.id} post={post} viewerId={viewerId} />
           ))}
         </div>
       </section>

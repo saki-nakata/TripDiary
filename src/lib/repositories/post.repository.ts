@@ -57,6 +57,7 @@ export async function findExplorePosts({
   sort = "latest",
   category,
   location,
+  q,
   userId,
 }: {
   cursor?: string;
@@ -64,11 +65,18 @@ export async function findExplorePosts({
   sort?: "latest" | "popular";
   category?: string;
   location?: string;
+  q?: string;
   userId?: string;
 }) {
   const where = {
     ...(category && { category }),
     ...(location && { location }),
+    ...(q && {
+      OR: [
+        { title: { contains: q } },
+        { body: { contains: q } },
+      ],
+    }),
   };
 
   const posts = await prisma.post.findMany({
@@ -103,7 +111,7 @@ export async function findFollowingPosts({
   const followingIds = following.map((f) => f.followingId);
 
   const posts = await prisma.post.findMany({
-    where: { authorId: { in: [userId, ...followingIds] } },
+    where: { authorId: { in: followingIds } },
     take: limit + 1,
     ...(cursor && { cursor: { id: cursor }, skip: 1 }),
     orderBy: { createdAt: "desc" },
@@ -116,6 +124,114 @@ export async function findFollowingPosts({
   });
 
   return paginateResults(posts, limit, userId);
+}
+
+export async function findPostsByAuthorId({
+  authorId,
+  cursor,
+  limit = 20,
+  viewerId,
+}: {
+  authorId: string;
+  cursor?: string;
+  limit?: number;
+  viewerId?: string;
+}) {
+  const posts = await prisma.post.findMany({
+    where: { authorId },
+    take: limit + 1,
+    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+    orderBy: { createdAt: "desc" },
+    select: {
+      ...POST_SELECT,
+      likes: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
+      wishlists: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
+      visited: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
+    },
+  });
+
+  return paginateResults(posts, limit, viewerId);
+}
+
+export async function findWishlistedPosts({
+  userId,
+  cursor,
+  limit = 20,
+}: {
+  userId: string;
+  cursor?: string;
+  limit?: number;
+}) {
+  const wishlists = await prisma.wishlist.findMany({
+    where: { userId },
+    take: limit + 1,
+    ...(cursor && { cursor: { userId_postId: { userId, postId: cursor } }, skip: 1 }),
+    orderBy: { createdAt: "desc" },
+    select: {
+      postId: true,
+      post: {
+        select: {
+          ...POST_SELECT,
+          likes: { where: { userId }, select: { userId: true } },
+          wishlists: { where: { userId }, select: { userId: true } },
+          visited: { where: { userId }, select: { userId: true } },
+        },
+      },
+    },
+  });
+
+  const hasMore = wishlists.length > limit;
+  const items = hasMore ? wishlists.slice(0, limit) : wishlists;
+  return {
+    posts: items.map((w) => formatPost(w.post, userId)),
+    nextCursor: hasMore ? items[items.length - 1].postId : null,
+    hasMore,
+  };
+}
+
+export async function findVisitedPosts({
+  userId,
+  cursor,
+  limit = 20,
+}: {
+  userId: string;
+  cursor?: string;
+  limit?: number;
+}) {
+  const visited = await prisma.visited.findMany({
+    where: { userId },
+    take: limit + 1,
+    ...(cursor && { cursor: { userId_postId: { userId, postId: cursor } }, skip: 1 }),
+    orderBy: { createdAt: "desc" },
+    select: {
+      postId: true,
+      post: {
+        select: {
+          ...POST_SELECT,
+          likes: { where: { userId }, select: { userId: true } },
+          wishlists: { where: { userId }, select: { userId: true } },
+          visited: { where: { userId }, select: { userId: true } },
+        },
+      },
+    },
+  });
+
+  const hasMore = visited.length > limit;
+  const items = hasMore ? visited.slice(0, limit) : visited;
+  return {
+    posts: items.map((v) => formatPost(v.post, userId)),
+    nextCursor: hasMore ? items[items.length - 1].postId : null,
+    hasMore,
+  };
+}
+
+export async function countFollowingFeedPosts(userId: string) {
+  const following = await prisma.follow.findMany({
+    where: { followerId: userId },
+    select: { followingId: true },
+  });
+  const followingIds = following.map((f) => f.followingId);
+  return prisma.post.count({ where: { authorId: { in: followingIds } } });
 }
 
 export async function findFeaturedPosts(limit = 5) {

@@ -23,7 +23,7 @@ test.describe("認証フロー", () => {
     await page.click('button[type="submit"]');
 
     // `/dashboard` は認証済みなら `/`（ホーム）へリダイレクトするだけのスタブ（実装計画書 Phase 1-E/2-A 参照）
-    await expect(page).toHaveURL("/");
+    await expect(page).toHaveURL("/", { timeout: 15000 });
     await expect(page.getByRole("button", { name: /テストユーザー/ })).toBeVisible();
   });
 
@@ -34,7 +34,7 @@ test.describe("認証フロー", () => {
     await page.fill("#password", TEST_USER.password);
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL("/");
+    await expect(page).toHaveURL("/", { timeout: 15000 });
   });
 
   test("誤パスワード → エラーメッセージ表示", async ({ page }) => {

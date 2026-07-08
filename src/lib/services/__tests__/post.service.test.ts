@@ -6,10 +6,37 @@ vi.mock("@/lib/repositories/post.repository", () => ({
   createPost: vi.fn(),
   updatePost: vi.fn(),
   deletePost: vi.fn(),
+  findExplorePosts: vi.fn(),
+  findFollowingPosts: vi.fn(),
+  findPopularPosts: vi.fn(),
+  findLatestPosts: vi.fn(),
+  findLocationCounts: vi.fn(),
+  findCategoryCounts: vi.fn(),
+  findTopRatedByCategory: vi.fn(),
 }));
 
-import { findPostById, createPost, updatePost, deletePost } from "@/lib/repositories/post.repository";
-import { createPostService, updatePostService, deletePostService } from "@/lib/services/post.service";
+import {
+  findPostById,
+  createPost,
+  updatePost,
+  deletePost,
+  findExplorePosts,
+  findFollowingPosts,
+  findPopularPosts,
+  findLatestPosts,
+  findLocationCounts,
+  findCategoryCounts,
+  findTopRatedByCategory,
+} from "@/lib/repositories/post.repository";
+import {
+  createPostService,
+  updatePostService,
+  deletePostService,
+  findPostByIdService,
+  findExplorePostsService,
+  findFollowingPostsService,
+  getPortalDataService,
+} from "@/lib/services/post.service";
 
 const AUTHOR_ID = "author-1";
 const OTHER_USER_ID = "other-user-2";
@@ -90,5 +117,75 @@ describe("deletePostService", () => {
     await deletePostService(AUTHOR_ID, POST_ID);
 
     expect(deletePost).toHaveBeenCalledWith(POST_ID);
+  });
+});
+
+describe("findPostByIdService", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("存在しない投稿ID_NotFoundError", async () => {
+    vi.mocked(findPostById).mockResolvedValue(null);
+
+    await expect(findPostByIdService(POST_ID)).rejects.toThrow(NotFoundError);
+  });
+
+  it("存在する投稿ID_投稿を返す", async () => {
+    vi.mocked(findPostById).mockResolvedValue({ id: POST_ID, authorId: AUTHOR_ID } as never);
+
+    const result = await findPostByIdService(POST_ID, "viewer-1");
+
+    expect(findPostById).toHaveBeenCalledWith(POST_ID, "viewer-1");
+    expect(result).toEqual({ id: POST_ID, authorId: AUTHOR_ID });
+  });
+});
+
+describe("findExplorePostsService", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("引数をそのままrepositoryに渡し結果を返す", async () => {
+    vi.mocked(findExplorePosts).mockResolvedValue({ posts: [], nextCursor: null, hasMore: false });
+
+    const options = { cursor: undefined, limit: 20, sort: "latest" as const, userId: undefined };
+    const result = await findExplorePostsService(options);
+
+    expect(findExplorePosts).toHaveBeenCalledWith(options);
+    expect(result).toEqual({ posts: [], nextCursor: null, hasMore: false });
+  });
+});
+
+describe("findFollowingPostsService", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("引数をそのままrepositoryに渡し結果を返す", async () => {
+    vi.mocked(findFollowingPosts).mockResolvedValue({ posts: [], nextCursor: null, hasMore: false });
+
+    const options = { userId: AUTHOR_ID, cursor: undefined, limit: 20 };
+    const result = await findFollowingPostsService(options);
+
+    expect(findFollowingPosts).toHaveBeenCalledWith(options);
+    expect(result).toEqual({ posts: [], nextCursor: null, hasMore: false });
+  });
+});
+
+describe("getPortalDataService", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("popularのIDを使ってtopRatedを取得し全セクションをまとめて返す", async () => {
+    vi.mocked(findPopularPosts).mockResolvedValue([{ id: "p1" }, { id: "p2" }] as never);
+    vi.mocked(findLatestPosts).mockResolvedValue([{ id: "l1" }] as never);
+    vi.mocked(findLocationCounts).mockResolvedValue([{ location: "東京都", count: 3 }] as never);
+    vi.mocked(findCategoryCounts).mockResolvedValue([{ category: "観光", count: 2 }] as never);
+    vi.mocked(findTopRatedByCategory).mockResolvedValue([{ id: "t1" }] as never);
+
+    const result = await getPortalDataService();
+
+    expect(findTopRatedByCategory).toHaveBeenCalledWith(["p1", "p2"]);
+    expect(result).toEqual({
+      popular: [{ id: "p1" }, { id: "p2" }],
+      latest: [{ id: "l1" }],
+      locations: [{ location: "東京都", count: 3 }],
+      categories: [{ category: "観光", count: 2 }],
+      topRated: [{ id: "t1" }],
+    });
   });
 });

@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { ExploreFeed } from "@/components/explore/ExploreFeed";
 import {
   findPopularPosts,
@@ -9,6 +10,7 @@ import {
 import type { Post } from "@/types/post";
 
 export default async function PortalPage() {
+  const session = await auth();
   const popular = (await findPopularPosts(6)) as Post[];
   const latest = (await findLatestPosts(6)) as Post[];
   const locations = await findLocationCounts();
@@ -18,6 +20,7 @@ export default async function PortalPage() {
   return (
     <ExploreFeed
       initialData={{ popular, latest, locations, categories, topRated }}
+      viewerId={session?.user?.id}
     />
   );
 }

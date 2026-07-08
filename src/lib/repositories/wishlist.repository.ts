@@ -13,3 +13,7 @@ export async function toggleWishlist(userId: string, postId: string) {
   await prisma.wishlist.create({ data: { userId, postId } });
   return { wishlisted: true };
 }
+
+export async function countWishlistByUser(userId: string) {
+  return prisma.wishlist.count({ where: { userId } });
+}

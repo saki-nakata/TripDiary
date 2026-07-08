@@ -10,3 +10,146 @@ export async function createUser(data: { nickname: string; email: string; passwo
     select: { id: true, nickname: true, email: true },
   });
 }
+
+export async function findUserById(id: string) {
+  return prisma.user.findUnique({
+    where: { id },
+    select: { id: true, nickname: true, image: true, bio: true },
+  });
+}
+
+export async function updateUser(id: string, data: { nickname: string; bio?: string | null; image?: string | null }) {
+  return prisma.user.update({
+    where: { id },
+    data,
+    select: { id: true, nickname: true, bio: true, image: true },
+  });
+}
+
+export async function countUserPosts(authorId: string) {
+  return prisma.post.count({ where: { authorId } });
+}
+
+export async function countVisitedByUser(userId: string) {
+  return prisma.visited.count({ where: { userId } });
+}
+
+export async function countLikesReceived(authorId: string) {
+  return prisma.like.count({ where: { post: { authorId } } });
+}
+
+export async function countCommentsReceived(authorId: string) {
+  return prisma.comment.count({ where: { post: { authorId } } });
+}
+
+export type TabiScoreInputs = {
+  postCount: number;
+  visitedCount: number;
+  likesReceived: number;
+  commentsReceived: number;
+};
+
+export async function computeTabiScoreInputsForUsers(userIds: string[]): Promise<Map<string, TabiScoreInputs>> {
+  const result = new Map<string, TabiScoreInputs>(
+    userIds.map((id) => [id, { postCount: 0, visitedCount: 0, likesReceived: 0, commentsReceived: 0 }])
+  );
+  if (userIds.length === 0) return result;
+
+  const [postCounts, visitedCounts, postsWithReceivedCounts] = await Promise.all([
+    prisma.post.groupBy({ by: ["authorId"], where: { authorId: { in: userIds } }, _count: { _all: true } }),
+    prisma.visited.groupBy({ by: ["userId"], where: { userId: { in: userIds } }, _count: { _all: true } }),
+    prisma.post.findMany({
+      where: { authorId: { in: userIds } },
+      select: { authorId: true, _count: { select: { likes: true, comments: true } } },
+    }),
+  ]);
+
+  for (const row of postCounts) {
+    result.get(row.authorId)!.postCount = row._count._all;
+  }
+  for (const row of visitedCounts) {
+    result.get(row.userId)!.visitedCount = row._count._all;
+  }
+  for (const post of postsWithReceivedCounts) {
+    const entry = result.get(post.authorId)!;
+    entry.likesReceived += post._count.likes;
+    entry.commentsReceived += post._count.comments;
+  }
+
+  return result;
+}
+
+const COMMENT_WITH_POST_SELECT = {
+  id: true,
+  body: true,
+  createdAt: true,
+  postId: true,
+  author: { select: { id: true, nickname: true, image: true } },
+  post: {
+    select: {
+      id: true,
+      title: true,
+      images: { take: 1, orderBy: { displayOrder: "asc" }, select: { url: true } },
+      author: { select: { id: true, nickname: true, image: true } },
+    },
+  },
+} as const;
+
+export async function countCommentsByAuthor(authorId: string) {
+  return prisma.comment.count({ where: { authorId } });
+}
+
+export async function findCommentsByAuthor(authorId: string) {
+  const comments = await prisma.comment.findMany({
+    where: { authorId },
+    orderBy: { createdAt: "desc" },
+    select: COMMENT_WITH_POST_SELECT,
+  });
+  return comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() }));
+}
+
+export async function findCommentsReceivedByAuthor(authorId: string) {
+  const comments = await prisma.comment.findMany({
+    where: { post: { authorId } },
+    orderBy: { createdAt: "desc" },
+    select: COMMENT_WITH_POST_SELECT,
+  });
+  return comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() }));
+}
+
+export async function searchUsersByNickname({
+  q,
+  cursor,
+  limit = 20,
+  excludeUserId,
+}: {
+  q: string;
+  cursor?: string;
+  limit?: number;
+  excludeUserId?: string;
+}) {
+  const users = await prisma.user.findMany({
+    where: {
+      ...(q && { nickname: { contains: q } }),
+      ...(excludeUserId && { id: { not: excludeUserId } }),
+    },
+    take: limit + 1,
+    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+    orderBy: { id: "asc" },
+    select: {
+      id: true,
+      nickname: true,
+      image: true,
+      bio: true,
+      _count: { select: { posts: true, followers: true } },
+    },
+  });
+
+  const hasMore = users.length > limit;
+  const items = hasMore ? users.slice(0, limit) : users;
+  return {
+    users: items,
+    nextCursor: hasMore ? items[items.length - 1].id : null,
+    hasMore,
+  };
+}

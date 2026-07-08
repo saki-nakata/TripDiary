@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -14,8 +15,10 @@ export default async function PublicLayout({ children }: { children: React.React
     };
     return (
       <ToastProvider>
-        <div className="min-h-screen bg-white">
-          <Sidebar user={user} />
+        <div className="min-h-screen">
+          <Suspense>
+            <Sidebar user={user} />
+          </Suspense>
           <div className="ml-16 max-md:ml-0 sidebar:ml-60 pb-16 md:pb-0">
             <main className="px-10 py-6">{children}</main>
           </div>
@@ -88,7 +91,7 @@ export default async function PublicLayout({ children }: { children: React.React
         </nav>
 
         <div className="md:ml-60 pb-16 md:pb-0">
-          <main>{children}</main>
+          <main className="px-10 py-6">{children}</main>
         </div>
       </div>
     </ToastProvider>

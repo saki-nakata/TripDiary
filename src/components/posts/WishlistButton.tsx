@@ -30,7 +30,7 @@ export function WishlistButton({ postId, initialWishlisted, isLoggedIn }: Props)
     try {
       const res = await fetch(`/api/posts/${postId}/wishlist`, { method: "POST" });
       if (!res.ok) throw new Error();
-      showToast(wishlisted ? "「行きたい」を解除しました" : "「行きたい」に追加しました", "success", 500);
+      showToast(wishlisted ? "「行きたい」を解除しました" : "「行きたい」に追加しました", "success", 1500);
     } catch {
       setWishlisted(prev);
       showToast("エラーが発生しました", "error");
@@ -51,7 +51,7 @@ export function WishlistButton({ postId, initialWishlisted, isLoggedIn }: Props)
       title={wishlisted ? "行きたいを解除" : "行きたいに追加"}
     >
       <span>{wishlisted ? "🔖" : "🔖"}</span>
-      <span className="hidden sm:inline">{wishlisted ? "行きたい済" : "行きたい"}</span>
+      <span className="hidden sm:inline">{wishlisted ? "行きたい！済" : "行きたい！"}</span>
     </button>
   );
 }
