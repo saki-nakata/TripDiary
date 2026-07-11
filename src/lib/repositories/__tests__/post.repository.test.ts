@@ -142,7 +142,7 @@ describe("post.repository", () => {
   // ─── findExplorePosts（キーワード検索） ───
   it("findExplorePosts_qがタイトルに部分一致_一致する投稿のみ取得される", async () => {
     const me = await createTestUser("me8@example.com", "自分8");
-    await createPost(me.id, { title: "嵐山の竹林", body: "本文", location: "京都府", category: "自然", visitedAt: "2026-01-01" });
+    await createPost(me.id, { title: "嵐山の竹林", body: "本文", location: "京都府", category: "季節・イベント", visitedAt: "2026-01-01" });
     await createPost(me.id, { title: "金閣寺の紅葉", body: "本文", location: "京都府", category: "歴史・文化", visitedAt: "2026-01-02" });
 
     const result = await findExplorePosts({ q: "竹林" });
@@ -154,7 +154,7 @@ describe("post.repository", () => {
   it("findExplorePosts_qが本文に部分一致_一致する投稿のみ取得される", async () => {
     const me = await createTestUser("me9@example.com", "自分9");
     await createPost(me.id, { title: "投稿A", body: "美味しいたこ焼きを食べました", location: "大阪府", category: "グルメ", visitedAt: "2026-01-01" });
-    await createPost(me.id, { title: "投稿B", body: "静かな竹林を散策しました", location: "京都府", category: "自然", visitedAt: "2026-01-02" });
+    await createPost(me.id, { title: "投稿B", body: "静かな竹林を散策しました", location: "京都府", category: "季節・イベント", visitedAt: "2026-01-02" });
 
     const result = await findExplorePosts({ q: "たこ焼き" });
 

@@ -1,9 +1,11 @@
 # TripDiary DB設計書
 
-**バージョン:** 1.4
+**バージョン:** 1.5
 **作成日:** 2026-06-27
-**更新日:** 2026-07-04
+**更新日:** 2026-07-11
 **作成者:** Nakata Saki
+
+> ✅ **2026-07-11 更新：** `plan_spots`テーブルが実装と乖離していたため修正（複合主キー`(planId, postId)`→単一`id`主キー、`postId`をNULL許容化、自由入力スポット用の`freeTitle`/`freeLocation`/`freeCategory`を追加）。
 
 ---
 
@@ -78,9 +80,13 @@ erDiagram
     }
 
     PlanSpot {
-        String planId PK,FK
-        String postId PK,FK
+        String id PK
+        String planId FK
+        String postId FK "nullable（自由入力スポットの場合null）"
         Int displayOrder
+        String freeTitle "自由入力スポット名（postId未設定時）"
+        String freeLocation "自由入力エリア（postId未設定時）"
+        String freeCategory "自由入力カテゴリ（postId未設定時、任意）"
     }
 
     PostImage {
@@ -362,14 +368,20 @@ erDiagram
 
 | カラム名 | 型 | NULL | デフォルト | 説明 |
 |---------|-----|------|-----------|------|
+| id | VARCHAR(30) | NOT NULL | cuid() | プランスポットID（cuid） |
 | planId | VARCHAR(30) | NOT NULL | - | プランID |
-| postId | VARCHAR(30) | NOT NULL | - | スポット（投稿）ID |
+| postId | VARCHAR(30) | NULL | - | スポット（投稿）ID。自由入力スポットの場合はNULL |
 | displayOrder | INT | NOT NULL | 0 | スポットの訪問順序（0始まり） |
+| freeTitle | VARCHAR(60) | NULL | - | 自由入力スポット名（`postId`未設定時に使用） |
+| freeLocation | VARCHAR(50) | NULL | - | 自由入力エリア（`postId`未設定時に使用） |
+| freeCategory | VARCHAR(20) | NULL | - | 自由入力カテゴリ（`postId`未設定時に使用、任意） |
 
 **制約**
-- 複合主キー：`(planId, postId)`
+- 主キー：`id`（cuid、単一PK。当初は複合主キー`(planId, postId)`だったが、投稿に紐付かない自由入力スポットに対応するため`id`単一PKに変更・`postId`をNULL許容化した）
 - 外部キー：`planId` → `plans.id`（CASCADE DELETE）
-- 外部キー：`postId` → `posts.id`（CASCADE DELETE）
+- 外部キー：`postId` → `posts.id`（CASCADE DELETE、NULL可）
+- インデックス：`planId`
+- 同一プランに同一投稿を複数回登録することは意図的に許容している（重複防止制約は設けない）
 
 ---
 

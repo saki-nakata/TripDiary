@@ -79,7 +79,7 @@ test.describe.serial("投稿の主要フロー（作成 → 詳細表示 → い
 
     await likeButton.click();
 
-    await expect(likeButton).toContainText("❤️");
+    await expect(likeButton.locator("img")).toHaveAttribute("alt", "❤️");
     await expect(likeButton).toContainText("1");
   });
 

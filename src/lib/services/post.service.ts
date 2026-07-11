@@ -5,6 +5,10 @@ import {
   deletePost,
   findExplorePosts,
   findFollowingPosts,
+  findPostsByAuthorId,
+  findWishlistedPosts,
+  findVisitedPosts,
+  countFollowingFeedPosts,
   findPopularPosts,
   findLatestPosts,
   findLocationCounts,
@@ -30,6 +34,22 @@ export async function findExplorePostsService(options: Parameters<typeof findExp
 
 export async function findFollowingPostsService(options: Parameters<typeof findFollowingPosts>[0]) {
   return findFollowingPosts(options);
+}
+
+export async function findPostsByAuthorIdService(options: Parameters<typeof findPostsByAuthorId>[0]) {
+  return findPostsByAuthorId(options);
+}
+
+export async function findWishlistedPostsService(options: Parameters<typeof findWishlistedPosts>[0]) {
+  return findWishlistedPosts(options);
+}
+
+export async function findVisitedPostsService(options: Parameters<typeof findVisitedPosts>[0]) {
+  return findVisitedPosts(options);
+}
+
+export async function countFollowingFeedPostsService(userId: string) {
+  return countFollowingFeedPosts(userId);
 }
 
 export async function getPortalDataService() {

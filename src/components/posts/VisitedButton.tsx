@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useToast } from "@/contexts/toast-context";
 import { useRouter } from "next/navigation";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Props = {
   postId: string;
@@ -50,7 +51,7 @@ export function VisitedButton({ postId, initialVisited, isLoggedIn }: Props) {
       }`}
       title={visited ? "訪問済みを解除" : "訪問済みにする"}
     >
-      <span>✅</span>
+      <TwemojiIcon codepoint={visited ? "1f6a9" : "1f3f3"} className="h-4 w-4" />
       <span className="hidden sm:inline">{visited ? "訪問済み" : "訪問済みに追加"}</span>
     </button>
   );

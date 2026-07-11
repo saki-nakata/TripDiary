@@ -165,14 +165,18 @@ model Plan {
 }
 
 model PlanSpot {
+  id           String  @id @default(cuid())
   planId       String
-  postId       String
-  displayOrder Int    @default(0)
+  postId       String?
+  displayOrder Int     @default(0)
+  freeTitle    String? @db.VarChar(60)
+  freeLocation String? @db.VarChar(50)
+  freeCategory String? @db.VarChar(20)
 
-  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  plan Plan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  post Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  @@id([planId, postId])
+  @@index([planId])
   @@map("plan_spots")
 }
 

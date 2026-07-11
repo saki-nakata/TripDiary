@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useToast } from "@/contexts/toast-context";
 import { useRouter } from "next/navigation";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Props = {
   postId: string;
@@ -54,7 +55,7 @@ export function LikeButton({ postId, initialLiked, initialCount, isLoggedIn }: P
           : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
       }`}
     >
-      <span>{liked ? "❤️" : "🤍"}</span>
+      <TwemojiIcon codepoint={liked ? "2764" : "1f90d"} alt={liked ? "❤️" : "🤍"} className="h-4 w-4" />
       <span>{count}</span>
     </button>
   );

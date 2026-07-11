@@ -2,10 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Post } from "@/types/post";
 import { StarRating } from "./StarRating";
-import { CATEGORY_ICONS, CATEGORY_COLORS } from "@/lib/constants";
+import { CATEGORY_COLORS } from "@/lib/constants";
+import { CategoryIcon } from "@/components/ui/category-icon";
 import { MyPostActions } from "./MyPostActions";
 import { PostCardTitle } from "./PostCardTitle";
 import { CommentIconLink } from "./CommentIconLink";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import styles from "./PostCard.module.css";
 
 type Props = {
@@ -19,7 +21,7 @@ type Props = {
 export function PostCard({ post, viewerId, showCost = false }: Props) {
   const isOwner = viewerId != null && viewerId === post.authorId;
   const thumbnail = post.images[0]?.url ?? null;
-  const icon = post.category ? (CATEGORY_ICONS[post.category] ?? "📍") : "📍";
+  const category = post.category ?? "その他";
 
   return (
     <Link
@@ -38,7 +40,7 @@ export function PostCard({ post, viewerId, showCost = false }: Props) {
           />
         ) : (
           <div className="flex h-full items-center justify-center text-4xl text-zinc-300">
-            {icon}
+            <CategoryIcon category={category} />
           </div>
         )}
         {post.category && (
@@ -47,12 +49,12 @@ export function PostCard({ post, viewerId, showCost = false }: Props) {
               CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600"
             }`}
           >
-            {icon} {post.category}
+            <CategoryIcon category={category} /> {post.category}
           </span>
         )}
         {post.images.length > 1 && (
-          <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[0.7rem] px-1.5 py-0.5 rounded">
-            📸 {post.images.length}
+          <span className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/50 text-white text-[0.7rem] px-1.5 py-0.5 rounded">
+            <TwemojiIcon codepoint="1f4f8" alt="📸" className="h-3 w-3" /> {post.images.length}
           </span>
         )}
         {isOwner && <MyPostActions postId={post.id} />}
@@ -77,19 +79,21 @@ export function PostCard({ post, viewerId, showCost = false }: Props) {
           )}
           <span className="truncate max-w-[6.5rem]" title={post.author.nickname}>{post.author.nickname}</span>
           <span className="ml-auto flex items-center gap-1.5 shrink-0">
-            <span className="text-[0.78rem] text-[#16a34a] bg-green-100 rounded-full px-2 py-0.5 font-medium">
-              📍 {post.location}
+            <span className="flex items-center gap-1 text-[0.78rem] text-[#16a34a] bg-green-100 rounded-full px-2 py-0.5 font-medium">
+              <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" /> {post.location}
             </span>
             {showCost && post.cost != null && post.cost > 0 && (
-              <span className="text-[0.78rem] text-zinc-500 font-medium">
-                💴 {post.cost.toLocaleString()}円
+              <span className="flex items-center gap-1 text-[0.78rem] text-zinc-500 font-medium">
+                <TwemojiIcon codepoint="1f4b4" alt="💴" className="h-3 w-3" /> {post.cost.toLocaleString()}円
               </span>
             )}
           </span>
         </div>
 
         <div className="flex items-center gap-3 text-[0.82rem] text-zinc-400 mt-auto pt-1">
-          <span>❤️ {post._count.likes}</span>
+          <span className="flex items-center gap-1">
+            <TwemojiIcon codepoint="2764" alt="❤️" className="h-3.5 w-3.5" /> {post._count.likes}
+          </span>
           <CommentIconLink postId={post.id} count={post._count.comments} />
           {post.rating ? (
             <span className="mx-auto">

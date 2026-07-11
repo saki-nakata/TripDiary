@@ -14,10 +14,9 @@ type Props = {
   initialNickname: string;
   initialBio: string | null;
   initialImage: string | null;
-  email: string;
 };
 
-export function SettingsForm({ userId, initialNickname, initialBio, initialImage, email }: Props) {
+export function SettingsForm({ userId, initialNickname, initialBio, initialImage }: Props) {
   const router = useRouter();
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,17 +124,6 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
           className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
         />
         {errors.nickname && <p className="text-xs text-red-500 mt-1">{errors.nickname.message}</p>}
-      </div>
-
-      {/* Email (読み取り専用) */}
-      <div>
-        <label className="block text-sm font-semibold text-zinc-700 mb-1">メールアドレス</label>
-        <input
-          type="email"
-          value={email}
-          disabled
-          className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-zinc-50 text-zinc-400"
-        />
       </div>
 
       {/* Bio */}

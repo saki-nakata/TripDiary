@@ -26,6 +26,23 @@ export async function updateUser(id: string, data: { nickname: string; bio?: str
   });
 }
 
+export async function findUserPasswordHash(id: string): Promise<string | null> {
+  const user = await prisma.user.findUnique({ where: { id }, select: { password: true } });
+  return user?.password ?? null;
+}
+
+export async function updateUserPassword(id: string, hashedPassword: string) {
+  await prisma.user.update({ where: { id }, data: { password: hashedPassword } });
+}
+
+export async function findUserPasswordHashAndEmail(id: string) {
+  return prisma.user.findUnique({ where: { id }, select: { password: true, email: true } });
+}
+
+export async function updateUserEmail(id: string, email: string) {
+  await prisma.user.update({ where: { id }, data: { email } });
+}
+
 export async function countUserPosts(authorId: string) {
   return prisma.post.count({ where: { authorId } });
 }

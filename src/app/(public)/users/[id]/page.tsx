@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { getUserProfileService } from "@/lib/services/user.service";
-import { findPostsByAuthorId } from "@/lib/repositories/post.repository";
+import { findPostsByAuthorIdService } from "@/lib/services/post.service";
 import {
   findCommentsByAuthor,
   findCommentsReceivedByAuthor,
@@ -144,9 +144,9 @@ export default async function UserProfilePage({ params, searchParams }: Props) {
 }
 
 async function renderPosts(authorId: string, viewerId?: string) {
-  const { posts } = await findPostsByAuthorId({ authorId, viewerId });
+  const { posts } = await findPostsByAuthorIdService({ authorId, viewerId });
   if (posts.length === 0) {
-    return <EmptyState emoji="✈️" message="まだ投稿がありません" />;
+    return <EmptyState codepoint="2708" message="まだ投稿がありません" />;
   }
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
@@ -160,7 +160,7 @@ async function renderPosts(authorId: string, viewerId?: string) {
 async function renderCommentsWritten(authorId: string) {
   const comments = await findCommentsByAuthor(authorId);
   if (comments.length === 0) {
-    return <EmptyState emoji="💬" message="まだコメントがありません" />;
+    return <EmptyState codepoint="1f4ac" message="まだコメントがありません" />;
   }
   return (
     <div className="space-y-3">
@@ -191,7 +191,7 @@ async function renderCommentsWritten(authorId: string) {
 async function renderCommentsReceived(authorId: string) {
   const comments = await findCommentsReceivedByAuthor(authorId);
   if (comments.length === 0) {
-    return <EmptyState emoji="💬" message="まだコメントを受け取っていません" />;
+    return <EmptyState codepoint="1f4ac" message="まだコメントを受け取っていません" />;
   }
   return (
     <div className="space-y-3">
@@ -226,7 +226,7 @@ async function renderCommentsReceived(authorId: string) {
 async function renderUserList(userId: string, type: "followers" | "following", viewerId?: string) {
   const users = type === "followers" ? await findFollowers(userId) : await findFollowing(userId);
   if (users.length === 0) {
-    return <EmptyState emoji="👥" message={type === "followers" ? "フォロワーはまだいません" : "フォロー中のユーザーはいません"} />;
+    return <EmptyState codepoint="1f465" message={type === "followers" ? "フォロワーはまだいません" : "フォロー中のユーザーはいません"} />;
   }
 
   const followingIds = viewerId ? await findFollowingIdsAmong(viewerId, users.map((u) => u.id)) : [];

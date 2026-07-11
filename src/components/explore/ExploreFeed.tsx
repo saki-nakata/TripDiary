@@ -38,10 +38,10 @@ export function ExploreFeed({ initialData, viewerId }: { initialData: PortalFeed
   const { popular, latest, locations, categories, topRated } = data;
 
   return (
-    <div className="px-4 pb-4 pt-2 md:px-8 md:pb-8 md:pt-4 space-y-10">
+    <div className="p-4 md:p-8 -mt-8 space-y-10">
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-zinc-800">❤️ 人気の旅スポット</h2>
+          <h2 className="text-lg font-bold text-zinc-800">💖 人気の旅スポット</h2>
           <Link href="/search?tab=post&sort=popular" className="text-sm text-[#16a34a] font-medium hover:underline">
             もっと見る
           </Link>
@@ -61,7 +61,7 @@ export function ExploreFeed({ initialData, viewerId }: { initialData: PortalFeed
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-zinc-800">🆕 新着の旅スポット</h2>
+          <h2 className="text-lg font-bold text-zinc-800">✨ 新着の旅スポット</h2>
           <Link href="/search?tab=post" className="text-sm text-[#16a34a] font-medium hover:underline">
             もっと見る
           </Link>

@@ -165,3 +165,76 @@ export const messageResponseSchema = z
     message: z.string(),
   })
   .openapi("MessageResponse");
+
+const spotPostSchema = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    location: z.enum(LOCATIONS),
+    category: z.enum(CATEGORIES).nullable(),
+    rating: z.number().int().min(1).max(5).nullable(),
+    images: z.array(z.object({ url: z.string() })),
+  })
+  .openapi("PlanSpotPost");
+
+const linkedPostSchema = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    location: z.enum(LOCATIONS),
+    category: z.enum(CATEGORIES).nullable(),
+    visitedAt: z.string(),
+    images: z.array(z.object({ url: z.string() })),
+  })
+  .openapi("PlanLinkedPost");
+
+export const planResponseSchema = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    startDate: z.string().nullable(),
+    endDate: z.string().nullable(),
+    budget: z.number().int().nullable(),
+    budgetBreakdown: z.array(z.object({ label: z.string(), amount: z.number().int() })).nullable(),
+    memo: z.string().nullable(),
+    completed: z.boolean(),
+    userId: z.string(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    spotCount: z.number().int().optional(),
+  })
+  .openapi("Plan");
+
+export const planListResponseSchema = z.array(planResponseSchema).openapi("PlanList");
+
+export const planDetailResponseSchema = planResponseSchema
+  .extend({
+    spots: z.array(
+      z.object({
+        displayOrder: z.number().int(),
+        post: spotPostSchema.nullable(),
+        freeTitle: z.string().nullable(),
+        freeLocation: z.string().nullable(),
+        freeCategory: z.string().nullable(),
+      })
+    ),
+    linkedPosts: z.array(linkedPostSchema),
+  })
+  .openapi("PlanDetail");
+
+export const statsYearsResponseSchema = z.array(z.number().int()).openapi("StatsYearsList");
+
+export const statsResponseSchema = z
+  .object({
+    year: z.union([z.number().int(), z.literal("all")]).openapi({ example: 2026 }),
+    completedPlans: z.number().int(),
+    totalPosts: z.number().int(),
+    totalPhotos: z.number().int(),
+    totalCost: z.number().int(),
+    visitedLocations: z.array(z.string()),
+    topLocation: z.string().nullable(),
+    categoryBreakdown: z.array(z.object({ category: z.string(), count: z.number().int() })),
+    monthlyPostCount: z.array(z.object({ month: z.number().int(), count: z.number().int() })),
+    yearlyPostCount: z.array(z.object({ year: z.number().int(), count: z.number().int() })),
+  })
+  .openapi("StatsResponse");

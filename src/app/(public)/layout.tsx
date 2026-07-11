@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ToastProvider } from "@/contexts/toast-context";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -35,7 +36,7 @@ export default async function PublicLayout({ children }: { children: React.React
             href="/"
             className="flex items-center gap-2 px-4 pt-6 mb-5 text-[#1a6b3a] font-bold hover:opacity-80 transition-opacity"
           >
-            <span className="text-2xl">✈️</span>
+            <TwemojiIcon codepoint="2708" alt="✈️" className="h-6 w-6" />
             <span className="text-[1.35rem]">TripDiary</span>
           </Link>
           <nav className="px-4 flex flex-col gap-1">
@@ -43,14 +44,14 @@ export default async function PublicLayout({ children }: { children: React.React
               href="/"
               className="flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
             >
-              <span className="text-[1.1rem] w-6 text-center">🏠</span>
+              <span className="w-6 flex justify-center"><TwemojiIcon codepoint="1f3e0" alt="🏠" className="h-[1.1rem] w-[1.1rem]" /></span>
               <span>ホーム</span>
             </Link>
             <Link
               href="/search"
               className="flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
             >
-              <span className="text-[1.1rem] w-6 text-center">🔍</span>
+              <span className="w-6 flex justify-center"><TwemojiIcon codepoint="1f50d" alt="🔍" className="h-[1.1rem] w-[1.1rem]" /></span>
               <span>検索</span>
             </Link>
           </nav>
@@ -73,19 +74,19 @@ export default async function PublicLayout({ children }: { children: React.React
         {/* Bottom nav (mobile, unauthenticated) */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] z-30 flex">
           <Link href="/" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
-            <span className="text-xl">🏠</span>
+            <TwemojiIcon codepoint="1f3e0" alt="🏠" className="h-5 w-5" />
             <span>ホーム</span>
           </Link>
           <Link href="/search" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
-            <span className="text-xl">🔍</span>
+            <TwemojiIcon codepoint="1f50d" alt="🔍" className="h-5 w-5" />
             <span>検索</span>
           </Link>
           <Link href="/login" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
-            <span className="text-xl">🔑</span>
+            <TwemojiIcon codepoint="1f511" alt="🔑" className="h-5 w-5" />
             <span>ログイン</span>
           </Link>
           <Link href="/signup" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
-            <span className="text-xl">✍️</span>
+            <TwemojiIcon codepoint="270d" alt="✍️" className="h-5 w-5" />
             <span>新規登録</span>
           </Link>
         </nav>

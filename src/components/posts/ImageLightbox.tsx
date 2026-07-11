@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Props = {
   images: { url: string }[];
@@ -38,11 +39,11 @@ export function ImageLightbox({ images, currentIndex, onClose, onPrev, onNext }:
     >
       {/* Close */}
       <button
-        className="absolute top-4 right-4 text-white text-3xl leading-none hover:opacity-70 transition-opacity"
+        className="absolute top-4 right-4 hover:opacity-70 transition-opacity"
         onClick={onClose}
         aria-label="閉じる"
       >
-        ✕
+        <TwemojiIcon codepoint="274c" alt="閉じる" className="h-4 w-4" />
       </button>
 
       {/* Counter */}

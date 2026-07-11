@@ -1,18 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Props = {
-  emoji: string;
+  codepoint: string;
   message: string;
   ctaLabel?: string;
   ctaHref?: string;
 };
 
-export function EmptyState({ emoji, message, ctaLabel, ctaHref }: Props) {
+export function EmptyState({ codepoint, message, ctaLabel, ctaHref }: Props) {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-      <span className="text-5xl">{emoji}</span>
+      <TwemojiIcon codepoint={codepoint} className="h-12 w-12" />
       <p className="text-[#64748b] text-sm">{message}</p>
       {ctaLabel && ctaHref && (
         <Link

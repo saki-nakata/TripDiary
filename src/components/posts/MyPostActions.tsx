@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/contexts/toast-context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Props = {
   postId: string;
@@ -40,7 +41,7 @@ export function MyPostActions({ postId }: Props) {
           title="編集"
           className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/90 shadow hover:bg-green-100 text-sm"
         >
-          ✏️
+          <TwemojiIcon codepoint="270f" className="h-4 w-4" />
         </button>
         <button
           onClick={(e) => {
@@ -51,7 +52,7 @@ export function MyPostActions({ postId }: Props) {
           title="削除"
           className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/90 shadow hover:bg-red-100 text-sm"
         >
-          🗑️
+          <TwemojiIcon codepoint="1f5d1" className="h-4 w-4" />
         </button>
       </div>
 

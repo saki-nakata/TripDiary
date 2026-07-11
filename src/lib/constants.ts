@@ -2,8 +2,9 @@ export const CATEGORIES = [
   "観光",
   "グルメ",
   "宿・ホテル",
-  "自然",
+  "季節・イベント",
   "アクティビティ",
+  "レジャー",
   "歴史・文化",
   "その他",
 ] as const;
@@ -67,21 +68,38 @@ export const SORT_OPTIONS = [
 ] as const;
 
 export const CATEGORY_ICONS: Record<string, string> = {
-  観光: "🏛️",
-  グルメ: "🍜",
+  観光: "🗼",
+  グルメ: "🍟",
   "宿・ホテル": "🏨",
-  自然: "🌿",
-  アクティビティ: "🎿",
-  "歴史・文化": "⛩️",
-  その他: "📍",
+  "季節・イベント": "🌸",
+  アクティビティ: "🏕️",
+  レジャー: "🎡",
+  "歴史・文化": "🎎",
+  その他: "📌",
+  // 旧カテゴリ名（カテゴリ再編前の投稿データ向けエイリアス）
+  自然: "🌸",
+};
+
+// CategoryIcon コンポーネント用の Twemoji コードポイント（CATEGORY_ICONS の絵文字と対応）
+export const CATEGORY_TWEMOJI: Record<string, string> = {
+  観光: "1f5fc",
+  グルメ: "1f35f",
+  "宿・ホテル": "1f3e8",
+  "季節・イベント": "1f338",
+  アクティビティ: "1f3d5",
+  レジャー: "1f3a1",
+  "歴史・文化": "1f38e",
+  その他: "1f4cc",
+  自然: "1f338",
 };
 
 export const CATEGORY_COLORS: Record<string, string> = {
   観光: "bg-orange-50 text-orange-800",
   グルメ: "bg-amber-100 text-amber-800",
   "宿・ホテル": "bg-pink-100 text-pink-800",
-  自然: "bg-green-100 text-green-800",
+  "季節・イベント": "bg-pink-50 text-pink-700",
   アクティビティ: "bg-sky-100 text-sky-800",
+  レジャー: "bg-fuchsia-100 text-fuchsia-800",
   "歴史・文化": "bg-purple-100 text-purple-800",
   その他: "bg-slate-100 text-slate-600",
 };

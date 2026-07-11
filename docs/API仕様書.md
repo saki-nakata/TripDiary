@@ -300,6 +300,8 @@ Auth.js v5（セッションベース）を使用する。
 |--------|--------------|------|------|
 | GET | `/api/users/[id]` | ユーザー情報取得 | 不要 |
 | PUT | `/api/users/[id]` | プロフィール編集 | 必要（本人のみ） |
+| PATCH | `/api/users/[id]/password` | パスワード変更 | 必要（本人のみ） |
+| PATCH | `/api/users/[id]/email` | メールアドレス変更 | 必要（本人のみ） |
 | POST | `/api/users/[id]/follow` | フォロー toggle | 必要 |
 | GET | `/api/users/search` | ユーザー名検索 | 不要 |
 
@@ -355,6 +357,53 @@ Auth.js v5（セッションベース）を使用する。
   "bio": "旅と写真が好きです"
 }
 ```
+
+#### PATCH `/api/users/[id]/password`（2026-07-09追加）
+
+**リクエスト**
+```json
+{
+  "currentPassword": "current-password",
+  "newPassword": "new-password"
+}
+```
+
+**レスポンス（200）**
+```json
+{ "message": "パスワードを変更しました" }
+```
+
+**エラーレスポンス**
+
+| ステータス | 条件 |
+|-----------|------|
+| 400 | `currentPassword` が誤っている、または `newPassword` が8文字未満 |
+| 403 | 本人以外がアクセス |
+
+#### PATCH `/api/users/[id]/email`（2026-07-09追加）
+
+**リクエスト**
+```json
+{
+  "email": "new-email@example.com",
+  "currentPassword": "current-password"
+}
+```
+
+**レスポンス（200）**
+```json
+{ "message": "メールアドレスを変更しました" }
+```
+
+※ 変更成功後はサーバー側で状態を変更せず、フロントエンドが `signOut()` を呼び出してログイン画面へ遷移させる（JWTセッションに古いメールアドレスが残るのを防ぐため）。
+
+**エラーレスポンス**
+
+| ステータス | 条件 |
+|-----------|------|
+| 400 | `currentPassword` が誤っている、または `email` の形式が不正 |
+| 403 | 本人以外がアクセス |
+| 409 | 指定したメールアドレスが既に他ユーザーに使用されている |
 
 ---
 
@@ -445,11 +494,14 @@ Auth.js v5（セッションベース）を使用する。
     ],
     "memo": "抹茶スイーツを制覇する旅",
     "completed": false,
-    "spotIds": ["p1", "p2", "p3"],
-    "createdAt": "2026-07-01T10:00:00Z"
+    "userId": "u_xxx",
+    "createdAt": "2026-07-01T10:00:00Z",
+    "updatedAt": "2026-07-01T10:00:00Z"
   }
 ]
 ```
+
+※ 一覧レスポンスにはスポット情報を含まない。`GET /api/plans/[id]`（詳細取得）のみ `spots`（`displayOrder`+投稿情報）・`linkedPosts`（このプランから記録した投稿一覧）を追加で返す。
 
 **POST `/api/plans` リクエスト**
 ```json
@@ -461,14 +513,18 @@ Auth.js v5（セッションベース）を使用する。
     { "label": "交通費", "amount": 20000 }
   ],
   "memo": "抹茶スイーツを制覇する旅",
-  "spotIds": ["p1", "p2", "p3"]
+  "spots": [
+    { "type": "post", "postId": "p1" },
+    { "type": "free", "title": "まだ投稿のない展望台", "location": "京都府", "category": "観光" }
+  ]
 }
 ```
 
-**PATCH `/api/plans/[id]/complete` リクエスト**
-```json
-{ "completed": true }
-```
+※ `budget` はリクエストに含めず、`budgetBreakdown` の合計値をサーバー側で自動算出する。
+
+**PATCH `/api/plans/[id]/complete`**
+
+リクエストボディなし。呼び出すたびに `completed` の真偽値をトグルする（いいね等の既存トグル系エンドポイントと同じ方式）。
 
 **エラーレスポンス**
 
@@ -484,11 +540,11 @@ Auth.js v5（セッションベース）を使用する。
 | Method | エンドポイント | 説明 | 認証 |
 |--------|--------------|------|------|
 | GET | `/api/stats/years` | 自分の投稿がある年一覧取得 | 必要 |
-| GET | `/api/stats?year=YYYY` | 年別統計データ取得 | 必要 |
+| GET | `/api/stats?year=YYYY\|all` | 年別統計データ取得（`year=all` で全期間集計） | 必要 |
 
 **GET `/api/stats/years` レスポンス（200）**
 ```json
-{ "years": [2026, 2025, 2024] }
+[2026, 2025, 2024]
 ```
 
 **GET `/api/stats?year=2026` レスポンス（200）**
@@ -506,18 +562,42 @@ Auth.js v5（セッションベース）を使用する。
     { "category": "歴史・文化", "count": 2 },
     { "category": "自然", "count": 1 }
   ],
-  "monthlyCost": [
-    { "month": 4, "cost": 12000 },
-    { "month": 6, "cost": 80000 }
+  "monthlyPostCount": [
+    { "month": 4, "count": 1 },
+    { "month": 6, "count": 2 }
+  ],
+  "yearlyPostCount": []
+}
+```
+
+**GET `/api/stats?year=all` レスポンス（200）**
+```json
+{
+  "year": "all",
+  "completedPlans": 5,
+  "totalPosts": 12,
+  "totalPhotos": 20,
+  "totalCost": 300000,
+  "visitedLocations": ["沖縄県", "奈良県", "静岡県"],
+  "topLocation": "沖縄県",
+  "categoryBreakdown": [
+    { "category": "アクティビティ", "count": 4 }
+  ],
+  "monthlyPostCount": [],
+  "yearlyPostCount": [
+    { "year": 2025, "count": 5 },
+    { "year": 2026, "count": 7 }
   ]
 }
 ```
+
+※ `monthlyPostCount` は特定の年を選択した場合のみ値を持つ（全期間選択時は空配列）。`yearlyPostCount` は全期間選択時のみ値を持つ（特定の年選択時は空配列）。
 
 **エラーレスポンス**
 
 | ステータス | 条件 |
 |-----------|------|
-| 400 | `year` パラメータが不正な数値 |
+| 400 | `year` パラメータが `all` でも有効な数値でもない |
 | 401 | 未認証 |
 
 ---

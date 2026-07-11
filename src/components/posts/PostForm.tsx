@@ -6,16 +6,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/contexts/toast-context";
 import { StarRating } from "./StarRating";
 import { LocationPickerWrapper } from "@/components/map/LocationPickerWrapper";
-import { CATEGORIES, LOCATIONS } from "@/lib/constants";
+import { CATEGORIES, CATEGORY_ICONS, LOCATIONS } from "@/lib/constants";
 import { postSchema, type PostInput } from "@/lib/validations/post";
 import type { Post, CostBreakdownItem } from "@/types/post";
 import { useState, useRef } from "react";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { useQueryClient } from "@tanstack/react-query";
 import type { PortalFeedData } from "@/components/explore/ExploreFeed";
 
 type Props = {
   initialData?: Post;
   planId?: string;
+  presetTitle?: string;
+  presetLocation?: string;
+  presetCategory?: string;
+  presetImageUrl?: string;
 };
 
 function formatAmount(value: number): string {
@@ -27,7 +32,7 @@ function parseAmount(value: string): number {
   return Number(value.replace(/,/g, "")) || 0;
 }
 
-export function PostForm({ initialData, planId }: Props) {
+export function PostForm({ initialData, planId, presetTitle, presetLocation, presetCategory, presetImageUrl }: Props) {
   const router = useRouter();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -37,7 +42,7 @@ export function PostForm({ initialData, planId }: Props) {
     initialData?.costBreakdown ?? []
   );
   const [imageUrls, setImageUrls] = useState<string[]>(
-    initialData?.images?.map((img) => img.url) ?? []
+    initialData?.images?.map((img) => img.url) ?? (presetImageUrl ? [presetImageUrl] : [])
   );
   const [uploadingCount, setUploadingCount] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -52,10 +57,10 @@ export function PostForm({ initialData, planId }: Props) {
   } = useForm<PostInput>({
     resolver: zodResolver(postSchema),
     defaultValues: {
-      title: initialData?.title ?? "",
+      title: initialData?.title ?? presetTitle ?? "",
       body: initialData?.body ?? "",
-      location: initialData?.location ?? "",
-      category: (initialData?.category as PostInput["category"]) ?? undefined,
+      location: initialData?.location ?? presetLocation ?? "",
+      category: (initialData?.category as PostInput["category"]) ?? (presetCategory as PostInput["category"]) ?? undefined,
       rating: initialData?.rating ?? undefined,
       visitedAt: initialData?.visitedAt ? initialData.visitedAt.slice(0, 10) : "",
       lat: initialData?.lat ?? null,
@@ -163,7 +168,11 @@ export function PostForm({ initialData, planId }: Props) {
         queryClient.setQueryData<PortalFeedData>(["explore-feed"], (old) =>
           old ? { ...old, latest: [created, ...old.latest].slice(0, 6) } : old
         );
-        router.push(`/?highlighted=${created.id}`);
+        if (planId) {
+          router.push(`/plans/${planId}`);
+        } else {
+          router.push(`/?highlighted=${created.id}`);
+        }
       }
     } catch (err) {
       showToast(err instanceof Error ? err.message : "エラーが発生しました", "error");
@@ -229,9 +238,9 @@ export function PostForm({ initialData, planId }: Props) {
                   <button
                     type="button"
                     onClick={() => setImageUrls((prev) => prev.filter((u) => u !== url))}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white shadow rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    ✕
+                    <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
                   </button>
                 </div>
               ))}
@@ -312,7 +321,7 @@ export function PostForm({ initialData, planId }: Props) {
             >
               <option value="">選択してください</option>
               {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>{CATEGORY_ICONS[c]} {c}</option>
               ))}
             </select>
             {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
@@ -339,9 +348,18 @@ export function PostForm({ initialData, planId }: Props) {
               🔒 自分のみ表示
             </span>
           </div>
-          <p className="text-sm font-semibold text-zinc-700 mb-3">
-            合計：{totalCost > 0 ? `¥${totalCost.toLocaleString()}` : "—"}
-          </p>
+          <div className="flex items-center justify-between pr-4 mb-1">
+            <p className="text-sm font-semibold text-zinc-700">
+              合計：{totalCost > 0 ? `¥${totalCost.toLocaleString()}` : "—"}
+            </p>
+            <button
+              type="button"
+              onClick={addCostItem}
+              className="py-2 px-4 rounded-lg border border-dashed border-zinc-300 text-sm font-semibold text-zinc-500 hover:bg-zinc-50 transition-colors"
+            >
+              ＋ 項目を追加
+            </button>
+          </div>
           {costBreakdown.map((item, i) => (
             <div key={i} className="flex gap-2">
               <input
@@ -362,19 +380,12 @@ export function PostForm({ initialData, planId }: Props) {
               <button
                 type="button"
                 onClick={() => removeCostItem(i)}
-                className="rounded-lg border border-zinc-200 px-2 py-2 text-sm text-zinc-400 hover:text-red-500 hover:border-red-300 transition-colors"
+                className="px-2 py-2 text-zinc-400 hover:text-red-500 transition-colors"
               >
-                ✕
+                <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
               </button>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={addCostItem}
-            className="w-40 py-2 rounded-lg border border-dashed border-zinc-300 text-sm font-semibold text-zinc-500 hover:bg-zinc-50 transition-colors"
-          >
-            ＋ 項目を追加
-          </button>
         </div>
 
         {/* 地図 */}

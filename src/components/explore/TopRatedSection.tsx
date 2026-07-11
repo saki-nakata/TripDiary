@@ -1,14 +1,17 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Post } from "@/types/post";
-import { CATEGORY_ICONS } from "@/lib/constants";
+import { CategoryIcon } from "@/components/ui/category-icon";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 export function TopRatedSection({ posts }: { posts: Post[] }) {
   if (posts.length === 0) return null;
 
   return (
     <section className="space-y-4">
-      <h2 className="text-lg font-bold text-zinc-800">⭐ カテゴリ別高評価スポット</h2>
+      <h2 className="flex items-center gap-2 text-lg font-bold text-zinc-800">
+        <TwemojiIcon codepoint="2b50" className="h-5 w-5" /> カテゴリ別高評価スポット
+      </h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {posts.map((post) => (
           <Link
@@ -28,7 +31,7 @@ export function TopRatedSection({ posts }: { posts: Post[] }) {
               )}
               {post.category && (
                 <span className="absolute top-2 left-2 bg-white/90 px-2 py-0.5 rounded-full text-xs font-semibold">
-                  {CATEGORY_ICONS[post.category] ?? "📍"} {post.category}
+                  <CategoryIcon category={post.category} /> {post.category}
                 </span>
               )}
             </div>

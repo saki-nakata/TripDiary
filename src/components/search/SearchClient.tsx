@@ -8,7 +8,9 @@ import Image from "next/image";
 import { PostCard } from "@/components/posts/PostCard";
 import { FollowButton } from "@/components/users/FollowButton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { CATEGORIES, CATEGORY_ICONS, LOCATIONS } from "@/lib/constants";
+import { CATEGORIES, LOCATIONS } from "@/lib/constants";
+import { CategoryIcon } from "@/components/ui/category-icon";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import type { PostsResponse } from "@/types/post";
 
 type AreaItem = { location: string; count: number; thumbnailUrl: string | null };
@@ -25,9 +27,9 @@ type UserItem = {
 type UsersResponse = { users: UserItem[]; nextCursor: string | null; hasMore: boolean };
 
 const TABS = [
-  { key: "post", label: "🏔️ 旅スポット" },
+  { key: "post", label: "🗾 旅スポット" },
   { key: "area", label: "📍 エリア" },
-  { key: "user", label: "👤 ユーザー" },
+  { key: "user", label: "👥 ユーザー" },
 ] as const;
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -45,7 +47,9 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4 -mt-8">
-      <h1 className="text-2xl font-bold text-[#1e293b]">🔍 検索</h1>
+      <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1e293b]">
+        <TwemojiIcon codepoint="1f50d" className="h-6 w-6" /> 検索
+      </h1>
 
       <div className="relative">
         <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400">🔍</span>
@@ -62,18 +66,28 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-[0.95rem] font-medium border-b-2 -mb-px transition-colors ${
-              tab === t.key ? "border-[#16a34a] text-[#16a34a]" : "border-transparent text-zinc-500 hover:text-zinc-700"
+            className={`relative px-4 py-2 text-[0.95rem] font-medium transition-colors ${
+              tab === t.key ? "text-[#16a34a]" : "text-zinc-500 hover:text-zinc-700"
             }`}
           >
             {t.label}
+            {tab === t.key && (
+              <span className="absolute -bottom-px left-3 right-0 h-0.5 bg-[#16a34a]" />
+            )}
           </button>
         ))}
       </div>
 
       <div className="min-h-[420px]">
-        {tab === "post" && <PostSearchTab location={undefined} q={q} initialSort={initialSort} />}
-        {tab === "area" && <AreaSearchTab q={q} />}
+        {tab === "post" && (
+          <PostSearchTab
+            location={undefined}
+            q={q}
+            initialSort={initialSort}
+            initialCategory={searchParams.get("category") ?? ""}
+          />
+        )}
+        {tab === "area" && <AreaSearchTab q={q} initialLocation={searchParams.get("location")} />}
         {tab === "user" && <UserSearchTab q={q} viewerId={viewerId} />}
       </div>
     </div>
@@ -86,14 +100,16 @@ function PostSearchTab({
   initialSort = "latest",
   showSort = true,
   locationLabel,
+  initialCategory = "",
 }: {
   location?: string;
   q: string;
   initialSort?: "latest" | "popular";
   showSort?: boolean;
   locationLabel?: string;
+  initialCategory?: string;
 }) {
-  const [category, setCategory] = useState<string>("");
+  const [category, setCategory] = useState<string>(initialCategory);
   const [sort, setSort] = useState<"latest" | "popular">(initialSort);
 
   const query = useInfiniteQuery({
@@ -138,7 +154,7 @@ function PostSearchTab({
                 : "bg-white text-zinc-500 border-zinc-200 hover:border-blue-400 hover:text-blue-500"
             }`}
           >
-            {CATEGORY_ICONS[c]} {c}
+            <CategoryIcon category={c} /> {c}
           </button>
         ))}
       </div>
@@ -172,7 +188,7 @@ function PostSearchTab({
       )}
 
       {posts.length === 0 && !query.isLoading ? (
-        <EmptyState emoji="🏔️" message="該当するスポットがありません" />
+        <EmptyState codepoint="1f3d4" message="該当するスポットがありません" />
       ) : sort === "popular" ? (
         <div className="space-y-2">
           {posts.slice(0, 20).map((post, i) => (
@@ -215,8 +231,8 @@ function PostSearchTab({
   );
 }
 
-function AreaSearchTab({ q }: { q: string }) {
-  const [selected, setSelected] = useState<string | null>(null);
+function AreaSearchTab({ q, initialLocation }: { q: string; initialLocation?: string | null }) {
+  const [selected, setSelected] = useState<string | null>(initialLocation ?? null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["search-areas"],
@@ -240,7 +256,7 @@ function AreaSearchTab({ q }: { q: string }) {
   const areasByLocation = new Map(data?.map((a) => [a.location, a]) ?? []);
   const areas = LOCATIONS.map((l) => areasByLocation.get(l)).filter((a): a is AreaItem => a != null);
   if (areas.length === 0) {
-    return <EmptyState emoji="📍" message="投稿があるエリアがありません" />;
+    return <EmptyState codepoint="1f4cd" message="投稿があるエリアがありません" />;
   }
 
   const selectedArea = areas.find((a) => a.location === selected);
@@ -295,7 +311,7 @@ function UserSearchTab({ q, viewerId }: { q: string; viewerId?: string }) {
   return (
     <div className="space-y-5">
       {users.length === 0 && !query.isLoading && (
-        <EmptyState emoji="👤" message="ユーザーが見つかりません" />
+        <EmptyState codepoint="1f464" message="ユーザーが見つかりません" />
       )}
 
       <div className="space-y-2">
