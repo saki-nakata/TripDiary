@@ -1,17 +1,20 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export async function toggleFollow(followerId: string, followingId: string) {
-  const existing = await prisma.follow.findUnique({
-    where: { followerId_followingId: { followerId, followingId } },
-  });
+  const { count } = await prisma.follow.deleteMany({ where: { followerId, followingId } });
+  if (count > 0) return { following: false };
 
-  if (existing) {
-    await prisma.follow.delete({ where: { followerId_followingId: { followerId, followingId } } });
-    return { following: false };
+  try {
+    await prisma.follow.create({ data: { followerId, followingId } });
+    return { following: true };
+  } catch (e) {
+    // 同時に別リクエストが先にcreateしていた場合（P2002: 一意制約違反）は、結果的にフォロー済みなので成功扱いにする
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      return { following: true };
+    }
+    throw e;
   }
-
-  await prisma.follow.create({ data: { followerId, followingId } });
-  return { following: true };
 }
 
 export async function isFollowing(followerId: string, followingId: string) {

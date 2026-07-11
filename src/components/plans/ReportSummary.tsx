@@ -76,23 +76,35 @@ function PostCountLineChart({
   return (
     <div className="space-y-2">
       <div className="flex items-stretch gap-2">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-32 w-full flex-1 overflow-visible" preserveAspectRatio="none">
-          {yTicks.map((t) => {
-            const y = height - padding - ((height - padding * 2) * t) / max;
-            return <line key={t} x1={padding} y1={y} x2={width} y2={y} stroke="#f4f4f5" strokeWidth="0.5" />;
-          })}
-          <line x1={width} y1={padding} x2={width} y2={height - padding} stroke="#e4e4e7" strokeWidth="0.5" />
-          <path d={path} fill="none" stroke={`url(#${gradientId})`} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          <defs>
-            <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#f093fb" />
-              <stop offset="100%" stopColor="#f5576c" />
-            </linearGradient>
-          </defs>
+        <div className="relative h-32 w-full flex-1">
+          <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full overflow-visible" preserveAspectRatio="none">
+            {yTicks.map((t) => {
+              const y = height - padding - ((height - padding * 2) * t) / max;
+              return <line key={t} x1={padding} y1={y} x2={width} y2={y} stroke="#f4f4f5" strokeWidth="0.5" />;
+            })}
+            <line x1={width} y1={padding} x2={width} y2={height - padding} stroke="#e4e4e7" strokeWidth="0.5" />
+            <path d={path} fill="none" stroke={`url(#${gradientId})`} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#ffafd7" />
+                <stop offset="70%" stopColor="#ff2d78" />
+                <stop offset="100%" stopColor="#c026d3" />
+              </linearGradient>
+            </defs>
+          </svg>
           {points.map((p) => (
-            <circle key={p.d.key} cx={p.x} cy={p.y} r="1.4" fill="#f5576c" />
+            <span
+              key={p.d.key}
+              className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+              style={{
+                left: `${(p.x / width) * 100}%`,
+                top: `${(p.y / height) * 100}%`,
+                backgroundColor: "#ffcba4",
+                border: "2px solid #fff200",
+              }}
+            />
           ))}
-        </svg>
+        </div>
         <div className="flex h-32 w-9 shrink-0 flex-col justify-between py-[6px] text-right text-sm text-zinc-500">
           {yTicks.map((t) => (
             <span key={t}>{t}件</span>
@@ -222,7 +234,7 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
           </p>
           <div className="flex flex-wrap gap-2">
             {stats.visitedLocations.map((loc) => (
-              <span key={loc} className="rounded-full bg-violet-500 px-3.5 py-1.5 text-sm font-semibold text-white">
+              <span key={loc} className="rounded-full bg-violet-100 px-3.5 py-1.5 text-sm font-semibold text-violet-800">
                 {loc}
               </span>
             ))}
