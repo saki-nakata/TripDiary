@@ -15,15 +15,21 @@ export default function PublicSegmentError({
   }, [error]);
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-      <TwemojiIcon codepoint="26a0" className="h-12 w-12" />
-      <h2 className="text-xl font-semibold text-zinc-800">エラーが発生しました</h2>
-      <p className="text-sm text-zinc-500">しばらく経ってからもう一度お試しください。</p>
+    <div className="animate-fade-in flex flex-col items-center justify-center gap-6 py-32 text-center">
+      <div className="flex h-28 w-28 items-center justify-center rounded-full bg-amber-100">
+        <TwemojiIcon codepoint="26a0" className="h-14 w-14" />
+      </div>
+      <h2 className="text-2xl font-semibold text-zinc-800">旅の途中で小さなトラブルが発生しました</h2>
+      <p className="max-w-sm text-base leading-relaxed text-zinc-500">
+        ご迷惑をおかけします。
+        <br />
+        もう一度お試しください。
+      </p>
       <button
         onClick={reset}
-        className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+        className="flex items-center gap-2 rounded-lg bg-[#3B88C3] px-6 py-3 text-base font-medium text-white hover:bg-[#2f6ea3]"
       >
-        再試行する
+        <TwemojiIcon codepoint="1f504" alt="🔄" className="h-5 w-5" /> 再試行する
       </button>
     </div>
   );

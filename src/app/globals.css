@@ -39,3 +39,12 @@ body {
 .animate-fade-in {
   animation: fade-in 0.25s ease-out forwards;
 }
+
+@keyframes bounce-dot {
+  0%, 100% { transform: translateY(0); }
+  30%      { transform: translateY(-18px); }
+}
+
+.animate-bounce-dot {
+  animation: bounce-dot 1s ease-in-out infinite;
+}

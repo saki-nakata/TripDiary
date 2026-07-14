@@ -21,15 +21,21 @@ export default function GlobalError({
   return (
     <html lang="ja">
       <body>
-        <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-          <TwemojiIcon codepoint="26a0" className="h-12 w-12" />
-          <h2 className="text-xl font-semibold text-zinc-800">重大なエラーが発生しました</h2>
-          <p className="text-sm text-zinc-500">しばらく経ってからもう一度お試しください。</p>
+        <div className="animate-fade-in flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
+          <div className="flex h-28 w-28 items-center justify-center rounded-full bg-red-100">
+            <TwemojiIcon codepoint="26a0" className="h-14 w-14" />
+          </div>
+          <h2 className="text-2xl font-semibold text-zinc-800">重大な問題が発生しました</h2>
+          <p className="max-w-sm text-base leading-relaxed text-zinc-500">
+            アプリの続行ができませんでした。
+            <br />
+            お手数ですが、再度お試しください。
+          </p>
           <button
             onClick={reset}
-            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+            className="flex items-center gap-2 rounded-lg bg-red-600 px-6 py-3 text-base font-medium text-white hover:bg-red-700"
           >
-            再試行する
+            <TwemojiIcon codepoint="1f504" alt="🔄" className="h-5 w-5" /> 再試行する
           </button>
         </div>
       </body>
