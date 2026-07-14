@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { getUserProfileService } from "@/lib/services/user.service";
-import { findPostsByAuthorId } from "@/lib/repositories/post.repository";
+import { findPostsByAuthorIdService } from "@/lib/services/post.service";
 import {
   findCommentsByAuthor,
   findCommentsReceivedByAuthor,
@@ -13,6 +13,7 @@ import {
 import { findFollowers, findFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
 import { PostCard } from "@/components/posts/PostCard";
 import { FollowButton } from "@/components/users/FollowButton";
+import { BackButton } from "@/components/posts/BackButton";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { Post } from "@/types/post";
 
@@ -59,94 +60,101 @@ export default async function UserProfilePage({ params, searchParams }: Props) {
   const rankColor = TABI_RANK_COLORS[profile.tabiRank] ?? "bg-amber-50 text-amber-700";
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 -mt-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="relative w-[100px] h-[100px] rounded-full overflow-hidden bg-zinc-200 shrink-0">
-          {profile.image ? (
-            <Image src={profile.image} alt={profile.nickname} fill sizes="100px" className="object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-3xl text-zinc-500 font-medium">
-              {profile.nickname[0]}
-            </div>
-          )}
+    <div className="relative">
+      {!isSelf && (
+        <div className="absolute left-0 top-1 z-10 md:left-2">
+          <BackButton />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-bold text-zinc-900">{profile.nickname}</h1>
-            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${rankColor}`}>
-              🏅 {profile.tabiRank}（{profile.tabiScore}pt）
-            </span>
-          </div>
-          <p className="text-sm text-zinc-600 mt-1 whitespace-pre-wrap">
-            {profile.bio || <span className="text-zinc-400">bioが設定されていません</span>}
-          </p>
-          <div className="flex gap-5 mt-3">
-            <div className="text-center">
-              <p className="text-lg font-bold text-zinc-900 leading-none">{profile.postCount}</p>
-              <p className="text-xs text-zinc-500 mt-1">投稿</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-bold text-zinc-900 leading-none">{profile.followerCount}</p>
-              <p className="text-xs text-zinc-500 mt-1">フォロワー</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-bold text-zinc-900 leading-none">{profile.followingCount}</p>
-              <p className="text-xs text-zinc-500 mt-1">フォロー中</p>
-            </div>
-          </div>
-          <div className="mt-3 flex gap-2">
-            {isSelf ? (
-              <Link
-                href="/settings"
-                className="px-4 py-1.5 rounded-full border border-zinc-200 text-zinc-600 text-sm font-semibold hover:bg-zinc-50 transition-colors"
-              >
-                ✏️ プロフィール編集
-              </Link>
+      )}
+      <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 -mt-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="relative w-[100px] h-[100px] rounded-full overflow-hidden bg-zinc-200 shrink-0">
+            {profile.image ? (
+              <Image src={profile.image} alt={profile.nickname} fill sizes="100px" className="object-cover" />
             ) : (
-              <FollowButton
-                userId={profile.id}
-                initialFollowing={profile.followedByCurrentUser}
-                isLoggedIn={!!viewerId}
-              />
+              <div className="w-full h-full flex items-center justify-center text-3xl text-zinc-500 font-medium">
+                {profile.nickname[0]}
+              </div>
             )}
           </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-zinc-900">{profile.nickname}</h1>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${rankColor}`}>
+                🏅 {profile.tabiRank}（{profile.tabiScore}pt）
+              </span>
+            </div>
+            <p className="text-sm text-zinc-600 mt-1 whitespace-pre-wrap">
+              {profile.bio || <span className="text-zinc-400">bioが設定されていません</span>}
+            </p>
+            <div className="flex gap-5 mt-3">
+              <div className="text-center">
+                <p className="text-lg font-bold text-zinc-900 leading-none">{profile.postCount}</p>
+                <p className="text-xs text-zinc-500 mt-1">投稿</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-zinc-900 leading-none">{profile.followerCount}</p>
+                <p className="text-xs text-zinc-500 mt-1">フォロワー</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-zinc-900 leading-none">{profile.followingCount}</p>
+                <p className="text-xs text-zinc-500 mt-1">フォロー中</p>
+              </div>
+            </div>
+            <div className="mt-3 flex gap-2">
+              {isSelf ? (
+                <Link
+                  href="/settings"
+                  className="px-4 py-1.5 rounded-full border border-zinc-200 text-zinc-600 text-sm font-semibold hover:bg-zinc-50 transition-colors"
+                >
+                  ✏️ プロフィール編集
+                </Link>
+              ) : (
+                <FollowButton
+                  userId={profile.id}
+                  initialFollowing={profile.followedByCurrentUser}
+                  isLoggedIn={!!viewerId}
+                />
+              )}
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="-mt-2 flex gap-1 border-b border-zinc-200 overflow-x-auto overflow-y-hidden">
-        {TABS.filter((t) => !("selfOnly" in t) || isSelf).map((t) => (
-          <Link
-            key={t.key}
-            href={`/users/${id}?tab=${t.key}`}
-            className={`px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
-              activeTab === t.key
-                ? "border-[#16a34a] text-[#16a34a]"
-                : "border-transparent text-zinc-500 hover:text-zinc-700"
-            }`}
-          >
-            {t.label} ({t.count})
-          </Link>
-        ))}
-      </div>
+        {/* Tabs */}
+        <div className="-mt-2 flex gap-1 border-b border-zinc-200 overflow-x-auto overflow-y-hidden">
+          {TABS.filter((t) => !("selfOnly" in t) || isSelf).map((t) => (
+            <Link
+              key={t.key}
+              href={`/users/${id}?tab=${t.key}`}
+              className={`rounded-t-lg px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
+                activeTab === t.key
+                  ? "border-[#16a34a] text-[#16a34a]"
+                  : "border-transparent text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+              }`}
+            >
+              {t.label} ({t.count})
+            </Link>
+          ))}
+        </div>
 
-      {/* Tab content */}
-      <div>
-        {activeTab === "posts" && (await renderPosts(id, viewerId))}
-        {activeTab === "comments" && (await renderCommentsWritten(id))}
-        {activeTab === "comments-received" && isSelf && (await renderCommentsReceived(id))}
-        {activeTab === "followers" && (await renderUserList(id, "followers", viewerId))}
-        {activeTab === "following" && (await renderUserList(id, "following", viewerId))}
+        {/* Tab content */}
+        <div>
+          {activeTab === "posts" && (await renderPosts(id, viewerId))}
+          {activeTab === "comments" && (await renderCommentsWritten(id))}
+          {activeTab === "comments-received" && isSelf && (await renderCommentsReceived(id))}
+          {activeTab === "followers" && (await renderUserList(id, "followers", viewerId))}
+          {activeTab === "following" && (await renderUserList(id, "following", viewerId))}
+        </div>
       </div>
     </div>
   );
 }
 
 async function renderPosts(authorId: string, viewerId?: string) {
-  const { posts } = await findPostsByAuthorId({ authorId, viewerId });
+  const { posts } = await findPostsByAuthorIdService({ authorId, viewerId });
   if (posts.length === 0) {
-    return <EmptyState emoji="✈️" message="まだ投稿がありません" />;
+    return <EmptyState codepoint="2708" message="まだ投稿がありません" />;
   }
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
@@ -160,7 +168,7 @@ async function renderPosts(authorId: string, viewerId?: string) {
 async function renderCommentsWritten(authorId: string) {
   const comments = await findCommentsByAuthor(authorId);
   if (comments.length === 0) {
-    return <EmptyState emoji="💬" message="まだコメントがありません" />;
+    return <EmptyState codepoint="1f4ac" message="まだコメントがありません" />;
   }
   return (
     <div className="space-y-3">
@@ -191,7 +199,7 @@ async function renderCommentsWritten(authorId: string) {
 async function renderCommentsReceived(authorId: string) {
   const comments = await findCommentsReceivedByAuthor(authorId);
   if (comments.length === 0) {
-    return <EmptyState emoji="💬" message="まだコメントを受け取っていません" />;
+    return <EmptyState codepoint="1f4ac" message="まだコメントを受け取っていません" />;
   }
   return (
     <div className="space-y-3">
@@ -226,7 +234,7 @@ async function renderCommentsReceived(authorId: string) {
 async function renderUserList(userId: string, type: "followers" | "following", viewerId?: string) {
   const users = type === "followers" ? await findFollowers(userId) : await findFollowing(userId);
   if (users.length === 0) {
-    return <EmptyState emoji="👥" message={type === "followers" ? "フォロワーはまだいません" : "フォロー中のユーザーはいません"} />;
+    return <EmptyState codepoint="1f465" message={type === "followers" ? "フォロワーはまだいません" : "フォロー中のユーザーはいません"} />;
   }
 
   const followingIds = viewerId ? await findFollowingIdsAmong(viewerId, users.map((u) => u.id)) : [];

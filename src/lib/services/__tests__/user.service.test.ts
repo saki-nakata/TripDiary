@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ForbiddenError, NotFoundError } from "@/lib/errors";
+import { ForbiddenError, NotFoundError, ValidationError, ConflictError } from "@/lib/errors";
 
 vi.mock("@/lib/repositories/user.repository", () => ({
   findUserById: vi.fn(),
@@ -10,14 +10,22 @@ vi.mock("@/lib/repositories/user.repository", () => ({
   countCommentsReceived: vi.fn(),
   computeTabiScoreInputsForUsers: vi.fn(),
   searchUsersByNickname: vi.fn(),
+  findUserPasswordHash: vi.fn(),
+  updateUserPassword: vi.fn(),
+  findUserByEmail: vi.fn(),
+  findUserPasswordHashAndEmail: vi.fn(),
+  updateUserEmail: vi.fn(),
 }));
 vi.mock("@/lib/repositories/follow.repository", () => ({
-  countFollowers: vi.fn(),
-  countFollowing: vi.fn(),
   isFollowing: vi.fn(),
   findFollowingIdsAmong: vi.fn(),
 }));
+vi.mock("bcryptjs", () => ({
+  compare: vi.fn(),
+  hash: vi.fn().mockResolvedValue("new-hashed-password"),
+}));
 
+import { compare } from "bcryptjs";
 import {
   findUserById,
   updateUser,
@@ -27,8 +35,13 @@ import {
   countCommentsReceived,
   computeTabiScoreInputsForUsers,
   searchUsersByNickname,
+  findUserPasswordHash,
+  updateUserPassword,
+  findUserByEmail,
+  findUserPasswordHashAndEmail,
+  updateUserEmail,
 } from "@/lib/repositories/user.repository";
-import { countFollowers, countFollowing, isFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
+import { isFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
 import {
   getUserProfileService,
   updateUserService,
@@ -36,6 +49,8 @@ import {
   tabiRank,
   getTabiScoresForUsers,
   searchUsersService,
+  changePasswordService,
+  changeEmailService,
 } from "@/lib/services/user.service";
 
 const USER_ID = "user-1";
@@ -48,8 +63,6 @@ describe("getUserProfileService", () => {
     vi.mocked(countVisitedByUser).mockResolvedValue(0);
     vi.mocked(countLikesReceived).mockResolvedValue(0);
     vi.mocked(countCommentsReceived).mockResolvedValue(0);
-    vi.mocked(countFollowers).mockResolvedValue(0);
-    vi.mocked(countFollowing).mockResolvedValue(0);
     vi.mocked(isFollowing).mockResolvedValue(false);
   });
 
@@ -62,7 +75,7 @@ describe("getUserProfileService", () => {
 
   // ─── email非公開 ───
   it("getUserProfile_レスポンスにemailを含まない", async () => {
-    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null });
+    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0 });
 
     const profile = await getUserProfileService(USER_ID);
 
@@ -71,7 +84,7 @@ describe("getUserProfileService", () => {
 
   // ─── フォロー状態 ───
   it("getUserProfile_閲覧者IDなし_followedByCurrentUserはfalse", async () => {
-    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null });
+    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0 });
 
     const profile = await getUserProfileService(USER_ID);
 
@@ -80,7 +93,7 @@ describe("getUserProfileService", () => {
   });
 
   it("getUserProfile_閲覧者がフォロー中_followedByCurrentUserはtrue", async () => {
-    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null });
+    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0 });
     vi.mocked(isFollowing).mockResolvedValue(true);
 
     const profile = await getUserProfileService(USER_ID, VIEWER_ID);
@@ -258,5 +271,107 @@ describe("searchUsersService", () => {
     const result = await searchUsersService({ q: "", limit: 20 });
 
     expect(result.users.map((u) => u.id)).toEqual(["u2", "u3", "u1"]);
+  });
+});
+
+describe("changePasswordService", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  // ─── changePassword ───
+  it("changePassword_他人のIDを指定_ForbiddenErrorかつrepositoryは呼ばれない", async () => {
+    await expect(
+      changePasswordService(USER_ID, VIEWER_ID, "current-pw", "new-password")
+    ).rejects.toThrow(ForbiddenError);
+    expect(findUserPasswordHash).not.toHaveBeenCalled();
+    expect(updateUserPassword).not.toHaveBeenCalled();
+  });
+
+  it("changePassword_存在しないユーザー_NotFoundError", async () => {
+    vi.mocked(findUserPasswordHash).mockResolvedValue(null);
+
+    await expect(
+      changePasswordService(USER_ID, USER_ID, "current-pw", "new-password")
+    ).rejects.toThrow(NotFoundError);
+  });
+
+  it("changePassword_現在のパスワードが誤り_ValidationErrorかつrepository更新は呼ばれない", async () => {
+    vi.mocked(findUserPasswordHash).mockResolvedValue("hashed-current");
+    vi.mocked(compare).mockResolvedValue(false as never);
+
+    await expect(
+      changePasswordService(USER_ID, USER_ID, "wrong-current-pw", "new-password")
+    ).rejects.toThrow(ValidationError);
+    expect(updateUserPassword).not.toHaveBeenCalled();
+  });
+
+  it("changePassword_現在のパスワードが正しい_ハッシュ化した新パスワードで更新される", async () => {
+    vi.mocked(findUserPasswordHash).mockResolvedValue("hashed-current");
+    vi.mocked(compare).mockResolvedValue(true as never);
+
+    await changePasswordService(USER_ID, USER_ID, "current-pw", "new-password");
+
+    expect(updateUserPassword).toHaveBeenCalledWith(USER_ID, "new-hashed-password");
+  });
+});
+
+describe("changeEmailService", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  // ─── changeEmail ───
+  it("changeEmail_他人のIDを指定_ForbiddenErrorかつrepositoryは呼ばれない", async () => {
+    await expect(
+      changeEmailService(USER_ID, VIEWER_ID, "new@example.com", "current-pw")
+    ).rejects.toThrow(ForbiddenError);
+    expect(findUserPasswordHashAndEmail).not.toHaveBeenCalled();
+    expect(updateUserEmail).not.toHaveBeenCalled();
+  });
+
+  it("changeEmail_存在しないユーザー_NotFoundError", async () => {
+    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue(null);
+
+    await expect(
+      changeEmailService(USER_ID, USER_ID, "new@example.com", "current-pw")
+    ).rejects.toThrow(NotFoundError);
+  });
+
+  it("changeEmail_現在のパスワードが誤り_ValidationErrorかつrepository更新は呼ばれない", async () => {
+    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({ password: "hashed-current", email: "old@example.com" });
+    vi.mocked(compare).mockResolvedValue(false as never);
+
+    await expect(
+      changeEmailService(USER_ID, USER_ID, "new@example.com", "wrong-pw")
+    ).rejects.toThrow(ValidationError);
+    expect(updateUserEmail).not.toHaveBeenCalled();
+  });
+
+  it("changeEmail_新しいメールアドレスが既存ユーザーと重複_ConflictError", async () => {
+    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({ password: "hashed-current", email: "old@example.com" });
+    vi.mocked(compare).mockResolvedValue(true as never);
+    vi.mocked(findUserByEmail).mockResolvedValue({ id: "other-user" } as never);
+
+    await expect(
+      changeEmailService(USER_ID, USER_ID, "taken@example.com", "current-pw")
+    ).rejects.toThrow(ConflictError);
+    expect(updateUserEmail).not.toHaveBeenCalled();
+  });
+
+  it("changeEmail_現在と同じメールアドレスを指定_重複チェックをスキップし何もしない(境界値)", async () => {
+    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({ password: "hashed-current", email: "same@example.com" });
+    vi.mocked(compare).mockResolvedValue(true as never);
+
+    await changeEmailService(USER_ID, USER_ID, "same@example.com", "current-pw");
+
+    expect(findUserByEmail).not.toHaveBeenCalled();
+    expect(updateUserEmail).not.toHaveBeenCalled();
+  });
+
+  it("changeEmail_正常なリクエスト_新しいメールアドレスで更新される", async () => {
+    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({ password: "hashed-current", email: "old@example.com" });
+    vi.mocked(compare).mockResolvedValue(true as never);
+    vi.mocked(findUserByEmail).mockResolvedValue(null);
+
+    await changeEmailService(USER_ID, USER_ID, "new@example.com", "current-pw");
+
+    expect(updateUserEmail).toHaveBeenCalledWith(USER_ID, "new@example.com");
   });
 });

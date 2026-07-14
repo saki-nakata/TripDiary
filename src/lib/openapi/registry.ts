@@ -3,7 +3,8 @@ import { OpenAPIRegistry, OpenApiGeneratorV3 } from "@asteasolutions/zod-to-open
 import { z } from "zod";
 import { postSchema } from "@/lib/validations/post";
 import { signupApiSchema, loginSchema } from "@/lib/validations/auth";
-import { userUpdateSchema } from "@/lib/validations/user";
+import { userUpdateSchema, passwordChangeApiSchema, emailChangeSchema } from "@/lib/validations/user";
+import { planSchema } from "@/lib/validations/plan";
 import {
   errorResponseSchema,
   validationErrorResponseSchema,
@@ -19,6 +20,11 @@ import {
   followToggleResponseSchema,
   userListResponseSchema,
   messageResponseSchema,
+  planResponseSchema,
+  planListResponseSchema,
+  planDetailResponseSchema,
+  statsYearsResponseSchema,
+  statsResponseSchema,
 } from "./schemas";
 
 const registry = new OpenAPIRegistry();
@@ -300,6 +306,43 @@ registry.registerPath({
 });
 
 registry.registerPath({
+  method: "patch",
+  path: "/api/users/{id}/password",
+  summary: "パスワード変更（本人のみ、現在のパスワード確認あり）",
+  tags: ["Users"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({ id: z.string() }),
+    body: { content: { "application/json": { schema: passwordChangeApiSchema } } },
+  },
+  responses: {
+    200: { description: "変更結果", content: { "application/json": { schema: messageResponseSchema } } },
+    400: commonErrors[400],
+    401: commonErrors[401],
+    403: commonErrors[403],
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/users/{id}/email",
+  summary: "メールアドレス変更（本人のみ、現在のパスワード確認あり）",
+  tags: ["Users"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({ id: z.string() }),
+    body: { content: { "application/json": { schema: emailChangeSchema } } },
+  },
+  responses: {
+    200: { description: "変更結果", content: { "application/json": { schema: messageResponseSchema } } },
+    400: commonErrors[400],
+    401: commonErrors[401],
+    403: commonErrors[403],
+    409: { description: "メールアドレス重複", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
   method: "post",
   path: "/api/users/{id}/follow",
   summary: "フォロー／アンフォロー トグル",
@@ -370,6 +413,126 @@ registry.registerPath({
   },
   responses: {
     200: { description: "アップロード結果", content: { "application/json": { schema: uploadResponseSchema } } },
+    400: commonErrors[400],
+    401: commonErrors[401],
+  },
+});
+
+// ─── plans ───
+registry.registerPath({
+  method: "get",
+  path: "/api/plans",
+  summary: "自分のプラン一覧取得",
+  tags: ["Plans"],
+  security: [{ [bearerAuth.name]: [] }],
+  responses: {
+    200: { description: "プラン一覧", content: { "application/json": { schema: planListResponseSchema } } },
+    401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/plans",
+  summary: "プラン作成",
+  tags: ["Plans"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    body: { content: { "application/json": { schema: planSchema } } },
+  },
+  responses: {
+    201: { description: "作成されたプラン", content: { "application/json": { schema: planResponseSchema } } },
+    400: commonErrors[400],
+    401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/plans/{id}",
+  summary: "プラン詳細取得（本人のみ）",
+  tags: ["Plans"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    200: { description: "プラン詳細", content: { "application/json": { schema: planDetailResponseSchema } } },
+    401: commonErrors[401],
+    403: commonErrors[403],
+    404: commonErrors[404],
+  },
+});
+
+registry.registerPath({
+  method: "put",
+  path: "/api/plans/{id}",
+  summary: "プラン更新（本人のみ）",
+  tags: ["Plans"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({ id: z.string() }),
+    body: { content: { "application/json": { schema: planSchema } } },
+  },
+  responses: {
+    200: { description: "更新されたプラン", content: { "application/json": { schema: planResponseSchema } } },
+    400: commonErrors[400],
+    401: commonErrors[401],
+    403: commonErrors[403],
+    404: commonErrors[404],
+  },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/plans/{id}",
+  summary: "プラン削除（本人のみ）",
+  tags: ["Plans"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    200: { description: "削除結果", content: { "application/json": { schema: messageResponseSchema } } },
+    401: commonErrors[401],
+    403: commonErrors[403],
+    404: commonErrors[404],
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/plans/{id}/complete",
+  summary: "完了フラグ切り替え（本人のみ）",
+  tags: ["Plans"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    200: { description: "更新されたプラン", content: { "application/json": { schema: planResponseSchema } } },
+    401: commonErrors[401],
+    403: commonErrors[403],
+    404: commonErrors[404],
+  },
+});
+
+// ─── stats ───
+registry.registerPath({
+  method: "get",
+  path: "/api/stats/years",
+  summary: "投稿がある年一覧取得",
+  tags: ["Stats"],
+  security: [{ [bearerAuth.name]: [] }],
+  responses: {
+    200: { description: "年一覧", content: { "application/json": { schema: statsYearsResponseSchema } } },
+    401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/stats",
+  summary: "年別統計データ取得",
+  tags: ["Stats"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: { query: z.object({ year: z.string().describe('年（例: "2026"）または "all"（全期間）') }) },
+  responses: {
+    200: { description: "年別統計", content: { "application/json": { schema: statsResponseSchema } } },
     400: commonErrors[400],
     401: commonErrors[401],
   },

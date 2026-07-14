@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { createSolidColorPng } from "./utils/testImage";
 
 const TEST_EMAIL = "test_playwright_posts@example.com";
 const TEST_USER = {
@@ -71,17 +72,8 @@ test.describe.serial("投稿の主要フロー（作成 → 詳細表示 → い
     await expect(page.getByRole("heading", { name: "💬 コメント" })).toBeInViewport();
   });
 
-  test("いいね → トグルされ件数が1増える", async ({ page }) => {
-    await page.goto(`/posts/${postId}`);
-
-    const likeButton = page.getByTestId("like-button");
-    await expect(likeButton).toContainText("0");
-
-    await likeButton.click();
-
-    await expect(likeButton).toContainText("❤️");
-    await expect(likeButton).toContainText("1");
-  });
+  // 自分の投稿にはいいねできない仕様のため、いいねのトグル自体の検証は
+  // like.service.test.ts（自分の投稿以外に対するトグル）でカバーする。
 
   test("コメント投稿 → 一覧に反映される", async ({ page }) => {
     await page.goto(`/posts/${postId}`);
@@ -107,5 +99,66 @@ test.describe.serial("投稿の主要フロー（作成 → 詳細表示 → い
     await page.getByRole("button", { name: "削除する" }).click();
 
     await expect(page).toHaveURL("/", { timeout: 5000 });
+  });
+
+  test("複数枚の写真をアップロードし、ドラッグ&ドロップで並び替えて保存できる", async ({ page }) => {
+    await page.goto("/posts/new");
+
+    await page.fill('input[name="title"]', `E2E画像並び替えテスト_${Date.now()}`);
+    await page.fill('textarea[name="body"]', "画像並び替えのE2Eテストです。");
+    await page.selectOption('select[name="location"]', "東京都");
+    await page.selectOption('select[name="category"]', "観光");
+    await page.fill('input[name="visitedAt"]', "2026-01-01");
+
+    await page.locator('input[type="file"]').setInputFiles([
+      { name: "red.png", mimeType: "image/png", buffer: createSolidColorPng(255, 0, 0) },
+      { name: "green.png", mimeType: "image/png", buffer: createSolidColorPng(0, 255, 0) },
+      { name: "blue.png", mimeType: "image/png", buffer: createSolidColorPng(0, 0, 255) },
+    ]);
+
+    const thumbs = page.locator(".group");
+    await expect(thumbs).toHaveCount(3, { timeout: 10000 });
+    await expect(page.getByText("（ドラッグ&ドロップで並び順を変更できます）")).toBeVisible();
+
+    const photoImg = thumbs.locator('img[alt^="写真"]');
+    const beforeSrcs = await photoImg.evaluateAll((els) => els.map((e) => e.getAttribute("src")));
+
+    // 1枚目を3枚目の位置までドラッグして並び替える
+    const firstBox = await thumbs.nth(0).boundingBox();
+    const thirdBox = await thumbs.nth(2).boundingBox();
+    if (!firstBox || !thirdBox) throw new Error("サムネイルの座標が取得できません");
+    const startX = firstBox.x + firstBox.width / 2;
+    const startY = firstBox.y + firstBox.height / 2;
+    const endX = thirdBox.x + thirdBox.width / 2;
+    const endY = thirdBox.y + thirdBox.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++) {
+      await page.mouse.move(startX + (endX - startX) * (i / 10), startY + (endY - startY) * (i / 10), { steps: 5 });
+      await page.waitForTimeout(30);
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+
+    const afterSrcs = await photoImg.evaluateAll((els) => els.map((e) => e.getAttribute("src")));
+    expect(afterSrcs).not.toEqual(beforeSrcs);
+    expect([...afterSrcs].sort()).toEqual([...beforeSrcs].sort());
+    expect(afterSrcs[0]).not.toBe(beforeSrcs[0]);
+
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\?highlighted=/);
+    const url = new URL(page.url());
+    const newPostId = url.searchParams.get("highlighted") ?? "";
+
+    await page.goto(`/posts/${newPostId}`);
+    const detailSrcs = await page.locator('img[sizes="72px"]').evaluateAll((els) =>
+      els.map((e) => {
+        const src = e.getAttribute("src") ?? "";
+        const encoded = new URL(src, "http://localhost").searchParams.get("url");
+        return encoded ? decodeURIComponent(encoded) : src;
+      })
+    );
+    expect(detailSrcs).toEqual(afterSrcs);
   });
 });

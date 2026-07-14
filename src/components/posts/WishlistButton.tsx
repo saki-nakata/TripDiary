@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useToast } from "@/contexts/toast-context";
 import { useRouter } from "next/navigation";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Props = {
   postId: string;
@@ -50,8 +51,8 @@ export function WishlistButton({ postId, initialWishlisted, isLoggedIn }: Props)
       }`}
       title={wishlisted ? "行きたいを解除" : "行きたいに追加"}
     >
-      <span>{wishlisted ? "🔖" : "🔖"}</span>
-      <span className="hidden sm:inline">{wishlisted ? "行きたい！済" : "行きたい！"}</span>
+      {wishlisted ? <TwemojiIcon codepoint="1f516" className="h-4 w-4" /> : <span>🔖</span>}
+      <span className="hidden sm:inline">{wishlisted ? "また行きたい！" : "また行きたい？"}</span>
     </button>
   );
 }

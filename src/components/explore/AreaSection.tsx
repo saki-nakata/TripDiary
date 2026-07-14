@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type AreaItem = { location: string; count: number; thumbnailUrl: string | null };
 
@@ -9,16 +10,19 @@ export function AreaSection({ areas }: { areas: AreaItem[] }) {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-zinc-800">📍 エリアから探す</h2>
+        <h2 className="flex items-center gap-2 text-lg font-bold text-zinc-800">
+          <TwemojiIcon codepoint="1f4cd" className="h-5 w-5" /> エリアから探す
+        </h2>
         <Link href="/search?tab=area" className="text-sm text-[#16a34a] font-medium hover:underline">
           エリア検索
         </Link>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
         {areas.map((area) => (
-          <div
+          <Link
             key={area.location}
-            className="rounded-xl overflow-hidden bg-white border border-zinc-200"
+            href={`/search?tab=area&location=${encodeURIComponent(area.location)}`}
+            className="rounded-xl overflow-hidden bg-white border border-zinc-200 transition-all hover:-translate-y-1 hover:border-zinc-300 hover:shadow-md"
           >
             <div className="relative h-20 bg-zinc-100">
               {area.thumbnailUrl && (
@@ -35,7 +39,7 @@ export function AreaSection({ areas }: { areas: AreaItem[] }) {
               <p className="font-semibold text-sm text-zinc-800">{area.location}</p>
               <p className="text-xs text-zinc-400">{area.count}件</p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </section>

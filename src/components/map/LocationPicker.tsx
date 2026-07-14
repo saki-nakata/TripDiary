@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 const defaultIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -135,10 +136,10 @@ export function LocationPicker({ lat, lng, onChange, label }: Props) {
           <button
             type="button"
             onClick={handleReset}
-            className="text-zinc-400 hover:text-zinc-600"
+            className="ml-1 text-zinc-400 hover:text-zinc-600"
             aria-label="位置情報をリセット"
           >
-            ×
+            <TwemojiIcon codepoint="274c" alt="リセット" className="h-2.5 w-2.5" />
           </button>
         </div>
       )}
@@ -152,10 +153,10 @@ export function LocationPicker({ lat, lng, onChange, label }: Props) {
             <button
               type="button"
               onClick={() => setExpanded(false)}
-              className="absolute -top-10 right-0 text-white text-3xl leading-none hover:opacity-70 transition-opacity"
+              className="absolute -top-10 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md hover:opacity-70 transition-opacity"
               aria-label="閉じる"
             >
-              ✕
+              <TwemojiIcon codepoint="2716" alt="閉じる" className="h-4 w-4" />
             </button>
             <PinMap
               center={center}

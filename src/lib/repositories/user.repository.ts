@@ -14,7 +14,7 @@ export async function createUser(data: { nickname: string; email: string; passwo
 export async function findUserById(id: string) {
   return prisma.user.findUnique({
     where: { id },
-    select: { id: true, nickname: true, image: true, bio: true },
+    select: { id: true, nickname: true, image: true, bio: true, followerCount: true, followingCount: true },
   });
 }
 
@@ -26,6 +26,23 @@ export async function updateUser(id: string, data: { nickname: string; bio?: str
   });
 }
 
+export async function findUserPasswordHash(id: string): Promise<string | null> {
+  const user = await prisma.user.findUnique({ where: { id }, select: { password: true } });
+  return user?.password ?? null;
+}
+
+export async function updateUserPassword(id: string, hashedPassword: string) {
+  await prisma.user.update({ where: { id }, data: { password: hashedPassword } });
+}
+
+export async function findUserPasswordHashAndEmail(id: string) {
+  return prisma.user.findUnique({ where: { id }, select: { password: true, email: true } });
+}
+
+export async function updateUserEmail(id: string, email: string) {
+  await prisma.user.update({ where: { id }, data: { email } });
+}
+
 export async function countUserPosts(authorId: string) {
   return prisma.post.count({ where: { authorId } });
 }
@@ -35,11 +52,13 @@ export async function countVisitedByUser(userId: string) {
 }
 
 export async function countLikesReceived(authorId: string) {
-  return prisma.like.count({ where: { post: { authorId } } });
+  const result = await prisma.post.aggregate({ where: { authorId }, _sum: { likeCount: true } });
+  return result._sum.likeCount ?? 0;
 }
 
 export async function countCommentsReceived(authorId: string) {
-  return prisma.comment.count({ where: { post: { authorId } } });
+  const result = await prisma.post.aggregate({ where: { authorId }, _sum: { commentCount: true } });
+  return result._sum.commentCount ?? 0;
 }
 
 export type TabiScoreInputs = {
@@ -55,12 +74,13 @@ export async function computeTabiScoreInputsForUsers(userIds: string[]): Promise
   );
   if (userIds.length === 0) return result;
 
-  const [postCounts, visitedCounts, postsWithReceivedCounts] = await Promise.all([
+  const [postCounts, visitedCounts, receivedCounts] = await Promise.all([
     prisma.post.groupBy({ by: ["authorId"], where: { authorId: { in: userIds } }, _count: { _all: true } }),
     prisma.visited.groupBy({ by: ["userId"], where: { userId: { in: userIds } }, _count: { _all: true } }),
-    prisma.post.findMany({
+    prisma.post.groupBy({
+      by: ["authorId"],
       where: { authorId: { in: userIds } },
-      select: { authorId: true, _count: { select: { likes: true, comments: true } } },
+      _sum: { likeCount: true, commentCount: true },
     }),
   ]);
 
@@ -70,10 +90,10 @@ export async function computeTabiScoreInputsForUsers(userIds: string[]): Promise
   for (const row of visitedCounts) {
     result.get(row.userId)!.visitedCount = row._count._all;
   }
-  for (const post of postsWithReceivedCounts) {
-    const entry = result.get(post.authorId)!;
-    entry.likesReceived += post._count.likes;
-    entry.commentsReceived += post._count.comments;
+  for (const row of receivedCounts) {
+    const entry = result.get(row.authorId)!;
+    entry.likesReceived = row._sum.likeCount ?? 0;
+    entry.commentsReceived = row._sum.commentCount ?? 0;
   }
 
   return result;
@@ -141,14 +161,18 @@ export async function searchUsersByNickname({
       nickname: true,
       image: true,
       bio: true,
-      _count: { select: { posts: true, followers: true } },
+      followerCount: true,
+      _count: { select: { posts: true } },
     },
   });
 
   const hasMore = users.length > limit;
   const items = hasMore ? users.slice(0, limit) : users;
   return {
-    users: items,
+    users: items.map(({ followerCount, _count, ...rest }) => ({
+      ...rest,
+      _count: { posts: _count.posts, followers: followerCount },
+    })),
     nextCursor: hasMore ? items[items.length - 1].id : null,
     hasMore,
   };

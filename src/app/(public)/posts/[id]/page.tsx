@@ -14,7 +14,9 @@ import { MapViewWrapper } from "@/components/map/MapViewWrapper";
 import { DeleteButton } from "@/components/posts/DeleteButton";
 import { BackButton } from "@/components/posts/BackButton";
 import { ScrollToHash } from "@/components/posts/ScrollToHash";
-import { CATEGORY_ICONS, CATEGORY_COLORS } from "@/lib/constants";
+import { CATEGORY_COLORS } from "@/lib/constants";
+import { CategoryIcon } from "@/components/ui/category-icon";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import type { Post, CostBreakdownItem } from "@/types/post";
 
 type Props = {
@@ -39,10 +41,10 @@ export default async function PostDetailPage({ params }: Props) {
   return (
     <div className="relative">
       <ScrollToHash />
-      <div className="px-4 pt-1 md:px-6 md:pt-1">
+      <div className="absolute left-0 top-1 z-10 md:left-2">
         <BackButton />
       </div>
-      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-7 -mt-6">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-7 -mt-4">
 
         {/* Header */}
         <div className="space-y-3">
@@ -53,10 +55,12 @@ export default async function PostDetailPage({ params }: Props) {
                   CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600"
                 }`}
               >
-                {CATEGORY_ICONS[post.category] ?? "📍"} {post.category}
+                <CategoryIcon category={post.category} /> {post.category}
               </span>
             )}
-            <span className="text-zinc-500 text-sm">📍 {post.location}</span>
+            <span className="inline-flex items-center gap-1 text-zinc-500 text-sm">
+              <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3.5 w-3.5" /> {post.location}
+            </span>
             <span className="text-zinc-400 text-sm ml-auto">訪問日：{visitedDate}</span>
           </div>
           <h1 className="text-3xl font-bold text-zinc-900 leading-snug">{post.title}</h1>
@@ -81,7 +85,7 @@ export default async function PostDetailPage({ params }: Props) {
               <div className="ml-auto flex gap-2">
                 <Link
                   href={`/posts/${post.id}/edit`}
-                  className="px-3 py-1 text-sm border border-zinc-200 rounded-lg hover:bg-zinc-50"
+                  className="px-3 py-1 text-sm border border-zinc-200 rounded-lg transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
                 >
                   編集
                 </Link>
@@ -105,6 +109,7 @@ export default async function PostDetailPage({ params }: Props) {
             initialLiked={post.isLiked ?? false}
             initialCount={post._count.likes}
             isLoggedIn={!!userId}
+            disabled={isAuthor}
           />
           <WishlistButton
             postId={post.id}
@@ -115,6 +120,7 @@ export default async function PostDetailPage({ params }: Props) {
             postId={post.id}
             initialVisited={post.isVisited ?? false}
             isLoggedIn={!!userId}
+            forcedVisited={isAuthor}
           />
         </div>
 
@@ -125,9 +131,11 @@ export default async function PostDetailPage({ params }: Props) {
         {isAuthor && post.cost != null && post.cost > 0 && (
           <div className="border border-amber-200 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <p className="text-base font-semibold text-zinc-800">💴 費用内訳</p>
+              <p className="flex items-center gap-1.5 text-base font-semibold text-zinc-800">
+                <TwemojiIcon codepoint="1f4b4" alt="💴" className="h-4 w-4" /> 費用内訳
+              </p>
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium px-2 py-0.5">
-                🔒 自分のみ表示
+                <TwemojiIcon codepoint="1f512" alt="🔒" className="h-3 w-3" /> 自分のみ表示
               </span>
             </div>
             <p className="text-sm font-semibold text-zinc-700">合計：¥{post.cost.toLocaleString()}</p>
@@ -158,8 +166,8 @@ export default async function PostDetailPage({ params }: Props) {
         {/* Related */}
         {related.length > 0 && (
           <div>
-            <p className="text-base font-semibold text-zinc-800 mb-3">
-              📍 {post.location}の関連スポット
+            <p className="flex items-center gap-1.5 text-base font-semibold text-zinc-800 mb-3">
+              <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-4 w-4" /> {post.location}の関連スポット
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {related.map((r) => (

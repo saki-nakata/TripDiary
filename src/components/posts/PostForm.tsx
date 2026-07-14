@@ -6,16 +6,75 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/contexts/toast-context";
 import { StarRating } from "./StarRating";
 import { LocationPickerWrapper } from "@/components/map/LocationPickerWrapper";
-import { CATEGORIES, LOCATIONS } from "@/lib/constants";
+import { CATEGORIES, CATEGORY_ICONS, LOCATIONS } from "@/lib/constants";
 import { postSchema, type PostInput } from "@/lib/validations/post";
 import type { Post, CostBreakdownItem } from "@/types/post";
 import { useState, useRef } from "react";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { useQueryClient } from "@tanstack/react-query";
 import type { PortalFeedData } from "@/components/explore/ExploreFeed";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+function SortableImageThumb({
+  url,
+  index,
+  draggable,
+  onRemove,
+}: {
+  url: string;
+  index: number;
+  draggable: boolean;
+  onRemove: (url: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: url });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...(draggable ? { ...attributes, ...listeners } : {})}
+      className={`relative group ${draggable ? "cursor-grab touch-none active:cursor-grabbing" : ""} ${isDragging ? "opacity-50 z-10" : ""}`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={`写真 ${index + 1}`}
+        className="w-20 h-20 object-cover rounded-lg border border-zinc-200"
+      />
+      <button
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => onRemove(url)}
+        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white shadow rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
 
 type Props = {
   initialData?: Post;
   planId?: string;
+  presetTitle?: string;
+  presetLocation?: string;
+  presetCategory?: string;
+  presetImageUrl?: string;
 };
 
 function formatAmount(value: number): string {
@@ -27,7 +86,7 @@ function parseAmount(value: string): number {
   return Number(value.replace(/,/g, "")) || 0;
 }
 
-export function PostForm({ initialData, planId }: Props) {
+export function PostForm({ initialData, planId, presetTitle, presetLocation, presetCategory, presetImageUrl }: Props) {
   const router = useRouter();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -37,11 +96,15 @@ export function PostForm({ initialData, planId }: Props) {
     initialData?.costBreakdown ?? []
   );
   const [imageUrls, setImageUrls] = useState<string[]>(
-    initialData?.images?.map((img) => img.url) ?? []
+    initialData?.images?.map((img) => img.url) ?? (presetImageUrl ? [presetImageUrl] : [])
   );
   const [uploadingCount, setUploadingCount] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+  );
 
   const {
     register,
@@ -52,10 +115,10 @@ export function PostForm({ initialData, planId }: Props) {
   } = useForm<PostInput>({
     resolver: zodResolver(postSchema),
     defaultValues: {
-      title: initialData?.title ?? "",
+      title: initialData?.title ?? presetTitle ?? "",
       body: initialData?.body ?? "",
-      location: initialData?.location ?? "",
-      category: (initialData?.category as PostInput["category"]) ?? undefined,
+      location: initialData?.location ?? presetLocation ?? "",
+      category: (initialData?.category as PostInput["category"]) ?? (presetCategory as PostInput["category"]) ?? undefined,
       rating: initialData?.rating ?? undefined,
       visitedAt: initialData?.visitedAt ? initialData.visitedAt.slice(0, 10) : "",
       lat: initialData?.lat ?? null,
@@ -81,6 +144,17 @@ export function PostForm({ initialData, planId }: Props) {
 
   function removeCostItem(index: number) {
     setCostBreakdown(costBreakdown.filter((_, i) => i !== index));
+  }
+
+  function handleImageDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setImageUrls((prev) => {
+      const oldIndex = prev.indexOf(active.id as string);
+      const newIndex = prev.indexOf(over.id as string);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
   }
 
   async function uploadFiles(files: File[]) {
@@ -163,7 +237,11 @@ export function PostForm({ initialData, planId }: Props) {
         queryClient.setQueryData<PortalFeedData>(["explore-feed"], (old) =>
           old ? { ...old, latest: [created, ...old.latest].slice(0, 6) } : old
         );
-        router.push(`/?highlighted=${created.id}`);
+        if (planId) {
+          router.push(`/plans/${planId}`);
+        } else {
+          router.push(`/?highlighted=${created.id}`);
+        }
       }
     } catch (err) {
       showToast(err instanceof Error ? err.message : "エラーが発生しました", "error");
@@ -215,32 +293,33 @@ export function PostForm({ initialData, planId }: Props) {
 
         {/* 写真 */}
         <div className="space-y-2">
-          <label className="text-base font-bold text-zinc-700">写真</label>
+          <div className="flex items-center justify-between">
+            <label className="text-base font-bold text-zinc-700">写真</label>
+            {imageUrls.length > 1 && (
+              <p className="text-xs text-zinc-400">（ドラッグ&ドロップで並び順を変更できます）</p>
+            )}
+          </div>
           {imageUrls.length > 0 && (
-            <div className="flex gap-2 flex-wrap">
-              {imageUrls.map((url, i) => (
-                <div key={url} className="relative group">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={url}
-                    alt={`写真 ${i + 1}`}
-                    className="w-20 h-20 object-cover rounded-lg border border-zinc-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setImageUrls((prev) => prev.filter((u) => u !== url))}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    ✕
-                  </button>
+            <DndContext id="post-images" sensors={imageSensors} collisionDetection={closestCenter} onDragEnd={handleImageDragEnd}>
+              <SortableContext items={imageUrls} strategy={rectSortingStrategy}>
+                <div className="flex gap-2 flex-wrap">
+                  {imageUrls.map((url, i) => (
+                    <SortableImageThumb
+                      key={url}
+                      url={url}
+                      index={i}
+                      draggable={imageUrls.length > 1}
+                      onRemove={(u) => setImageUrls((prev) => prev.filter((x) => x !== u))}
+                    />
+                  ))}
+                  {uploadingCount > 0 && (
+                    <div className="w-20 h-20 rounded-lg border border-zinc-200 bg-zinc-50 flex items-center justify-center text-xs text-zinc-400">
+                      uploading…
+                    </div>
+                  )}
                 </div>
-              ))}
-              {uploadingCount > 0 && (
-                <div className="w-20 h-20 rounded-lg border border-zinc-200 bg-zinc-50 flex items-center justify-center text-xs text-zinc-400">
-                  uploading…
-                </div>
-              )}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
           <label
             className={`w-full h-14 rounded-xl border border-dashed flex items-center justify-center text-sm cursor-pointer transition-colors ${
@@ -312,7 +391,7 @@ export function PostForm({ initialData, planId }: Props) {
             >
               <option value="">選択してください</option>
               {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>{CATEGORY_ICONS[c]} {c}</option>
               ))}
             </select>
             {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
@@ -339,9 +418,18 @@ export function PostForm({ initialData, planId }: Props) {
               🔒 自分のみ表示
             </span>
           </div>
-          <p className="text-sm font-semibold text-zinc-700 mb-3">
-            合計：{totalCost > 0 ? `¥${totalCost.toLocaleString()}` : "—"}
-          </p>
+          <div className="flex items-center justify-between pr-4 mb-1">
+            <p className="text-sm font-semibold text-zinc-700">
+              合計：{totalCost > 0 ? `¥${totalCost.toLocaleString()}` : "—"}
+            </p>
+            <button
+              type="button"
+              onClick={addCostItem}
+              className="py-2 px-4 rounded-lg border border-dashed border-zinc-300 text-sm font-semibold text-zinc-500 hover:bg-zinc-50 transition-colors"
+            >
+              ＋ 項目を追加
+            </button>
+          </div>
           {costBreakdown.map((item, i) => (
             <div key={i} className="flex gap-2">
               <input
@@ -362,19 +450,12 @@ export function PostForm({ initialData, planId }: Props) {
               <button
                 type="button"
                 onClick={() => removeCostItem(i)}
-                className="rounded-lg border border-zinc-200 px-2 py-2 text-sm text-zinc-400 hover:text-red-500 hover:border-red-300 transition-colors"
+                className="px-2 py-2 text-zinc-400 hover:text-red-500 transition-colors"
               >
-                ✕
+                <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
               </button>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={addCostItem}
-            className="w-40 py-2 rounded-lg border border-dashed border-zinc-300 text-sm font-semibold text-zinc-500 hover:bg-zinc-50 transition-colors"
-          >
-            ＋ 項目を追加
-          </button>
         </div>
 
         {/* 地図 */}

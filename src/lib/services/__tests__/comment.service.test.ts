@@ -97,24 +97,26 @@ describe("deleteCommentService", () => {
   it("コメント本人_削除される", async () => {
     vi.mocked(findCommentById).mockResolvedValue({
       authorId: USER_ID,
+      postId: POST_ID,
       post: { authorId: POST_AUTHOR_ID },
     } as never);
     vi.mocked(deleteComment).mockResolvedValue({} as never);
 
     await deleteCommentService(USER_ID, COMMENT_ID);
 
-    expect(deleteComment).toHaveBeenCalledWith(COMMENT_ID);
+    expect(deleteComment).toHaveBeenCalledWith(COMMENT_ID, POST_ID);
   });
 
   it("投稿オーナー本人_他人のコメントでも削除できる", async () => {
     vi.mocked(findCommentById).mockResolvedValue({
       authorId: OTHER_USER_ID,
+      postId: POST_ID,
       post: { authorId: POST_AUTHOR_ID },
     } as never);
     vi.mocked(deleteComment).mockResolvedValue({} as never);
 
     await deleteCommentService(POST_AUTHOR_ID, COMMENT_ID);
 
-    expect(deleteComment).toHaveBeenCalledWith(COMMENT_ID);
+    expect(deleteComment).toHaveBeenCalledWith(COMMENT_ID, POST_ID);
   });
 });

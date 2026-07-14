@@ -27,5 +27,5 @@ export async function deleteCommentService(userId: string, commentId: string) {
   if (comment.authorId !== userId && comment.post.authorId !== userId) {
     throw new ForbiddenError();
   }
-  return deleteComment(commentId);
+  return deleteComment(commentId, comment.postId);
 }

@@ -57,6 +57,9 @@ playwright-report/
 # vitest coverage report
 coverage/
 
+# local one-off scripts
+scripts-tmp-*.js
+
 # debug
 npm-debug.log*
 yarn-debug.log*

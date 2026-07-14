@@ -1,9 +1,13 @@
 # TripDiary DB設計書
 
-**バージョン:** 1.4
+**バージョン:** 1.6
 **作成日:** 2026-06-27
-**更新日:** 2026-07-04
+**更新日:** 2026-07-13
 **作成者:** Nakata Saki
+
+> ✅ **2026-07-11 更新：** `plan_spots`テーブルが実装と乖離していたため修正（複合主キー`(planId, postId)`→単一`id`主キー、`postId`をNULL許容化、自由入力スポット用の`freeTitle`/`freeLocation`/`freeCategory`を追加）。
+>
+> ✅ **2026-07-13 更新：** 一覧表示のたびに `_count` を都度集計していたのを解消するため、`posts.likeCount`/`posts.commentCount`・`users.followerCount`/`users.followingCount`（非正規化カウンタ、`Int @default(0)`）を追加（マイグレーション`20260712131822_add_denormalized_counters`）。
 
 ---
 
@@ -30,6 +34,8 @@ erDiagram
         String image
         String bio
         String password
+        Int followerCount
+        Int followingCount
         DateTime createdAt
         DateTime updatedAt
     }
@@ -47,6 +53,8 @@ erDiagram
         String planId FK
         Float lat
         Float lng
+        Int likeCount
+        Int commentCount
         String authorId FK
         DateTime createdAt
         DateTime updatedAt
@@ -78,9 +86,13 @@ erDiagram
     }
 
     PlanSpot {
-        String planId PK,FK
-        String postId PK,FK
+        String id PK
+        String planId FK
+        String postId FK "nullable（自由入力スポットの場合null）"
         Int displayOrder
+        String freeTitle "自由入力スポット名（postId未設定時）"
+        String freeLocation "自由入力エリア（postId未設定時）"
+        String freeCategory "自由入力カテゴリ（postId未設定時、任意）"
     }
 
     PostImage {
@@ -173,6 +185,8 @@ erDiagram
 | image | TEXT | NULL | - | プロフィール画像URL（S3） |
 | bio | VARCHAR(200) | NULL | - | 自己紹介文 |
 | password | VARCHAR(255) | NULL | - | ハッシュ化済みパスワード（OAuth利用時はNULL） |
+| followerCount | INT | NOT NULL | 0 | フォロワー数（非正規化カウンタ。`follows`テーブルの`increment`/`decrement`と同一トランザクションで更新） |
+| followingCount | INT | NOT NULL | 0 | フォロー中数（非正規化カウンタ。同上） |
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
 | updatedAt | DATETIME(3) | NOT NULL | - | 更新日時 |
 
@@ -203,6 +217,8 @@ erDiagram
 | planId | VARCHAR(30) | NULL | - | 旅行プランから投稿した場合のプランID |
 | lat | FLOAT | NULL | - | 緯度（任意・地図ピン設置時に設定） |
 | lng | FLOAT | NULL | - | 経度（任意・地図ピン設置時に設定） |
+| likeCount | INT | NOT NULL | 0 | いいね数（非正規化カウンタ。`likes`テーブルの`increment`/`decrement`と同一トランザクションで更新） |
+| commentCount | INT | NOT NULL | 0 | コメント数（非正規化カウンタ。同上） |
 | authorId | VARCHAR(30) | NOT NULL | - | 投稿者のユーザーID |
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
 | updatedAt | DATETIME(3) | NOT NULL | - | 更新日時 |
@@ -362,14 +378,20 @@ erDiagram
 
 | カラム名 | 型 | NULL | デフォルト | 説明 |
 |---------|-----|------|-----------|------|
+| id | VARCHAR(30) | NOT NULL | cuid() | プランスポットID（cuid） |
 | planId | VARCHAR(30) | NOT NULL | - | プランID |
-| postId | VARCHAR(30) | NOT NULL | - | スポット（投稿）ID |
+| postId | VARCHAR(30) | NULL | - | スポット（投稿）ID。自由入力スポットの場合はNULL |
 | displayOrder | INT | NOT NULL | 0 | スポットの訪問順序（0始まり） |
+| freeTitle | VARCHAR(60) | NULL | - | 自由入力スポット名（`postId`未設定時に使用） |
+| freeLocation | VARCHAR(50) | NULL | - | 自由入力エリア（`postId`未設定時に使用） |
+| freeCategory | VARCHAR(20) | NULL | - | 自由入力カテゴリ（`postId`未設定時に使用、任意） |
 
 **制約**
-- 複合主キー：`(planId, postId)`
+- 主キー：`id`（cuid、単一PK。当初は複合主キー`(planId, postId)`だったが、投稿に紐付かない自由入力スポットに対応するため`id`単一PKに変更・`postId`をNULL許容化した）
 - 外部キー：`planId` → `plans.id`（CASCADE DELETE）
-- 外部キー：`postId` → `posts.id`（CASCADE DELETE）
+- 外部キー：`postId` → `posts.id`（CASCADE DELETE、NULL可）
+- インデックス：`planId`
+- 同一プランに同一投稿を複数回登録することは意図的に許容している（重複防止制約は設けない）
 
 ---
 

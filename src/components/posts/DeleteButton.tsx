@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useToast } from "@/contexts/toast-context";
 import { useQueryClient } from "@tanstack/react-query";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Props = {
   postId: string;
@@ -42,7 +43,7 @@ export function DeleteButton({ postId }: Props) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm mx-4 flex flex-col gap-5">
             <div className="text-center">
-              <p className="text-2xl mb-2">🗑️</p>
+              <TwemojiIcon codepoint="1f5d1" className="mx-auto mb-2 h-8 w-8" />
               <h2 className="text-base font-bold text-zinc-900">投稿を削除しますか？</h2>
               <p className="text-sm text-zinc-500 mt-1">この操作は取り消せません。</p>
             </div>

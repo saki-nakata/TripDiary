@@ -1,4 +1,5 @@
-import { ForbiddenError, NotFoundError } from "@/lib/errors";
+import { compare, hash } from "bcryptjs";
+import { ForbiddenError, NotFoundError, ValidationError, ConflictError } from "@/lib/errors";
 import {
   findUserById,
   updateUser as updateUserRepo,
@@ -8,8 +9,13 @@ import {
   countCommentsReceived,
   computeTabiScoreInputsForUsers,
   searchUsersByNickname,
+  findUserPasswordHash,
+  updateUserPassword,
+  findUserByEmail,
+  findUserPasswordHashAndEmail,
+  updateUserEmail,
 } from "@/lib/repositories/user.repository";
-import { countFollowers, countFollowing, isFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
+import { isFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
 import type { UserUpdateInput } from "@/lib/validations/user";
 
 export function calcTabiScore({
@@ -37,14 +43,12 @@ export async function getUserProfileService(userId: string, viewerId?: string) {
   const user = await findUserById(userId);
   if (!user) throw new NotFoundError("ユーザーが見つかりません");
 
-  const [postCount, visitedCount, likesReceived, commentsReceived, followerCount, followingCount, followedByCurrentUser] =
+  const [postCount, visitedCount, likesReceived, commentsReceived, followedByCurrentUser] =
     await Promise.all([
       countUserPosts(userId),
       countVisitedByUser(userId),
       countLikesReceived(userId),
       countCommentsReceived(userId),
-      countFollowers(userId),
-      countFollowing(userId),
       viewerId ? isFollowing(viewerId, userId) : Promise.resolve(false),
     ]);
 
@@ -56,12 +60,20 @@ export async function getUserProfileService(userId: string, viewerId?: string) {
     image: user.image,
     bio: user.bio,
     postCount,
-    followerCount,
-    followingCount,
+    followerCount: user.followerCount,
+    followingCount: user.followingCount,
     followedByCurrentUser,
     tabiScore,
     tabiRank: tabiRank(tabiScore),
   };
+}
+
+export async function countUserPostsService(authorId: string) {
+  return countUserPosts(authorId);
+}
+
+export async function countVisitedByUserService(userId: string) {
+  return countVisitedByUser(userId);
 }
 
 export async function getTabiScoresForUsers(userIds: string[]): Promise<Map<string, { score: number; rank: string }>> {
@@ -105,4 +117,60 @@ export async function updateUserService(targetUserId: string, actingUserId: stri
     throw new ForbiddenError("他のユーザーのプロフィールは編集できません");
   }
   return updateUserRepo(targetUserId, data);
+}
+
+export async function changePasswordService(
+  targetUserId: string,
+  actingUserId: string,
+  currentPassword: string,
+  newPassword: string
+) {
+  if (targetUserId !== actingUserId) {
+    throw new ForbiddenError("他のユーザーのパスワードは変更できません");
+  }
+
+  const passwordHash = await findUserPasswordHash(targetUserId);
+  if (!passwordHash) throw new NotFoundError();
+
+  const isValid = await compare(currentPassword, passwordHash);
+  if (!isValid) {
+    throw new ValidationError("入力内容を確認してください", {
+      currentPassword: ["現在のパスワードが正しくありません"],
+    });
+  }
+
+  const hashedPassword = await hash(newPassword, 12);
+  await updateUserPassword(targetUserId, hashedPassword);
+}
+
+export async function changeEmailService(
+  targetUserId: string,
+  actingUserId: string,
+  newEmail: string,
+  currentPassword: string
+) {
+  if (targetUserId !== actingUserId) {
+    throw new ForbiddenError("他のユーザーのメールアドレスは変更できません");
+  }
+
+  const current = await findUserPasswordHashAndEmail(targetUserId);
+  if (!current?.password) throw new NotFoundError();
+
+  const isValid = await compare(currentPassword, current.password);
+  if (!isValid) {
+    throw new ValidationError("入力内容を確認してください", {
+      currentPassword: ["現在のパスワードが正しくありません"],
+    });
+  }
+
+  if (newEmail === current.email) {
+    return;
+  }
+
+  const existing = await findUserByEmail(newEmail);
+  if (existing) {
+    throw new ConflictError("このメールアドレスはすでに使用されています");
+  }
+
+  await updateUserEmail(targetUserId, newEmail);
 }

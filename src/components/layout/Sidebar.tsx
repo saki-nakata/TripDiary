@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 async function fetchUnreadCount(): Promise<number> {
   const res = await fetch("/api/notifications/unread-count");
@@ -17,7 +18,8 @@ function useUnreadCount() {
   const { data } = useQuery({
     queryKey: ["unread-count"],
     queryFn: fetchUnreadCount,
-    refetchInterval: 60_000,
+    staleTime: 60_000,
+    refetchInterval: 180_000,
   });
 
   return { count: data ?? 0 };
@@ -34,25 +36,25 @@ type NavItem = { divider: true } | NavLink;
 
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/", icon: "🏠", label: "ホーム", key: "dashboard" },
-  { href: "/search", icon: "🔍", label: "検索", key: "search" },
+  { href: "/", icon: "1f3e0", label: "ホーム", key: "dashboard" },
+  { href: "/search", icon: "1f50d", label: "検索", key: "search" },
   { divider: true },
-  { href: "/posts/new", icon: "✏️", label: "新規投稿", key: "posts-new" },
-  { href: "/users/[id]", icon: "👤", label: "プロフィール", key: "profile" },
+  { href: "/posts/new", icon: "1f4dd", label: "新規投稿", key: "posts-new" },
+  { href: "/users/[id]", icon: "1f464", label: "プロフィール", key: "profile" },
   { divider: true },
-  { href: "/mypage?tab=plans", icon: "🗺️", label: "旅行プラン", key: "plans", disabled: true },
-  { href: "/mypage?tab=myposts", icon: "✈️", label: "自分の投稿", key: "myposts" },
-  { href: "/mypage?tab=report", icon: "📋", label: "旅行レポート", key: "report", disabled: true },
-  { href: "/mypage?tab=wishlist", icon: "🔖", label: "行きたい", key: "wishlist" },
-  { href: "/mypage?tab=visited", icon: "✅", label: "訪問済み", key: "visited" },
-  { href: "/mypage?tab=follow-feed", icon: "👥", label: "フォロー中の投稿", key: "follow-feed" },
+  { href: "/mypage?tab=plans", icon: "1f9ed", label: "旅行プラン", key: "plans" },
+  { href: "/mypage?tab=myposts", icon: "1f4da", label: "自分の投稿", key: "myposts" },
+  { href: "/mypage?tab=report", icon: "1f4cb", label: "旅行レポート", key: "report" },
+  { href: "/mypage?tab=wishlist", icon: "1f516", label: "行きたい", key: "wishlist" },
+  { href: "/mypage?tab=visited", icon: "1f6a9", label: "訪問済み", key: "visited" },
+  { href: "/mypage?tab=follow-feed", icon: "1f465", label: "フォロー中の投稿", key: "follow-feed" },
 ];
 
 const BOTTOM_NAV_ITEMS = [
-  { href: "/", icon: "🏠", label: "ホーム" },
-  { href: "/search", icon: "🔍", label: "検索" },
-  { href: "/posts/new", icon: "✏️", label: "新規投稿" },
-  { href: "/mypage", icon: "👤", label: "マイページ" },
+  { href: "/", icon: "1f3e0", label: "ホーム" },
+  { href: "/search", icon: "1f50d", label: "検索" },
+  { href: "/posts/new", icon: "1f4dd", label: "新規投稿" },
+  { href: "/mypage", icon: "1f464", label: "マイページ" },
 ];
 
 export function Sidebar({ user }: { user: User }) {
@@ -100,7 +102,7 @@ export function Sidebar({ user }: { user: User }) {
           href="/"
           className="flex items-center gap-2 px-3 sidebar:px-5 pt-6 mb-5 text-[#1e8449] font-bold hover:opacity-80 transition-opacity shrink-0 justify-start"
         >
-          <span className="text-2xl shrink-0">✈️</span>
+          <TwemojiIcon codepoint="2708" className="h-6 w-6 shrink-0" />
           <span className="hidden sidebar:inline text-[1.35rem]">TripDiary</span>
         </Link>
 
@@ -117,7 +119,7 @@ export function Sidebar({ user }: { user: User }) {
                   title="Phase 4 実装後に有効化"
                   className="flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] text-zinc-300 cursor-not-allowed justify-start"
                 >
-                  <span className="text-[1.1rem] w-6 text-center shrink-0">{item.icon}</span>
+                  <TwemojiIcon codepoint={item.icon} className="h-[1.1rem] w-6 shrink-0" />
                   <span className="hidden sidebar:block">{item.label}</span>
                 </span>
               );
@@ -135,7 +137,11 @@ export function Sidebar({ user }: { user: User }) {
                     : "text-[#1e293b] hover:bg-[#f8fafc]"
                   }`}
               >
-                <span className="text-[1.1rem] w-6 text-center shrink-0">{item.icon}</span>
+                {item.key === "dashboard" ? (
+                  <span className="w-6 shrink-0 text-center text-[1.1rem]">🏠</span>
+                ) : (
+                  <TwemojiIcon codepoint={item.icon} className="h-[1.1rem] w-6 shrink-0" />
+                )}
                 <span className="hidden sidebar:block">{item.label}</span>
               </Link>
             );
@@ -155,8 +161,8 @@ export function Sidebar({ user }: { user: User }) {
                 : "text-[#1e293b] hover:bg-[#f8fafc]"
               }`}
           >
-            <span className="relative text-[1.1rem] w-6 text-center shrink-0">
-              🔔
+            <span className="relative flex h-[1.1rem] w-6 shrink-0 items-center justify-center">
+              <TwemojiIcon codepoint="1f514" className="h-[1.1rem] w-[1.1rem]" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-[3px] leading-none">
                   {unreadCount > 99 ? "99+" : unreadCount}
@@ -191,6 +197,13 @@ export function Sidebar({ user }: { user: User }) {
                 >
                   プロフィール編集
                 </Link>
+                <Link
+                  href="/settings/account"
+                  className="block px-4 py-[11px] text-[0.9rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
+                  onClick={() => setDropdownOpen(false)}
+                >
+                  アカウント設定
+                </Link>
                 <button
                   onClick={() => { setDropdownOpen(false); signOut({ callbackUrl: "/" }); }}
                   className="w-full text-left px-4 py-[11px] text-[0.9rem] text-red-500 hover:bg-[#fff5f5] border-t border-[#e2e8f0] transition-colors"
@@ -206,8 +219,8 @@ export function Sidebar({ user }: { user: User }) {
       {/* Bottom nav (mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] z-30 flex">
         {BOTTOM_NAV_ITEMS.map((item) => {
-          const active = item.href === "/dashboard"
-            ? pathname === "/dashboard"
+          const active = item.href === "/"
+            ? pathname === "/"
             : pathname.startsWith(item.href);
           return (
             <Link
@@ -216,7 +229,11 @@ export function Sidebar({ user }: { user: User }) {
               className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-xs transition-colors
                 ${active ? "text-[#16a34a]" : "text-[#64748b]"}`}
             >
-              <span className="text-xl">{item.icon}</span>
+              {item.label === "ホーム" ? (
+                <span className="text-xl leading-5">🏠</span>
+              ) : (
+                <TwemojiIcon codepoint={item.icon} className="h-5 w-5" />
+              )}
               <span>{item.label}</span>
             </Link>
           );

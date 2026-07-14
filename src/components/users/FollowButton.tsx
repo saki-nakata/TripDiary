@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useToast } from "@/contexts/toast-context";
 import { useRouter } from "next/navigation";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Props = {
   userId: string;
@@ -44,12 +45,15 @@ export function FollowButton({ userId, initialFollowing, isLoggedIn }: Props) {
     <button
       onClick={handleClick}
       disabled={loading}
-      className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
+      data-testid="follow-button"
+      title={following ? "フォローを解除" : "フォローする"}
+      className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
         following
-          ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-          : "bg-[#16a34a] text-white hover:bg-[#15803d]"
+          ? "bg-green-50 text-green-600 hover:bg-green-100"
+          : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
       }`}
     >
+      {following ? <TwemojiIcon codepoint="1f465" className="h-4 w-4" /> : <span>➕</span>}
       {following ? "フォロー中" : "フォロー"}
     </button>
   );

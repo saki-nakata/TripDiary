@@ -8,14 +8,19 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  nickname  String   @db.VarChar(20)
-  image     String?  @db.Text
-  bio       String?  @db.VarChar(200)
-  password  String?  @db.VarChar(255)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  email           String   @unique
+  nickname        String   @db.VarChar(20)
+  image           String?  @db.Text
+  bio             String?  @db.VarChar(200)
+  password        String?  @db.VarChar(255)
+  // 非正規化カウンタ。follows テーブルの increment/decrement と同一トランザクションで更新される
+  // （follow.repository.ts の toggleFollow）。フォロワー数/フォロー中数が必要な場合は
+  // 必ずこの列を参照し、`_count: { select: { followers/following: true } }` によるライブ集計を書かないこと
+  followerCount   Int      @default(0)
+  followingCount  Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   posts     Post[]
   comments  Comment[]
@@ -46,6 +51,12 @@ model Post {
   lat            Float?
   lng            Float?
   authorId       String
+  // 非正規化カウンタ。likes/comments テーブルの increment/decrement と同一トランザクションで更新される
+  // （like.repository.ts の toggleLike、comment.repository.ts の createComment/deleteComment）。
+  // いいね数/コメント数が必要な場合は必ずこの列を参照し、`_count: { select: { likes/comments: true } }`
+  // によるライブ集計を書かないこと
+  likeCount      Int       @default(0)
+  commentCount   Int       @default(0)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -64,6 +75,7 @@ model Post {
   @@index([rating])
   @@index([createdAt(sort: Desc)])
   @@index([planId])
+  @@index([likeCount(sort: Desc)])
   @@map("posts")
 }
 
@@ -165,14 +177,18 @@ model Plan {
 }
 
 model PlanSpot {
+  id           String  @id @default(cuid())
   planId       String
-  postId       String
-  displayOrder Int    @default(0)
+  postId       String?
+  displayOrder Int     @default(0)
+  freeTitle    String? @db.VarChar(60)
+  freeLocation String? @db.VarChar(50)
+  freeCategory String? @db.VarChar(20)
 
-  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  plan Plan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  post Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  @@id([planId, postId])
+  @@index([planId])
   @@map("plan_spots")
 }
 

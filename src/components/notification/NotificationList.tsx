@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
+import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Notification = {
   id: string;
@@ -73,18 +74,22 @@ function NotificationItem({
   }, [notification.id, notification.read, onRead]);
 
   const { type, fromUser, postId, commentBody } = notification;
-  let icon = "";
+  let iconCodepoint = "";
+  let iconAlt = "";
+  let plainIcon = "";
   let text = "";
   const href = postId ? `/posts/${postId}` : `/users/${fromUser.id}`;
 
   if (type === "like") {
-    icon = "❤️";
+    iconCodepoint = "2764";
+    iconAlt = "❤️";
     text = `${fromUser.nickname} さんがあなたの投稿にいいねしました`;
   } else if (type === "comment") {
-    icon = "💬";
+    plainIcon = "💬";
     text = `${fromUser.nickname} さんがあなたの投稿にコメントしました`;
   } else if (type === "follow") {
-    icon = "👤";
+    iconCodepoint = "1f465";
+    iconAlt = "👥";
     text = `${fromUser.nickname} さんがあなたをフォローしました`;
   }
 
@@ -95,7 +100,11 @@ function NotificationItem({
       className={`flex items-start gap-3 px-4 py-4 border-b border-[#e2e8f0] hover:bg-[#f8fafc] transition-colors
         ${notification.read ? "opacity-60" : "bg-[#f0fdf4]"}`}
     >
-      <span className="text-xl shrink-0 mt-0.5">{icon}</span>
+      {plainIcon ? (
+        <span className="text-xl shrink-0 mt-0.5">{plainIcon}</span>
+      ) : (
+        <TwemojiIcon codepoint={iconCodepoint} alt={iconAlt} className="h-5 w-5 shrink-0 mt-0.5" />
+      )}
       <div className="w-8 h-8 rounded-full bg-[#16a34a]/10 flex items-center justify-center shrink-0 text-sm font-semibold text-[#16a34a]">
         {fromUser.image ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -162,7 +171,7 @@ export function NotificationList() {
   if (notifications.length === 0) {
     return (
       <div className="rounded-xl border border-[#e2e8f0] flex flex-col items-center py-16 text-[#94a3b8]">
-        <span className="text-5xl mb-3">🔔</span>
+        <TwemojiIcon codepoint="1f514" className="h-12 w-12 mb-3" />
         <p>まだ通知はありません</p>
       </div>
     );
