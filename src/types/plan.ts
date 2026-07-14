@@ -9,6 +9,8 @@ export type PlanSpotPost = {
   location: string;
   category: string | null;
   rating: number | null;
+  lat: number | null;
+  lng: number | null;
   images: { url: string }[];
 };
 

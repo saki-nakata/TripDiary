@@ -6,6 +6,7 @@ import { useInfiniteQuery, useQuery, keepPreviousData } from "@tanstack/react-qu
 import Link from "next/link";
 import Image from "next/image";
 import { PostCard } from "@/components/posts/PostCard";
+import { BackButton } from "@/components/posts/BackButton";
 import { FollowButton } from "@/components/users/FollowButton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CATEGORIES, LOCATIONS } from "@/lib/constants";
@@ -46,49 +47,54 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4 -mt-8">
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1e293b]">
-        <TwemojiIcon codepoint="1f50d" className="h-6 w-6" /> 検索
-      </h1>
-
-      <div className="relative">
-        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400">🔍</span>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="スポット名・エリア・ユーザー名で検索…"
-          className="w-full h-11 pl-10 pr-4 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
-        />
+    <div className="relative">
+      <div className="absolute left-0 top-1 z-10 md:left-2">
+        <BackButton />
       </div>
+      <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4 -mt-4">
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1e293b]">
+          <TwemojiIcon codepoint="1f50d" className="h-6 w-6" /> 検索
+        </h1>
 
-      <div className="flex gap-1 border-b border-zinc-200">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`relative px-4 py-2 text-[0.95rem] font-medium transition-colors ${
-              tab === t.key ? "text-[#16a34a]" : "text-zinc-500 hover:text-zinc-700"
-            }`}
-          >
-            {t.label}
-            {tab === t.key && (
-              <span className="absolute -bottom-px left-3 right-0 h-0.5 bg-[#16a34a]" />
-            )}
-          </button>
-        ))}
-      </div>
-
-      <div className="min-h-[420px]">
-        {tab === "post" && (
-          <PostSearchTab
-            location={undefined}
-            q={q}
-            initialSort={initialSort}
-            initialCategory={searchParams.get("category") ?? ""}
+        <div className="relative">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400">🔍</span>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="スポット名・エリア・ユーザー名で検索…"
+            className="w-full h-11 pl-10 pr-4 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
           />
-        )}
-        {tab === "area" && <AreaSearchTab q={q} initialLocation={searchParams.get("location")} />}
-        {tab === "user" && <UserSearchTab q={q} viewerId={viewerId} />}
+        </div>
+
+        <div className="flex gap-1 border-b border-zinc-200">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`relative px-4 py-2 text-[0.95rem] font-medium transition-colors ${
+                tab === t.key ? "text-[#16a34a]" : "text-zinc-500 hover:text-zinc-700"
+              }`}
+            >
+              {t.label}
+              {tab === t.key && (
+                <span className="absolute -bottom-px left-3 right-0 h-0.5 bg-[#16a34a]" />
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="min-h-[420px]">
+          {tab === "post" && (
+            <PostSearchTab
+              location={undefined}
+              q={q}
+              initialSort={initialSort}
+              initialCategory={searchParams.get("category") ?? ""}
+            />
+          )}
+          {tab === "area" && <AreaSearchTab q={q} initialLocation={searchParams.get("location")} />}
+          {tab === "user" && <UserSearchTab q={q} viewerId={viewerId} />}
+        </div>
       </div>
     </div>
   );
@@ -318,7 +324,7 @@ function UserSearchTab({ q, viewerId }: { q: string; viewerId?: string }) {
         {users.map((u) => (
           <div
             key={u.id}
-            className="flex items-center gap-3 p-3 rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors"
+            className="flex items-center gap-3 p-3 rounded-xl border border-zinc-200 transition-colors hover:border-zinc-300 hover:bg-zinc-100"
           >
             <Link href={`/users/${u.id}`} className="flex items-center gap-3 flex-1 min-w-0">
               <div className="relative w-12 h-12 rounded-full overflow-hidden bg-zinc-200 shrink-0">

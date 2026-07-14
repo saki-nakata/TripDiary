@@ -30,6 +30,7 @@ export function ImageCarousel({ images, title }: Props) {
             sizes="(max-width: 1024px) 100vw, 1024px"
             className="object-contain cursor-pointer"
             onClick={() => setLightboxIndex(current)}
+            priority={current === 0}
           />
         </div>
         {images.length > 1 && (

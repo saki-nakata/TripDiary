@@ -45,7 +45,7 @@ export default function SignupPage() {
         return;
       }
 
-      await signIn("credentials", { email: data.email, password: data.password, callbackUrl: "/dashboard" });
+      await signIn("credentials", { email: data.email, password: data.password, callbackUrl: "/" });
     });
   }
 

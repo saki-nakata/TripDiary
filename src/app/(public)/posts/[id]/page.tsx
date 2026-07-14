@@ -41,10 +41,10 @@ export default async function PostDetailPage({ params }: Props) {
   return (
     <div className="relative">
       <ScrollToHash />
-      <div className="px-4 pt-1 md:px-6 md:pt-1">
+      <div className="absolute left-0 top-1 z-10 md:left-2">
         <BackButton />
       </div>
-      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-7 -mt-6">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-7 -mt-4">
 
         {/* Header */}
         <div className="space-y-3">
@@ -109,6 +109,7 @@ export default async function PostDetailPage({ params }: Props) {
             initialLiked={post.isLiked ?? false}
             initialCount={post._count.likes}
             isLoggedIn={!!userId}
+            disabled={isAuthor}
           />
           <WishlistButton
             postId={post.id}
@@ -119,6 +120,7 @@ export default async function PostDetailPage({ params }: Props) {
             postId={post.id}
             initialVisited={post.isVisited ?? false}
             isLoggedIn={!!userId}
+            forcedVisited={isAuthor}
           />
         </div>
 

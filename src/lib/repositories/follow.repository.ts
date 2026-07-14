@@ -2,19 +2,33 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export async function toggleFollow(followerId: string, followingId: string) {
-  const { count } = await prisma.follow.deleteMany({ where: { followerId, followingId } });
-  if (count > 0) return { following: false };
-
-  try {
-    await prisma.follow.create({ data: { followerId, followingId } });
-    return { following: true };
-  } catch (e) {
-    // 同時に別リクエストが先にcreateしていた場合（P2002: 一意制約違反）は、結果的にフォロー済みなので成功扱いにする
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-      return { following: true };
+  return prisma.$transaction(async (tx) => {
+    const { count } = await tx.follow.deleteMany({ where: { followerId, followingId } });
+    if (count > 0) {
+      // deleteMany・カウンタ更新を同一トランザクションにまとめ、片方だけ失敗する不整合を防ぐ
+      await Promise.all([
+        tx.user.update({ where: { id: followerId }, data: { followingCount: { decrement: 1 } } }),
+        tx.user.update({ where: { id: followingId }, data: { followerCount: { decrement: 1 } } }),
+      ]);
+      return { following: false };
     }
-    throw e;
-  }
+
+    try {
+      await tx.follow.create({ data: { followerId, followingId } });
+      await Promise.all([
+        tx.user.update({ where: { id: followerId }, data: { followingCount: { increment: 1 } } }),
+        tx.user.update({ where: { id: followingId }, data: { followerCount: { increment: 1 } } }),
+      ]);
+      return { following: true };
+    } catch (e) {
+      // 同時に別リクエストが先にcreateしていた場合（P2002: 一意制約違反）は、
+      // そちらのトランザクションで既にカウンタも加算済みのため、ここでは何もせず成功扱いにする
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+        return { following: true };
+      }
+      throw e;
+    }
+  });
 }
 
 export async function isFollowing(followerId: string, followingId: string) {
@@ -31,14 +45,6 @@ export async function findFollowingIdsAmong(viewerId: string, userIds: string[])
     select: { followingId: true },
   });
   return rows.map((r) => r.followingId);
-}
-
-export async function countFollowers(userId: string) {
-  return prisma.follow.count({ where: { followingId: userId } });
-}
-
-export async function countFollowing(userId: string) {
-  return prisma.follow.count({ where: { followerId: userId } });
 }
 
 const FOLLOW_USER_SELECT = {

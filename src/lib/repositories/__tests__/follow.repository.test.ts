@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { toggleFollow, isFollowing, countFollowers, countFollowing, findFollowers, findFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
+import { toggleFollow, isFollowing, findFollowers, findFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
 
 async function cleanDatabase() {
   await prisma.$executeRawUnsafe("SET FOREIGN_KEY_CHECKS = 0");
@@ -45,19 +45,28 @@ describe("follow.repository", () => {
     expect(await isFollowing(me.id, other.id)).toBe(false);
   });
 
-  // ─── カウント ───
-  it("countFollowers_countFollowing_それぞれ正しく集計される", async () => {
+  // ─── 非正規化カウンタ ───
+  it("toggleFollow_フォロー時_フォロワー数とフォロー中数が両ユーザーで正しく増減する", async () => {
     const me = await createTestUser("me3@example.com", "自分3");
-    const follower1 = await createTestUser("f1@example.com", "フォロワー1");
-    const follower2 = await createTestUser("f2@example.com", "フォロワー2");
-    const following1 = await createTestUser("g1@example.com", "フォロー先1");
+    const other = await createTestUser("other3@example.com", "他人3");
 
-    await prisma.follow.create({ data: { followerId: follower1.id, followingId: me.id } });
-    await prisma.follow.create({ data: { followerId: follower2.id, followingId: me.id } });
-    await prisma.follow.create({ data: { followerId: me.id, followingId: following1.id } });
+    await toggleFollow(me.id, other.id);
 
-    expect(await countFollowers(me.id)).toBe(2);
-    expect(await countFollowing(me.id)).toBe(1);
+    const [meAfterFollow, otherAfterFollow] = await Promise.all([
+      prisma.user.findUniqueOrThrow({ where: { id: me.id } }),
+      prisma.user.findUniqueOrThrow({ where: { id: other.id } }),
+    ]);
+    expect(meAfterFollow.followingCount).toBe(1);
+    expect(otherAfterFollow.followerCount).toBe(1);
+
+    await toggleFollow(me.id, other.id);
+
+    const [meAfterUnfollow, otherAfterUnfollow] = await Promise.all([
+      prisma.user.findUniqueOrThrow({ where: { id: me.id } }),
+      prisma.user.findUniqueOrThrow({ where: { id: other.id } }),
+    ]);
+    expect(meAfterUnfollow.followingCount).toBe(0);
+    expect(otherAfterUnfollow.followerCount).toBe(0);
   });
 
   // ─── 一覧 ───

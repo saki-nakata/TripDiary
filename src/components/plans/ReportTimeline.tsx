@@ -17,14 +17,14 @@ function YearSection({ group }: { group: TimelineYearGroup }) {
   const remaining = group.posts.length - 3;
 
   return (
-    <div className="space-y-1.5">
+    <div id={`timeline-year-${group.year}`} className="scroll-mt-4 space-y-1.5">
       <p className="text-base font-bold text-zinc-800">{group.year}年</p>
       <ul className="space-y-2">
         {visiblePosts.map((post) => (
           <li key={post.id}>
             <Link
               href={`/posts/${post.id}`}
-              className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 hover:bg-zinc-50 transition-colors"
+              className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 transition-colors hover:border-zinc-300 hover:bg-zinc-100"
             >
               {post.images[0] ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -47,7 +47,8 @@ function YearSection({ group }: { group: TimelineYearGroup }) {
                   )}
                 </p>
               </div>
-              <span className="shrink-0 text-xs text-zinc-500">
+              <span className="mr-3 flex shrink-0 items-center gap-1 text-xs text-zinc-600">
+                <TwemojiIcon codepoint="1f4c5" alt="📅" className="h-3 w-3" />
                 {formatDateSlash(post.visitedAt)}
               </span>
             </Link>
@@ -71,7 +72,7 @@ export function ReportTimeline({ groups }: { groups: TimelineYearGroup[] }) {
   if (groups.length === 0) return null;
 
   return (
-    <div className="space-y-3">
+    <div id="yearly-timeline" className="scroll-mt-4 space-y-3">
       <p className="flex items-center gap-1.5 text-lg font-bold text-zinc-800">
         <TwemojiIcon codepoint="1f4da" alt="📚" className="h-5 w-5" /> 年別旅行記録
       </p>

@@ -32,13 +32,13 @@ export function ExploreFeed({ initialData, viewerId }: { initialData: PortalFeed
     queryFn: fetchPortalFeed,
     initialData,
     staleTime: 180_000,
-    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 
   const { popular, latest, locations, categories, topRated } = data;
 
   return (
-    <div className="p-4 md:p-8 -mt-8 space-y-10">
+    <div className="p-4 md:p-8 -mt-4 space-y-10">
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-zinc-800">💖 人気の旅スポット</h2>

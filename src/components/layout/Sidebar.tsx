@@ -18,7 +18,8 @@ function useUnreadCount() {
   const { data } = useQuery({
     queryKey: ["unread-count"],
     queryFn: fetchUnreadCount,
-    refetchInterval: 60_000,
+    staleTime: 60_000,
+    refetchInterval: 180_000,
   });
 
   return { count: data ?? 0 };
@@ -218,8 +219,8 @@ export function Sidebar({ user }: { user: User }) {
       {/* Bottom nav (mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] z-30 flex">
         {BOTTOM_NAV_ITEMS.map((item) => {
-          const active = item.href === "/dashboard"
-            ? pathname === "/dashboard"
+          const active = item.href === "/"
+            ? pathname === "/"
             : pathname.startsWith(item.href);
           return (
             <Link

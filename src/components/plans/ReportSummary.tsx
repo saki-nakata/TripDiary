@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { StatsResponse } from "@/types/stats";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { PrefectureMapView } from "@/components/map/PrefectureMapView";
 
 type Props = {
   years: number[];
@@ -19,8 +22,9 @@ const CARD_GRADIENTS = [
   "from-[#43e97b] to-[#38f9d7]",
   "from-[#fa709a] to-[#fee140]",
   "from-[#a18cd1] to-[#fbc2eb]",
-  "from-[#fda085] to-[#f6d365]",
+  "from-[#3a3d98] to-[#e94ec7]",
   "from-[#30cfd0] to-[#330867]",
+  "from-[#f2c94c] to-[#fff9a6]",
 ];
 
 function StatCard({
@@ -29,22 +33,27 @@ function StatCard({
   value,
   delay,
   gradient,
+  onClick,
 }: {
   codepoint: string;
   label: string;
   value: string;
   delay: number;
   gradient: string;
+  onClick?: () => void;
 }) {
+  const Tag = onClick ? "button" : "div";
   return (
-    <div
-      className={`animate-fade-in flex flex-col items-center rounded-2xl bg-gradient-to-br ${gradient} p-5 text-center text-white shadow-sm`}
+    <Tag
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={`animate-fade-in flex flex-col items-center rounded-2xl border border-transparent bg-gradient-to-br ${gradient} p-5 text-center text-white shadow-sm transition-all ${onClick ? "cursor-pointer hover:-translate-y-1 hover:border-zinc-300 hover:shadow-md" : ""}`}
       style={{ animationDelay: `${delay}s` }}
     >
       <TwemojiIcon codepoint={codepoint} className="h-7 w-7" />
       <p className="mt-2 text-3xl font-extrabold [text-shadow:0_2px_8px_rgba(0,0,0,.2)]">{value}</p>
       <p className="text-xs font-medium text-white/80">{label}</p>
-    </div>
+    </Tag>
   );
 }
 
@@ -78,16 +87,16 @@ function PostCountLineChart({
       <div className="flex items-stretch gap-2">
         <div className="relative h-32 w-full flex-1">
           <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full overflow-visible" preserveAspectRatio="none">
-            {yTicks.map((t) => {
+            {yTicks.map((t, i) => {
               const y = height - padding - ((height - padding * 2) * t) / max;
-              return <line key={t} x1={padding} y1={y} x2={width} y2={y} stroke="#f4f4f5" strokeWidth="0.5" />;
+              return <line key={i} x1={padding} y1={y} x2={width} y2={y} stroke="#f4f4f5" strokeWidth="0.5" />;
             })}
             <line x1={width} y1={padding} x2={width} y2={height - padding} stroke="#e4e4e7" strokeWidth="0.5" />
             <path d={path} fill="none" stroke={`url(#${gradientId})`} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="#ffafd7" />
-                <stop offset="70%" stopColor="#ff2d78" />
+                <stop offset="85%" stopColor="#ff2d78" />
                 <stop offset="100%" stopColor="#c026d3" />
               </linearGradient>
             </defs>
@@ -106,8 +115,8 @@ function PostCountLineChart({
           ))}
         </div>
         <div className="flex h-32 w-9 shrink-0 flex-col justify-between py-[6px] text-right text-sm text-zinc-500">
-          {yTicks.map((t) => (
-            <span key={t}>{t}件</span>
+          {yTicks.map((t, i) => (
+            <span key={i}>{t}件</span>
           ))}
         </div>
       </div>
@@ -130,21 +139,25 @@ function PostCountLineChart({
 }
 
 export function ReportSummary({ years, initialYear, initialStats }: Props) {
+  const router = useRouter();
   const [year, setYear] = useState(initialYear);
-  const [stats, setStats] = useState<StatsResponse>(initialStats);
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const stats = initialStats;
 
-  async function handleYearChange(newYear: number | "all") {
+  function scrollToId(id: string) {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function scrollToTimeline() {
+    scrollToId(year === "all" ? "yearly-timeline" : `timeline-year-${year}`);
+  }
+
+  function handleYearChange(newYear: number | "all") {
     setYear(newYear);
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/stats?year=${newYear}`);
-      if (res.ok) {
-        setStats(await res.json());
-      }
-    } finally {
-      setLoading(false);
-    }
+    const url = newYear === "all" ? "/mypage?tab=report" : `/mypage?tab=report&year=${newYear}`;
+    startTransition(() => {
+      router.replace(url, { scroll: false });
+    });
   }
 
   const yearLabel = year === "all" ? "全期間" : `${year}年`;
@@ -163,29 +176,51 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
   const maxYearlyPostCount = Math.max(1, ...stats.yearlyPostCount.map((y) => y.count));
 
   return (
-    <div className={`-mt-3 space-y-6 transition-opacity ${loading ? "opacity-50" : ""}`}>
+    <div className={`-mt-3 space-y-6 transition-opacity ${isPending ? "opacity-50" : ""}`}>
       <YearSelect years={years} value={year} onChange={handleYearChange} />
 
       <p className="flex items-center gap-1.5 text-lg font-bold text-zinc-800">
         <TwemojiIcon codepoint="1f3c6" alt="🏆" className="h-5 w-5" /> {yearLabel}の旅まとめ
       </p>
 
-      {/* 7枚のまとめカード */}
+      {/* 8枚のまとめカード */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <StatCard codepoint="1f4da" label="投稿数" value={`${stats.totalPosts}件`} delay={0} gradient={CARD_GRADIENTS[0]} />
-        <StatCard codepoint="1f4f8" label="写真枚数" value={`${stats.totalPhotos}枚`} delay={0.1} gradient={CARD_GRADIENTS[1]} />
-        <StatCard codepoint="1f4cd" label="訪問エリア数" value={`${stats.visitedLocations.length}エリア`} delay={0.2} gradient={CARD_GRADIENTS[2]} />
-        <StatCard codepoint="1f5fa" label="訪問スポット数" value={`${stats.totalPosts}件`} delay={0.3} gradient={CARD_GRADIENTS[3]} />
-        <StatCard codepoint="1f4d6" label="旅行回数" value={`${stats.completedPlans}回`} delay={0.4} gradient={CARD_GRADIENTS[4]} />
-        <StatCard codepoint="1f4b4" label="旅行費用合計" value={stats.totalCost > 0 ? `¥${stats.totalCost.toLocaleString()}` : "—"} delay={0.5} gradient={CARD_GRADIENTS[5]} />
-        <StatCard codepoint="1f6a9" label="最多訪問エリア" value={stats.topLocation ?? "—"} delay={0.6} gradient={CARD_GRADIENTS[6]} />
+        <StatCard codepoint="1f4da" label="投稿数" value={`${stats.totalPosts}件`} delay={0} gradient={CARD_GRADIENTS[0]} onClick={() => scrollToId("post-trend")} />
+        <StatCard codepoint="1f4f8" label="写真枚数" value={`${stats.totalPhotos}枚`} delay={0.1} gradient={CARD_GRADIENTS[1]} onClick={() => router.push("/mypage?tab=myposts")} />
+        <StatCard codepoint="1f5fa" label="訪問スポット数" value={`${stats.totalPosts}件`} delay={0.2} gradient={CARD_GRADIENTS[2]} onClick={scrollToTimeline} />
+        <StatCard codepoint="1f4cd" label="訪問エリア数" value={`${stats.visitedLocations.length}エリア`} delay={0.3} gradient={CARD_GRADIENTS[3]} onClick={() => scrollToId("visited-areas")} />
+        <StatCard codepoint="1f6a9" label="最多訪問エリア" value={stats.topLocation ?? "—"} delay={0.4} gradient={CARD_GRADIENTS[4]} onClick={() => scrollToId("visited-areas")} />
+        <StatCard codepoint="1f3f7" label="カテゴリ数" value={`${stats.categoryBreakdown.length}カテゴリ`} delay={0.5} gradient={CARD_GRADIENTS[5]} onClick={() => scrollToId("category-breakdown")} />
+        <StatCard codepoint="1f4d6" label="旅行回数" value={`${stats.completedPlans}回`} delay={0.6} gradient={CARD_GRADIENTS[6]} onClick={() => router.push("/mypage?tab=plans")} />
+        <StatCard codepoint="1f4b4" label="旅行費用合計" value={stats.totalCost > 0 ? `¥${stats.totalCost.toLocaleString()}` : "—"} delay={0.7} gradient={CARD_GRADIENTS[7]} onClick={() => router.push("/mypage?tab=myposts")} />
       </div>
+
+      {/* 訪問エリアバッジ */}
+      {stats.visitedLocations.length > 0 && (
+        <div id="visited-areas" className="scroll-mt-4 rounded-xl border border-zinc-200 bg-white p-4">
+          <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-zinc-800">
+            <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-4 w-4" /> {yearLabel}の訪問エリア
+          </p>
+          <PrefectureMapView visitedLocations={stats.visitedLocations} className="mx-auto mb-4 h-auto w-full max-w-xs" />
+          <div className="flex flex-wrap gap-2">
+            {stats.visitedLocations.map((loc) => (
+              <Link
+                key={loc}
+                href={`/search?tab=area&location=${encodeURIComponent(loc)}`}
+                className="rounded-full border border-pink-400 bg-yellow-100 px-3.5 py-1.5 text-sm font-semibold text-amber-500 transition-colors hover:bg-yellow-200"
+              >
+                {loc}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* カテゴリ別バーグラフ */}
       {stats.categoryBreakdown.length > 0 && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
+        <div id="category-breakdown" className="scroll-mt-4 rounded-xl border border-zinc-200 bg-white p-4">
           <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-zinc-800">
-            <TwemojiIcon codepoint="1f3f7" alt="🏷️" className="h-4 w-4" /> カテゴリ別投稿数
+            <TwemojiIcon codepoint="1f3f7" alt="🏷️" className="h-4 w-4" /> {yearLabel}のカテゴリ別投稿数
           </p>
           <div className="space-y-3">
             {stats.categoryBreakdown.map((c) => (
@@ -193,7 +228,7 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
                 <span className="w-24 shrink-0 text-sm text-zinc-700">{c.category}</span>
                 <div className="h-3.5 flex-1 rounded-full bg-zinc-100">
                   <div
-                    className="h-3.5 rounded-full bg-gradient-to-r from-[#ffe066] to-[#ffc233] transition-[width] duration-700"
+                    className="h-3.5 rounded-full bg-gradient-to-r from-[#7c3aed] via-[#9333ea] via-85% to-[#ff6ec7] transition-[width] duration-700"
                     style={{ width: `${(c.count / maxCategoryCount) * 100}%` }}
                   />
                 </div>
@@ -205,9 +240,9 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
       )}
 
       {/* 月別 / 年別投稿数の推移 */}
-      <div className="rounded-xl border border-zinc-200 bg-white p-4">
+      <div id="post-trend" className="scroll-mt-4 rounded-xl border border-zinc-200 bg-white p-4">
         <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-zinc-800">
-          <TwemojiIcon codepoint="1f4da" alt="📚" className="h-4 w-4" /> {year === "all" ? "年別投稿数の推移" : "月別投稿数の推移"}
+          <TwemojiIcon codepoint="1f4da" alt="📚" className="h-4 w-4" /> {yearLabel}の投稿数の推移
         </p>
         {year === "all" ? (
           <PostCountLineChart
@@ -225,22 +260,6 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
           />
         )}
       </div>
-
-      {/* 訪問エリアバッジ */}
-      {stats.visitedLocations.length > 0 && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-zinc-800">
-            <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-4 w-4" /> 訪問エリア
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {stats.visitedLocations.map((loc) => (
-              <span key={loc} className="rounded-full bg-violet-100 px-3.5 py-1.5 text-sm font-semibold text-violet-800">
-                {loc}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

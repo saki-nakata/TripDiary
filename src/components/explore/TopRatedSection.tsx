@@ -17,7 +17,7 @@ export function TopRatedSection({ posts }: { posts: Post[] }) {
           <Link
             key={post.id}
             href={`/posts/${post.id}`}
-            className="rounded-xl overflow-hidden border border-zinc-200 hover:shadow-md transition-shadow"
+            className="rounded-xl overflow-hidden border border-zinc-200 bg-white transition-all hover:-translate-y-1 hover:border-zinc-300 hover:shadow-md"
           >
             <div className="relative aspect-[4/3] bg-zinc-100">
               {post.images[0] && (

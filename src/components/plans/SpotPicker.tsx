@@ -319,7 +319,7 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
         {selected.length === 0 ? (
           <p className="text-sm text-zinc-400">まだスポットが選択されていません</p>
         ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext id="plan-spots" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={selected.map((s) => s.id)} strategy={verticalListSortingStrategy}>
               <ul className="space-y-2">
                 {selected.map((spot, i) => (

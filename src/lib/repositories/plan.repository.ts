@@ -21,6 +21,8 @@ const SPOT_POST_SELECT = {
   location: true,
   category: true,
   rating: true,
+  lat: true,
+  lng: true,
   images: { take: 1, orderBy: { displayOrder: "asc" as const }, select: { url: true } },
 } as const;
 

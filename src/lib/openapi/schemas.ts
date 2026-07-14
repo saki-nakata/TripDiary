@@ -173,6 +173,8 @@ const spotPostSchema = z
     location: z.enum(LOCATIONS),
     category: z.enum(CATEGORIES).nullable(),
     rating: z.number().int().min(1).max(5).nullable(),
+    lat: z.number().nullable(),
+    lng: z.number().nullable(),
     images: z.array(z.object({ url: z.string() })),
   })
   .openapi("PlanSpotPost");

@@ -27,7 +27,7 @@ export default async function TagPage({ params }: Props) {
   ]);
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 -mt-4">
       <Link href="/search?tab=area" className="text-sm text-zinc-500 hover:text-zinc-700">
         ← エリア一覧に戻る
       </Link>

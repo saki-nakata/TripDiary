@@ -16,11 +16,13 @@ export default async function NewPlanPage() {
     location: p.location,
     category: p.category,
     rating: p.rating,
+    lat: p.lat,
+    lng: p.lng,
     images: p.images.map((img: { url: string }) => ({ url: img.url })),
   }));
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6 -mt-4">
       <h1 className="flex items-center gap-2 text-2xl font-bold text-zinc-900">
         <TwemojiIcon codepoint="1f9ed" className="h-6 w-6" /> 旅行プランを作成する
       </h1>

@@ -47,10 +47,14 @@ export async function createComment({
   authorId: string;
   body: string;
 }) {
-  return prisma.comment.create({
-    data: { postId, authorId, body },
-    select: { ...COMMENT_SELECT, postId: true, authorId: true },
-  });
+  const [comment] = await prisma.$transaction([
+    prisma.comment.create({
+      data: { postId, authorId, body },
+      select: { ...COMMENT_SELECT, postId: true, authorId: true },
+    }),
+    prisma.post.update({ where: { id: postId }, data: { commentCount: { increment: 1 } } }),
+  ]);
+  return comment;
 }
 
 export async function findCommentById(id: string) {
@@ -60,6 +64,10 @@ export async function findCommentById(id: string) {
   });
 }
 
-export async function deleteComment(id: string) {
-  return prisma.comment.delete({ where: { id } });
+export async function deleteComment(id: string, postId: string) {
+  const [comment] = await prisma.$transaction([
+    prisma.comment.delete({ where: { id } }),
+    prisma.post.update({ where: { id: postId }, data: { commentCount: { decrement: 1 } } }),
+  ]);
+  return comment;
 }

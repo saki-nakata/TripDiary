@@ -10,9 +10,10 @@ type Props = {
   initialLiked: boolean;
   initialCount: number;
   isLoggedIn: boolean;
+  disabled?: boolean;
 };
 
-export function LikeButton({ postId, initialLiked, initialCount, isLoggedIn }: Props) {
+export function LikeButton({ postId, initialLiked, initialCount, isLoggedIn, disabled = false }: Props) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
@@ -20,6 +21,7 @@ export function LikeButton({ postId, initialLiked, initialCount, isLoggedIn }: P
   const router = useRouter();
 
   async function handleClick() {
+    if (disabled) return;
     if (!isLoggedIn) {
       router.push("/login");
       return;
@@ -44,18 +46,25 @@ export function LikeButton({ postId, initialLiked, initialCount, isLoggedIn }: P
     }
   }
 
+  const showLiked = disabled ? count > 0 : liked;
+
   return (
     <button
       onClick={handleClick}
-      disabled={loading}
+      disabled={loading || disabled}
       data-testid="like-button"
+      title={disabled ? "自分の投稿にはいいねできません" : liked ? "いいねを解除" : "いいね"}
       className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-        liked
+        showLiked
           ? "bg-red-50 text-red-500 hover:bg-red-100"
           : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-      }`}
+      } ${disabled ? (showLiked ? "cursor-not-allowed" : "opacity-50 cursor-not-allowed") : ""}`}
     >
-      <TwemojiIcon codepoint={liked ? "2764" : "1f90d"} alt={liked ? "❤️" : "🤍"} className="h-4 w-4" />
+      <TwemojiIcon
+        codepoint={showLiked ? "2764" : "1fa76"}
+        alt={showLiked ? "❤️" : "🩶"}
+        className="h-4 w-4"
+      />
       <span>{count}</span>
     </button>
   );

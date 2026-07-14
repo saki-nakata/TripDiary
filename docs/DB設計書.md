@@ -1,11 +1,13 @@
 # TripDiary DB設計書
 
-**バージョン:** 1.5
+**バージョン:** 1.6
 **作成日:** 2026-06-27
-**更新日:** 2026-07-11
+**更新日:** 2026-07-13
 **作成者:** Nakata Saki
 
 > ✅ **2026-07-11 更新：** `plan_spots`テーブルが実装と乖離していたため修正（複合主キー`(planId, postId)`→単一`id`主キー、`postId`をNULL許容化、自由入力スポット用の`freeTitle`/`freeLocation`/`freeCategory`を追加）。
+>
+> ✅ **2026-07-13 更新：** 一覧表示のたびに `_count` を都度集計していたのを解消するため、`posts.likeCount`/`posts.commentCount`・`users.followerCount`/`users.followingCount`（非正規化カウンタ、`Int @default(0)`）を追加（マイグレーション`20260712131822_add_denormalized_counters`）。
 
 ---
 
@@ -32,6 +34,8 @@ erDiagram
         String image
         String bio
         String password
+        Int followerCount
+        Int followingCount
         DateTime createdAt
         DateTime updatedAt
     }
@@ -49,6 +53,8 @@ erDiagram
         String planId FK
         Float lat
         Float lng
+        Int likeCount
+        Int commentCount
         String authorId FK
         DateTime createdAt
         DateTime updatedAt
@@ -179,6 +185,8 @@ erDiagram
 | image | TEXT | NULL | - | プロフィール画像URL（S3） |
 | bio | VARCHAR(200) | NULL | - | 自己紹介文 |
 | password | VARCHAR(255) | NULL | - | ハッシュ化済みパスワード（OAuth利用時はNULL） |
+| followerCount | INT | NOT NULL | 0 | フォロワー数（非正規化カウンタ。`follows`テーブルの`increment`/`decrement`と同一トランザクションで更新） |
+| followingCount | INT | NOT NULL | 0 | フォロー中数（非正規化カウンタ。同上） |
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
 | updatedAt | DATETIME(3) | NOT NULL | - | 更新日時 |
 
@@ -209,6 +217,8 @@ erDiagram
 | planId | VARCHAR(30) | NULL | - | 旅行プランから投稿した場合のプランID |
 | lat | FLOAT | NULL | - | 緯度（任意・地図ピン設置時に設定） |
 | lng | FLOAT | NULL | - | 経度（任意・地図ピン設置時に設定） |
+| likeCount | INT | NOT NULL | 0 | いいね数（非正規化カウンタ。`likes`テーブルの`increment`/`decrement`と同一トランザクションで更新） |
+| commentCount | INT | NOT NULL | 0 | コメント数（非正規化カウンタ。同上） |
 | authorId | VARCHAR(30) | NOT NULL | - | 投稿者のユーザーID |
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
 | updatedAt | DATETIME(3) | NOT NULL | - | 更新日時 |

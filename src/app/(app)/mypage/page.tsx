@@ -25,7 +25,7 @@ import type { Plan } from "@/types/plan";
 export const metadata: Metadata = { title: "マイページ — TripDiary" };
 
 type Props = {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; year?: string }>;
 };
 
 const TABS = [
@@ -42,7 +42,7 @@ const TAB_INFO: Record<string, { icon: string; label: string }> = Object.fromEnt
 );
 
 export default async function MyPage({ searchParams }: Props) {
-  const { tab = "myposts" } = await searchParams;
+  const { tab = "myposts", year: yearParam } = await searchParams;
   const session = await auth();
   const userId = session!.user.id!;
 
@@ -65,7 +65,7 @@ export default async function MyPage({ searchParams }: Props) {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 -mt-8">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 -mt-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="flex items-center gap-4 text-2xl font-bold text-[#1e293b]">
           <span className="flex items-center gap-2">
@@ -105,7 +105,7 @@ export default async function MyPage({ searchParams }: Props) {
       <div>
         {activeTab === "plans" && (await renderPlans(userId))}
         {activeTab === "myposts" && (await renderMyPosts(userId))}
-        {activeTab === "report" && (await renderReport(userId))}
+        {activeTab === "report" && (await renderReport(userId, yearParam))}
         {activeTab === "wishlist" && (await renderWishlist(userId))}
         {activeTab === "visited" && (await renderVisited(userId))}
         {activeTab === "follow-feed" && (await renderFollowFeed(userId))}
@@ -114,20 +114,23 @@ export default async function MyPage({ searchParams }: Props) {
   );
 }
 
-async function renderReport(userId: string) {
+async function renderReport(userId: string, yearParam?: string) {
   const years = await getAvailableYearsService(userId);
   if (years.length === 0) {
     return <EmptyState codepoint="1f4cb" message="まだ旅の記録がありません" ctaLabel="投稿する" ctaHref="/posts/new" />;
   }
 
+  const parsedYear = yearParam ? Number(yearParam) : NaN;
+  const year: number | "all" = years.includes(parsedYear) ? parsedYear : "all";
+
   const [stats, timeline] = await Promise.all([
-    getYearlyStatsService(userId, null),
+    getYearlyStatsService(userId, year === "all" ? null : year),
     getTimelineService(userId),
   ]);
 
   return (
     <div className="space-y-8">
-      <ReportSummary years={years} initialYear="all" initialStats={stats} />
+      <ReportSummary key={year} years={years} initialYear={year} initialStats={stats} />
       <ReportTimeline groups={timeline} />
     </div>
   );
@@ -140,7 +143,7 @@ function formatDateSlash(iso: string) {
 
 function PlanListItem({ plan }: { plan: Plan }) {
   return (
-    <div className="group flex items-start justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 transition-colors">
+    <div className="group flex items-start justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 hover:bg-zinc-100">
       <Link href={`/plans/${plan.id}`} className="min-w-0 flex-1">
         <p className="flex items-center gap-1.5 truncate text-base font-bold text-zinc-800">
           <TwemojiIcon codepoint="1f9ed" alt="🧭" className="h-5 w-5 shrink-0" /> {plan.title}

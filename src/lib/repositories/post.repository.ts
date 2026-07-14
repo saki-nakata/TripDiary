@@ -24,9 +24,8 @@ const POST_SELECT = {
     select: { id: true, url: true, displayOrder: true },
     orderBy: { displayOrder: "asc" as const },
   },
-  _count: {
-    select: { likes: true, comments: true },
-  },
+  likeCount: true,
+  commentCount: true,
 } as const;
 
 export async function findPostAuthorId(postId: string): Promise<string | null> {
@@ -83,7 +82,7 @@ export async function findExplorePosts({
     where,
     take: limit + 1,
     ...(cursor && { cursor: { id: cursor }, skip: 1 }),
-    orderBy: sort === "popular" ? [{ likes: { _count: "desc" } }, { createdAt: "desc" }] : { createdAt: "desc" },
+    orderBy: sort === "popular" ? [{ likeCount: "desc" }, { createdAt: "desc" }] : { createdAt: "desc" },
     select: {
       ...POST_SELECT,
       likes: userId ? { where: { userId }, select: { userId: true } } : false,
@@ -237,7 +236,7 @@ export async function countFollowingFeedPosts(userId: string) {
 export async function findFeaturedPosts(limit = 5) {
   const posts = await prisma.post.findMany({
     take: limit,
-    orderBy: [{ likes: { _count: "desc" } }, { createdAt: "desc" }],
+    orderBy: [{ likeCount: "desc" }, { createdAt: "desc" }],
     select: {
       ...POST_SELECT,
       likes: false,
@@ -273,7 +272,7 @@ export async function findLocationCounts() {
       _count: { _all: true },
     }),
     prisma.post.findMany({
-      orderBy: [{ likes: { _count: "desc" } }, { createdAt: "desc" }],
+      orderBy: [{ likeCount: "desc" }, { createdAt: "desc" }],
       select: {
         location: true,
         images: { take: 1, orderBy: { displayOrder: "asc" }, select: { url: true } },
@@ -313,7 +312,7 @@ export async function findTopRatedByCategory(excludeIds: string[] = []) {
       rating: { not: null },
       ...(excludeIds.length > 0 && { id: { notIn: excludeIds } }),
     },
-    orderBy: [{ rating: "desc" }, { likes: { _count: "desc" } }],
+    orderBy: [{ rating: "desc" }, { likeCount: "desc" }],
     select: {
       ...POST_SELECT,
       likes: false,
@@ -334,10 +333,10 @@ export async function findTopRatedByCategory(excludeIds: string[] = []) {
 }
 
 export async function findRelatedPosts(postId: string, location: string, limit = 3) {
-  return prisma.post.findMany({
+  const posts = await prisma.post.findMany({
     where: { location, id: { not: postId } },
     take: limit,
-    orderBy: [{ likes: { _count: "desc" } }, { createdAt: "desc" }],
+    orderBy: [{ likeCount: "desc" }, { createdAt: "desc" }],
     select: {
       ...POST_SELECT,
       likes: false,
@@ -345,6 +344,7 @@ export async function findRelatedPosts(postId: string, location: string, limit =
       visited: false,
     },
   });
+  return posts.map((p) => formatPost(p));
 }
 
 export async function createPost(authorId: string, data: PostInput) {
@@ -363,6 +363,10 @@ export async function createPost(authorId: string, data: PostInput) {
           create: imageUrls.map((url, displayOrder) => ({ url, displayOrder })),
         },
       }),
+      // 自分の投稿は必ず訪問済みとして扱うため、作成時に本人のVisitedレコードを同時作成する
+      visited: {
+        create: { userId: authorId },
+      },
     },
     select: {
       ...POST_SELECT,
@@ -419,12 +423,13 @@ function paginateResults(posts: any[], limit: number, userId?: string) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatPost(post: any, userId?: string) {
-  const { likes, wishlists, visited, ...rest } = post;
+  const { likes, wishlists, visited, likeCount, commentCount, ...rest } = post;
   return {
     ...rest,
     visitedAt: rest.visitedAt instanceof Date ? rest.visitedAt.toISOString() : rest.visitedAt,
     createdAt: rest.createdAt instanceof Date ? rest.createdAt.toISOString() : rest.createdAt,
     updatedAt: rest.updatedAt instanceof Date ? rest.updatedAt.toISOString() : rest.updatedAt,
+    _count: { likes: likeCount, comments: commentCount },
     isLiked: userId ? Array.isArray(likes) && likes.length > 0 : undefined,
     isWishlisted: userId ? Array.isArray(wishlists) && wishlists.length > 0 : undefined,
     isVisited: userId ? Array.isArray(visited) && visited.length > 0 : undefined,

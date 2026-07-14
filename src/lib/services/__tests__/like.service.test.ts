@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { ForbiddenError } from "@/lib/errors";
 
 vi.mock("@/lib/repositories/like.repository", () => ({
   toggleLike: vi.fn(),
@@ -49,5 +50,12 @@ describe("toggleLikeService", () => {
     await toggleLikeService(USER_ID, POST_ID);
 
     expect(createLikeNotification).not.toHaveBeenCalled();
+  });
+
+  it("toggleLike_自分の投稿_ForbiddenErrorを投げてtoggleLikeは呼ばれない", async () => {
+    vi.mocked(findPostAuthorId).mockResolvedValue(USER_ID);
+
+    await expect(toggleLikeService(USER_ID, POST_ID)).rejects.toThrow(ForbiddenError);
+    expect(toggleLike).not.toHaveBeenCalled();
   });
 });

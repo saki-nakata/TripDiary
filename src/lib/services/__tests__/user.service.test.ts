@@ -17,8 +17,6 @@ vi.mock("@/lib/repositories/user.repository", () => ({
   updateUserEmail: vi.fn(),
 }));
 vi.mock("@/lib/repositories/follow.repository", () => ({
-  countFollowers: vi.fn(),
-  countFollowing: vi.fn(),
   isFollowing: vi.fn(),
   findFollowingIdsAmong: vi.fn(),
 }));
@@ -43,7 +41,7 @@ import {
   findUserPasswordHashAndEmail,
   updateUserEmail,
 } from "@/lib/repositories/user.repository";
-import { countFollowers, countFollowing, isFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
+import { isFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
 import {
   getUserProfileService,
   updateUserService,
@@ -65,8 +63,6 @@ describe("getUserProfileService", () => {
     vi.mocked(countVisitedByUser).mockResolvedValue(0);
     vi.mocked(countLikesReceived).mockResolvedValue(0);
     vi.mocked(countCommentsReceived).mockResolvedValue(0);
-    vi.mocked(countFollowers).mockResolvedValue(0);
-    vi.mocked(countFollowing).mockResolvedValue(0);
     vi.mocked(isFollowing).mockResolvedValue(false);
   });
 
@@ -79,7 +75,7 @@ describe("getUserProfileService", () => {
 
   // ─── email非公開 ───
   it("getUserProfile_レスポンスにemailを含まない", async () => {
-    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null });
+    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0 });
 
     const profile = await getUserProfileService(USER_ID);
 
@@ -88,7 +84,7 @@ describe("getUserProfileService", () => {
 
   // ─── フォロー状態 ───
   it("getUserProfile_閲覧者IDなし_followedByCurrentUserはfalse", async () => {
-    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null });
+    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0 });
 
     const profile = await getUserProfileService(USER_ID);
 
@@ -97,7 +93,7 @@ describe("getUserProfileService", () => {
   });
 
   it("getUserProfile_閲覧者がフォロー中_followedByCurrentUserはtrue", async () => {
-    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null });
+    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0 });
     vi.mocked(isFollowing).mockResolvedValue(true);
 
     const profile = await getUserProfileService(USER_ID, VIEWER_ID);

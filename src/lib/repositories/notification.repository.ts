@@ -51,3 +51,10 @@ export async function markAsRead(notificationId: string, userId: string) {
     data: { read: true },
   });
 }
+
+export async function markStaleNotificationsAsRead(userId: string, olderThan: Date) {
+  return prisma.notification.updateMany({
+    where: { userId, read: false, createdAt: { lt: olderThan } },
+    data: { read: true },
+  });
+}

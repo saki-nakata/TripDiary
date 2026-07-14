@@ -15,7 +15,7 @@ import {
   findUserPasswordHashAndEmail,
   updateUserEmail,
 } from "@/lib/repositories/user.repository";
-import { countFollowers, countFollowing, isFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
+import { isFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
 import type { UserUpdateInput } from "@/lib/validations/user";
 
 export function calcTabiScore({
@@ -43,14 +43,12 @@ export async function getUserProfileService(userId: string, viewerId?: string) {
   const user = await findUserById(userId);
   if (!user) throw new NotFoundError("ユーザーが見つかりません");
 
-  const [postCount, visitedCount, likesReceived, commentsReceived, followerCount, followingCount, followedByCurrentUser] =
+  const [postCount, visitedCount, likesReceived, commentsReceived, followedByCurrentUser] =
     await Promise.all([
       countUserPosts(userId),
       countVisitedByUser(userId),
       countLikesReceived(userId),
       countCommentsReceived(userId),
-      countFollowers(userId),
-      countFollowing(userId),
       viewerId ? isFollowing(viewerId, userId) : Promise.resolve(false),
     ]);
 
@@ -62,8 +60,8 @@ export async function getUserProfileService(userId: string, viewerId?: string) {
     image: user.image,
     bio: user.bio,
     postCount,
-    followerCount,
-    followingCount,
+    followerCount: user.followerCount,
+    followingCount: user.followingCount,
     followedByCurrentUser,
     tabiScore,
     tabiRank: tabiRank(tabiScore),

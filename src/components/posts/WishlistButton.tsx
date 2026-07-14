@@ -52,7 +52,7 @@ export function WishlistButton({ postId, initialWishlisted, isLoggedIn }: Props)
       title={wishlisted ? "行きたいを解除" : "行きたいに追加"}
     >
       {wishlisted ? <TwemojiIcon codepoint="1f516" className="h-4 w-4" /> : <span>🔖</span>}
-      <span className="hidden sm:inline">{wishlisted ? "行きたい！済" : "行きたい！"}</span>
+      <span className="hidden sm:inline">{wishlisted ? "また行きたい！" : "また行きたい？"}</span>
     </button>
   );
 }

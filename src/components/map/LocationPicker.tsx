@@ -153,10 +153,10 @@ export function LocationPicker({ lat, lng, onChange, label }: Props) {
             <button
               type="button"
               onClick={() => setExpanded(false)}
-              className="absolute -top-10 right-0 hover:opacity-70 transition-opacity"
+              className="absolute -top-10 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md hover:opacity-70 transition-opacity"
               aria-label="閉じる"
             >
-              <TwemojiIcon codepoint="274c" alt="閉じる" className="h-4 w-4" />
+              <TwemojiIcon codepoint="2716" alt="閉じる" className="h-4 w-4" />
             </button>
             <PinMap
               center={center}

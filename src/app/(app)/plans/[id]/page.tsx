@@ -8,6 +8,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { BackButton } from "@/components/posts/BackButton";
+import { PlanMapViewWrapper } from "@/components/map/PlanMapViewWrapper";
+import type { PlanMapSpot } from "@/components/map/PlanMapView";
 import type { PlanDetail } from "@/types/plan";
 
 type Props = {
@@ -54,12 +56,21 @@ export default async function PlanDetailPage({ params }: Props) {
       spotNumberByTitle.set(spotTitle, i + 1);
   });
 
+  const mapSpots: PlanMapSpot[] = plan.spots
+    .map((spot, i) => ({
+      lat: spot.post?.lat ?? null,
+      lng: spot.post?.lng ?? null,
+      label: spot.post?.title ?? spot.freeTitle ?? "",
+      order: i + 1,
+    }))
+    .filter((s): s is PlanMapSpot => s.lat != null && s.lng != null);
+
   return (
     <div className="relative">
-      <div className="px-4 pt-1 md:px-6 md:pt-1">
+      <div className="absolute left-0 top-1 z-10 md:left-2">
         <BackButton />
       </div>
-      <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-8 -mt-8">
+      <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-8 -mt-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="-mt-2">
             <h1 className="text-2xl font-bold text-[#1e293b]">{plan.title}</h1>
@@ -195,6 +206,16 @@ export default async function PlanDetailPage({ params }: Props) {
             </ul>
           )}
         </div>
+
+        {/* スポット地図 */}
+        {mapSpots.length > 0 && (
+          <div className="space-y-2">
+            <p className="flex items-center gap-1.5 text-sm font-bold text-zinc-700">
+              <TwemojiIcon codepoint="1f5fa" alt="🗺️" className="h-4 w-4" /> スポット地図
+            </p>
+            <PlanMapViewWrapper spots={mapSpots} />
+          </div>
+        )}
 
         {/* リンク済み投稿 */}
         {plan.linkedPosts.length > 0 && (

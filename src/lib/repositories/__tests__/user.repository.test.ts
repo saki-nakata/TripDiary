@@ -91,6 +91,18 @@ describe("user.repository", () => {
     expect(result.users.find((u) => u.id === self.id)).toBeUndefined();
   });
 
+  it("searchUsersByNickname_件数は非正規化カウンタ(followerCount)と投稿数のライブ集計を反映する", async () => {
+    const target = await createTestUser("target@example.com", "対象ユーザー");
+    const follower = await createTestUser("follower@example.com", "フォロワー");
+    await prisma.follow.create({ data: { followerId: follower.id, followingId: target.id } });
+    await prisma.user.update({ where: { id: target.id }, data: { followerCount: { increment: 1 } } });
+    await createPost(target.id, { title: "投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+
+    const result = await searchUsersByNickname({ q: "対象ユーザー" });
+
+    expect(result.users[0]._count).toEqual({ posts: 1, followers: 1 });
+  });
+
   // ─── findUserById / updateUser ───
   it("findUserById_存在するID_ユーザー情報を返す(emailを含まない)", async () => {
     const user = await createTestUser("find@example.com", "検索対象");
@@ -123,12 +135,14 @@ describe("user.repository", () => {
     await createPost(author.id, {
       title: "投稿2", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-02",
     });
-    await prisma.visited.create({ data: { userId: author.id, postId: post.id } });
+    // createPostは投稿者自身のVisited行を自動作成するため、明示的なvisited.createは不要（2件とも自動で訪問済みになる）
     await prisma.like.create({ data: { userId: other.id, postId: post.id } });
     await prisma.comment.create({ data: { authorId: other.id, postId: post.id, body: "コメント" } });
+    // countLikesReceived/countCommentsReceivedは非正規化カラムを参照するため、直接作成したlike/commentに合わせて手動で反映する
+    await prisma.post.update({ where: { id: post.id }, data: { likeCount: { increment: 1 }, commentCount: { increment: 1 } } });
 
     expect(await countUserPosts(author.id)).toBe(2);
-    expect(await countVisitedByUser(author.id)).toBe(1);
+    expect(await countVisitedByUser(author.id)).toBe(2);
     expect(await countLikesReceived(author.id)).toBe(1);
     expect(await countCommentsReceived(author.id)).toBe(1);
   });
@@ -181,15 +195,17 @@ describe("user.repository", () => {
     await createPost(active.id, {
       title: "投稿6", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-02",
     });
-    await prisma.visited.create({ data: { userId: active.id, postId: post.id } });
+    // createPostは投稿者自身のVisited行を自動作成するため、明示的なvisited.createは不要（2件とも自動で訪問済みになる）
     await prisma.like.create({ data: { userId: other.id, postId: post.id } });
     await prisma.comment.create({ data: { authorId: other.id, postId: post.id, body: "いいね" } });
+    // computeTabiScoreInputsForUsersは非正規化カラムを参照するため、直接作成したlike/commentに合わせて手動で反映する
+    await prisma.post.update({ where: { id: post.id }, data: { likeCount: { increment: 1 }, commentCount: { increment: 1 } } });
 
     const result = await computeTabiScoreInputsForUsers([active.id, idle.id]);
 
     expect(result.get(active.id)).toEqual({
       postCount: 2,
-      visitedCount: 1,
+      visitedCount: 2,
       likesReceived: 1,
       commentsReceived: 1,
     });

@@ -70,6 +70,20 @@ describe("getYearlyStatsService", () => {
     expect(result.visitedLocations).toEqual(["東京都", "大阪府"]);
   });
 
+  it("visitedLocationsは訪問日順ではなく北海道→沖縄県の地理順で並ぶ", async () => {
+    vi.mocked(findYearlyPosts).mockResolvedValue([
+      // 訪問日は沖縄県が先、北海道が後だが、表示順は地理順（北海道→沖縄県）になるべき
+      { visitedAt: new Date("2026-01-01"), location: "沖縄県", category: "観光", cost: null, _count: { images: 0 } },
+      { visitedAt: new Date("2026-02-01"), location: "北海道", category: "観光", cost: null, _count: { images: 0 } },
+      { visitedAt: new Date("2026-03-01"), location: "東京都", category: "観光", cost: null, _count: { images: 0 } },
+    ] as never);
+    vi.mocked(findYearlyCompletedPlans).mockResolvedValue(0);
+
+    const result = await getYearlyStatsService(USER_ID, 2026);
+
+    expect(result.visitedLocations).toEqual(["北海道", "東京都", "沖縄県"]);
+  });
+
   it("投稿が0件_topLocationはnullでvisitedLocationsは空配列(境界値)", async () => {
     vi.mocked(findYearlyPosts).mockResolvedValue([]);
     vi.mocked(findYearlyCompletedPlans).mockResolvedValue(0);
@@ -92,6 +106,25 @@ describe("getYearlyStatsService", () => {
     expect(result.monthlyPostCount).toHaveLength(12);
     expect(result.monthlyPostCount.find((m) => m.month === 3)?.count).toBe(1);
     expect(result.monthlyPostCount.find((m) => m.month === 1)?.count).toBe(0);
+  });
+
+  it("categoryBreakdownは件数降順、同数の場合はCATEGORIES定義順で並ぶ", async () => {
+    vi.mocked(findYearlyPosts).mockResolvedValue([
+      // 投稿の出現順は「レジャー」が先だが、CATEGORIES定義順では「グルメ」の方が先
+      { visitedAt: new Date("2026-01-01"), location: "東京都", category: "レジャー", cost: null, _count: { images: 0 } },
+      { visitedAt: new Date("2026-02-01"), location: "東京都", category: "グルメ", cost: null, _count: { images: 0 } },
+      { visitedAt: new Date("2026-03-01"), location: "東京都", category: "観光", cost: null, _count: { images: 0 } },
+      { visitedAt: new Date("2026-04-01"), location: "東京都", category: "観光", cost: null, _count: { images: 0 } },
+    ] as never);
+    vi.mocked(findYearlyCompletedPlans).mockResolvedValue(0);
+
+    const result = await getYearlyStatsService(USER_ID, 2026);
+
+    expect(result.categoryBreakdown).toEqual([
+      { category: "観光", count: 2 },
+      { category: "グルメ", count: 1 },
+      { category: "レジャー", count: 1 },
+    ]);
   });
 
   it("categoryが未設定の投稿は集計から除外される", async () => {

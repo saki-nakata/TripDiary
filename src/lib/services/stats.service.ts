@@ -4,6 +4,10 @@ import {
   findYearlyCompletedPlans,
   findAllPostsGroupedByYear,
 } from "@/lib/repositories/stats.repository";
+import { CATEGORIES, LOCATIONS } from "@/lib/constants";
+
+const LOCATION_ORDER = LOCATIONS as readonly string[];
+const CATEGORY_ORDER = CATEGORIES as readonly string[];
 
 export async function getAvailableYearsService(userId: string) {
   const posts = await findAllPostsByUser(userId);
@@ -22,7 +26,10 @@ export async function getYearlyStatsService(userId: string, year: number | null)
   const totalCost = posts.reduce((sum, p) => sum + (p.cost ?? 0), 0);
 
   const locatedPosts = posts.filter((p) => p.location);
-  const visitedLocations = Array.from(new Set(locatedPosts.map((p) => p.location)));
+  // 北海道→沖縄県（→海外）の順（LOCATIONS配列の並び順＝都道府県塗り分け地図と同じ基準）で表示する
+  const visitedLocations = Array.from(new Set(locatedPosts.map((p) => p.location))).sort(
+    (a, b) => LOCATION_ORDER.indexOf(a) - LOCATION_ORDER.indexOf(b)
+  );
 
   const locationCounts = new Map<string, number>();
   for (const p of locatedPosts) {
@@ -37,9 +44,13 @@ export async function getYearlyStatsService(userId: string, year: number | null)
     if (!p.category) continue;
     categoryCounts.set(p.category, (categoryCounts.get(p.category) ?? 0) + 1);
   }
+  // 件数降順。同数の場合は CATEGORIES の定義順（投稿の取得順に依存させず表示順を安定させる）
   const categoryBreakdown = Array.from(categoryCounts.entries())
     .map(([category, count]) => ({ category, count }))
-    .sort((a, b) => b.count - a.count);
+    .sort(
+      (a, b) =>
+        b.count - a.count || CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category)
+    );
 
   let monthlyPostCount: { month: number; count: number }[] = [];
   let yearlyPostCount: { year: number; count: number }[] = [];

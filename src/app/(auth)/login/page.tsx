@@ -33,7 +33,7 @@ export default function LoginPage() {
       await signIn("credentials", {
         email: data.email,
         password: data.password,
-        callbackUrl: "/dashboard",
+        callbackUrl: "/",
       });
     });
   }

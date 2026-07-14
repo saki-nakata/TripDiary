@@ -13,6 +13,60 @@ import { useState, useRef } from "react";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { useQueryClient } from "@tanstack/react-query";
 import type { PortalFeedData } from "@/components/explore/ExploreFeed";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+function SortableImageThumb({
+  url,
+  index,
+  draggable,
+  onRemove,
+}: {
+  url: string;
+  index: number;
+  draggable: boolean;
+  onRemove: (url: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: url });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...(draggable ? { ...attributes, ...listeners } : {})}
+      className={`relative group ${draggable ? "cursor-grab touch-none active:cursor-grabbing" : ""} ${isDragging ? "opacity-50 z-10" : ""}`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={`写真 ${index + 1}`}
+        className="w-20 h-20 object-cover rounded-lg border border-zinc-200"
+      />
+      <button
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => onRemove(url)}
+        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white shadow rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
 
 type Props = {
   initialData?: Post;
@@ -47,6 +101,10 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
   const [uploadingCount, setUploadingCount] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+  );
 
   const {
     register,
@@ -86,6 +144,17 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
 
   function removeCostItem(index: number) {
     setCostBreakdown(costBreakdown.filter((_, i) => i !== index));
+  }
+
+  function handleImageDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setImageUrls((prev) => {
+      const oldIndex = prev.indexOf(active.id as string);
+      const newIndex = prev.indexOf(over.id as string);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
   }
 
   async function uploadFiles(files: File[]) {
@@ -224,32 +293,33 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
 
         {/* 写真 */}
         <div className="space-y-2">
-          <label className="text-base font-bold text-zinc-700">写真</label>
+          <div className="flex items-center justify-between">
+            <label className="text-base font-bold text-zinc-700">写真</label>
+            {imageUrls.length > 1 && (
+              <p className="text-xs text-zinc-400">（ドラッグ&ドロップで並び順を変更できます）</p>
+            )}
+          </div>
           {imageUrls.length > 0 && (
-            <div className="flex gap-2 flex-wrap">
-              {imageUrls.map((url, i) => (
-                <div key={url} className="relative group">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={url}
-                    alt={`写真 ${i + 1}`}
-                    className="w-20 h-20 object-cover rounded-lg border border-zinc-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setImageUrls((prev) => prev.filter((u) => u !== url))}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white shadow rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
-                  </button>
+            <DndContext id="post-images" sensors={imageSensors} collisionDetection={closestCenter} onDragEnd={handleImageDragEnd}>
+              <SortableContext items={imageUrls} strategy={rectSortingStrategy}>
+                <div className="flex gap-2 flex-wrap">
+                  {imageUrls.map((url, i) => (
+                    <SortableImageThumb
+                      key={url}
+                      url={url}
+                      index={i}
+                      draggable={imageUrls.length > 1}
+                      onRemove={(u) => setImageUrls((prev) => prev.filter((x) => x !== u))}
+                    />
+                  ))}
+                  {uploadingCount > 0 && (
+                    <div className="w-20 h-20 rounded-lg border border-zinc-200 bg-zinc-50 flex items-center justify-center text-xs text-zinc-400">
+                      uploading…
+                    </div>
+                  )}
                 </div>
-              ))}
-              {uploadingCount > 0 && (
-                <div className="w-20 h-20 rounded-lg border border-zinc-200 bg-zinc-50 flex items-center justify-center text-xs text-zinc-400">
-                  uploading…
-                </div>
-              )}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
           <label
             className={`w-full h-14 rounded-xl border border-dashed flex items-center justify-center text-sm cursor-pointer transition-colors ${
