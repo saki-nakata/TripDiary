@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# CIに必要な環境変数（.env.testはgitignore対象でCIには存在しないため、
+# vitest.config.tsのloadEnv({ path: ".env.test" })は無視され、
+# ここでGitHub Actionsのenv:として渡す値がそのまま使われる）
+env:
+  DATABASE_URL: mysql://tripdiary:tripdiary@127.0.0.1:3307/tripdiary_test
+  AUTH_SECRET: ci-dummy-auth-secret-not-for-production
+  ENABLE_TEST_ENDPOINTS: "true"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql-test:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: tripdiary_test
+          MYSQL_USER: tripdiary
+          MYSQL_PASSWORD: tripdiary
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # pnpm prisma:migrate:test は dotenv-cli が .env.test の不在でエラー終了するため
+      # CIでは使わず、DATABASE_URL を上記env:から渡した上で直接呼ぶ
+      - run: pnpm prisma migrate deploy
+      - run: pnpm test:coverage
+
+  e2e:
+    runs-on: ubuntu-latest
+    # 既存E2Eはdevサーバー高負荷時のタイムアウトで不安定になった経緯があり、
+    # ローカルより低速なランナーでは同種の不安定さが再発しやすい。
+    # 安定性を見極めるまでは non-blocking とする（必須化の判断はPhase 5-C-2で確定）
+    continue-on-error: true
+    services:
+      mysql-test:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: tripdiary_test
+          MYSQL_USER: tripdiary
+          MYSQL_PASSWORD: tripdiary
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma migrate deploy
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm playwright test --project=e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
