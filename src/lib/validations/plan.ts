@@ -1,3 +1,4 @@
+import "@/lib/openapi/zod-setup";
 import { z } from "zod";
 
 export const budgetBreakdownItemSchema = z.object({

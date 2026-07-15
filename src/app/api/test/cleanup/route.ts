@@ -3,7 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 
 export async function DELETE(req: NextRequest) {
-  if (process.env.NODE_ENV === "production") {
+  // NODE_ENV ではなく専用フラグでガードする。CIのe2eジョブは本番相当ビルド
+  // （NODE_ENV=production）でアプリを起動するが、既存E2Eはこのエンドポイントに
+  // 依存するため NODE_ENV では判定できない。Phase 6の本番環境変数には
+  // ENABLE_TEST_ENDPOINTS を設定しないこと。
+  if (process.env.ENABLE_TEST_ENDPOINTS !== "true") {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
   const email = req.nextUrl.searchParams.get("email");
