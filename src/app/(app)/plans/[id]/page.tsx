@@ -71,7 +71,10 @@ export default async function PlanDetailPage({ params }: Props) {
         <BackButton />
       </div>
       <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-8 -mt-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        {/* pt-9: モバイルは絶対配置のBackButton（top-1、高さ約30px）とタイトルが
+            重なるため、その分の余白を確保する（md以上はBackButtonとの間に
+            自然な余白があるため不要） */}
+        <div className="flex flex-wrap items-start justify-between gap-3 pt-9 md:pt-0">
           <div className="-mt-2">
             <h1 className="text-2xl font-bold text-[#1e293b]">{plan.title}</h1>
             {(plan.startDate || plan.endDate) && (

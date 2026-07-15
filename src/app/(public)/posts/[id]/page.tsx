@@ -47,7 +47,10 @@ export default async function PostDetailPage({ params }: Props) {
       <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-7 -mt-4">
 
         {/* Header */}
-        <div className="space-y-3">
+        {/* pt-9: モバイルは絶対配置のBackButton（top-1、高さ約30px）と最初の行が
+            重なるため、その分の余白を確保する（md以上はBackButtonとの間に
+            自然な余白があるため不要） */}
+        <div className="space-y-3 pt-9 md:pt-0">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             {post.category && (
               <span

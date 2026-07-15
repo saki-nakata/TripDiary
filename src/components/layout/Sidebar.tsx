@@ -50,24 +50,26 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/mypage?tab=follow-feed", icon: "1f465", label: "フォロー中の投稿", key: "follow-feed" },
 ];
 
-const BOTTOM_NAV_ITEMS = [
-  { href: "/", icon: "1f3e0", label: "ホーム" },
-  { href: "/search", icon: "1f50d", label: "検索" },
-  { href: "/posts/new", icon: "1f4dd", label: "新規投稿" },
-  { href: "/mypage", icon: "1f464", label: "マイページ" },
-];
+// モバイルのボトムナビは画面が狭くラベル込みでは全項目を収められないため、
+// NAV_ITEMS のうち「ホーム・検索」（上部バーへ移動）を除いた残りをアイコンのみで並べる
+const MOBILE_BOTTOM_KEYS = ["posts-new", "profile", "plans", "myposts", "report", "wishlist", "visited", "follow-feed"];
 
 export function Sidebar({ user }: { user: User }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
   const { count: unreadCount } = useUnreadCount();
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(e.target as Node)) {
+        setMobileDropdownOpen(false);
       }
     }
     document.addEventListener("click", handleClick);
@@ -216,25 +218,71 @@ export function Sidebar({ user }: { user: User }) {
         </div>
       </aside>
 
-      {/* Bottom nav (mobile) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] z-30 flex">
-        {BOTTOM_NAV_ITEMS.map((item) => {
-          const active = item.href === "/"
-            ? pathname === "/"
-            : pathname.startsWith(item.href);
+      {/* Top bar (mobile): ホーム・検索・通知・アバター */}
+      <nav className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#e2e8f0] z-30 flex items-center justify-around px-2">
+        <Link href="/" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname === "/" ? "text-[#16a34a] bg-[#dcfce7]" : "text-[#64748b]"}`}>
+          <span className="text-lg leading-none">🏠</span>
+        </Link>
+        <Link href="/search" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname.startsWith("/search") ? "text-[#16a34a] bg-[#dcfce7]" : "text-[#64748b]"}`}>
+          <TwemojiIcon codepoint="1f50d" className="h-5 w-5" />
+        </Link>
+        <Link href="/notification" className={`relative flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname === "/notification" ? "text-[#16a34a] bg-[#dcfce7]" : "text-[#64748b]"}`}>
+          <TwemojiIcon codepoint="1f514" className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-[3px] leading-none">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Link>
+        <div className="relative" ref={mobileDropdownRef}>
+          <button
+            onClick={(e) => { e.stopPropagation(); setMobileDropdownOpen((o) => !o); }}
+            className="flex items-center justify-center h-9 w-9 rounded-full bg-[#16a34a]/10 text-sm font-semibold text-[#16a34a]"
+          >
+            {user.nickname[0]}
+          </button>
+          {mobileDropdownOpen && (
+            <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-[#e2e8f0] overflow-hidden z-50">
+              <Link
+                href="/settings"
+                className="block px-4 py-[11px] text-[0.9rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
+                onClick={() => setMobileDropdownOpen(false)}
+              >
+                プロフィール編集
+              </Link>
+              <Link
+                href="/settings/account"
+                className="block px-4 py-[11px] text-[0.9rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
+                onClick={() => setMobileDropdownOpen(false)}
+              >
+                アカウント設定
+              </Link>
+              <button
+                onClick={() => { setMobileDropdownOpen(false); signOut({ callbackUrl: "/" }); }}
+                className="w-full text-left px-4 py-[11px] text-[0.9rem] text-red-500 hover:bg-[#fff5f5] border-t border-[#e2e8f0] transition-colors"
+              >
+                ログアウト
+              </button>
+            </div>
+          )}
+        </div>
+      </nav>
+
+      {/* Bottom nav (mobile): 新規投稿・プロフィール・マイページ内各タブへの直接リンク（アイコンのみ） */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] z-30 flex overflow-x-auto">
+        {NAV_ITEMS.filter((item): item is NavLink => !("divider" in item) && MOBILE_BOTTOM_KEYS.includes(item.key)).map((item) => {
+          const href = resolveHref(item);
+          const active = isActive(item);
           return (
             <Link
-              key={item.href}
-              href={item.href}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-xs transition-colors
+              key={item.key}
+              href={href}
+              title={item.label}
+              aria-label={item.label}
+              className={`flex-1 flex items-center justify-center py-3 min-w-[44px] transition-colors
                 ${active ? "text-[#16a34a]" : "text-[#64748b]"}`}
             >
-              {item.label === "ホーム" ? (
-                <span className="text-xl leading-5">🏠</span>
-              ) : (
-                <TwemojiIcon codepoint={item.icon} className="h-5 w-5" />
-              )}
-              <span>{item.label}</span>
+              <TwemojiIcon codepoint={item.icon} className="h-5 w-5" />
             </Link>
           );
         })}

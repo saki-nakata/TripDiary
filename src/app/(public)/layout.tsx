@@ -20,7 +20,7 @@ export default async function PublicLayout({ children }: { children: React.React
           <Suspense>
             <Sidebar user={user} />
           </Suspense>
-          <div className="ml-16 max-md:ml-0 sidebar:ml-60 pb-16 md:pb-0">
+          <div className="ml-16 max-md:ml-0 sidebar:ml-60 pt-14 md:pt-0 pb-16 md:pb-0">
             <main className="px-10 py-6">{children}</main>
           </div>
         </div>
@@ -86,7 +86,7 @@ export default async function PublicLayout({ children }: { children: React.React
             <span>ログイン</span>
           </Link>
           <Link href="/signup" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
-            <TwemojiIcon codepoint="270d" alt="✍️" className="h-5 w-5" />
+            <TwemojiIcon codepoint="2728" alt="✨" className="h-5 w-5" />
             <span>新規登録</span>
           </Link>
         </nav>

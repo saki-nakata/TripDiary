@@ -68,7 +68,9 @@ export default async function UserProfilePage({ params, searchParams }: Props) {
       )}
       <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 -mt-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        {/* !isSelfの場合、モバイルは絶対配置のBackButton（top-1、高さ約30px）と
+            重なるため、その分の余白を確保する（md以上は自然な余白があるため不要） */}
+        <div className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 ${!isSelf ? "pt-9 md:pt-0" : ""}`}>
           <div className="relative w-[100px] h-[100px] rounded-full overflow-hidden bg-zinc-200 shrink-0">
             {profile.image ? (
               <Image src={profile.image} alt={profile.nickname} fill sizes="100px" className="object-cover" />
