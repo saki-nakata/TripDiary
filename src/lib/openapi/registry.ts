@@ -27,9 +27,19 @@ import {
   statsResponseSchema,
 } from "./schemas";
 
-const registry = new OpenAPIRegistry();
+// registerPath()の呼び出しはNext.jsのビルド時静的解析（"Collecting page data"）が
+// 本モジュールをインポートしただけで即座に実行されてしまう。この解析フェーズでは
+// zod-to-openapiによるzodプロトタイプ拡張（zod-setup.ts）が正しく反映されず
+// `t.openapi is not a function` でビルドが失敗するため、登録処理を関数化して
+// 実リクエスト時（generateOpenApiDocument()呼び出し時）まで遅延させ、結果をキャッシュする。
+let cachedRegistry: OpenAPIRegistry | undefined;
 
-const bearerAuth = registry.registerComponent("securitySchemes", "cookieAuth", {
+function buildRegistry(): OpenAPIRegistry {
+  if (cachedRegistry) return cachedRegistry;
+
+  const registry = new OpenAPIRegistry();
+
+  const bearerAuth = registry.registerComponent("securitySchemes", "cookieAuth", {
   type: "apiKey",
   in: "cookie",
   name: "authjs.session-token",
@@ -554,7 +564,12 @@ registry.registerPath({
 
 registry.register("Login", loginSchema);
 
+  cachedRegistry = registry;
+  return registry;
+}
+
 export function generateOpenApiDocument() {
+  const registry = buildRegistry();
   const generator = new OpenApiGeneratorV3(registry.definitions);
   return generator.generateDocument({
     openapi: "3.0.0",
