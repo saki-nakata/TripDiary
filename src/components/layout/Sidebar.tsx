@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { useToast } from "@/contexts/toast-context";
 
 async function fetchUnreadCount(): Promise<number> {
   const res = await fetch("/api/notifications/unread-count");
@@ -50,9 +51,10 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/mypage?tab=follow-feed", icon: "1f465", label: "フォロー中の投稿", key: "follow-feed" },
 ];
 
-// モバイルのボトムナビは画面が狭くラベル込みでは全項目を収められないため、
-// NAV_ITEMS のうち「ホーム・検索」（上部バーへ移動）を除いた残りをアイコンのみで並べる
-const MOBILE_BOTTOM_KEYS = ["posts-new", "profile", "plans", "myposts", "report", "wishlist", "visited", "follow-feed"];
+// モバイルのボトムナビは「マイページ内タブの切り替え」＋「新規投稿」。
+// ホーム・検索・プロフィールは上部バーへ移動。新規投稿は最重要アクションのため
+// 親指の届きやすい中央（配列の中央=4番目/7項目）に配置し、見た目も強調する
+const MOBILE_BOTTOM_KEYS = ["plans", "myposts", "report", "posts-new", "wishlist", "visited", "follow-feed"];
 
 export function Sidebar({ user }: { user: User }) {
   const pathname = usePathname();
@@ -62,6 +64,70 @@ export function Sidebar({ user }: { user: User }) {
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
   const { count: unreadCount } = useUnreadCount();
+  const { showToast } = useToast();
+
+  // ログイン直後のみ、ボトムナビのアイコンを一瞬バウンドさせて気づいてもらう
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
+  // 長押し中のボトムナビ項目（アイコンのみでは分かりにくいので長押しでラベル表示）
+  const [pressedKey, setPressedKey] = useState<string | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 実機ではリンクの長押しでブラウザ標準のメニュー（共有・新しいタブで開く等）が
+  // 割り込みtouchendが発火しないことがあるため、touchendに頼らず一定時間で
+  // 強制的にラベルを消す安全策（これが無いとラベルが消えず操作不能になる）
+  const autoHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 長押しでラベルを表示した直後に指を離すと、それが「タップ」として扱われ
+  // 意図せずそのページへ遷移してしまう。長押しが成立した項目のキーを覚えておき、
+  // 「その項目自身」のクリックだけをキャンセルする（キー一致で判定することで、
+  // clickが発火せずフラグが残っても他の無関係なボタンには影響しない設計にする）
+  const wasLongPressKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (sessionStorage.getItem("justLoggedIn")) {
+      sessionStorage.removeItem("justLoggedIn");
+      // sessionStorage はサーバー側で読めずSSR時点で判定できないため、
+      // マウント後にクライアント側でのみ判定してstateに反映する必要がある
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setJustLoggedIn(true);
+      showToast("下のアイコンを長押しすると名前が表示されます", "info", 2500);
+    }
+    // showToast は useCallback で安定した参照のため依存配列から除外して問題ない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handlePressStart(key: string) {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    if (autoHideTimer.current) clearTimeout(autoHideTimer.current);
+    longPressTimer.current = setTimeout(() => {
+      setPressedKey(key);
+      wasLongPressKey.current = key;
+      // touchend が届かなくてもラベルが残り続けないよう、表示から1.5秒後に必ず消す
+      autoHideTimer.current = setTimeout(() => setPressedKey(null), 1500);
+    }, 450);
+  }
+  function handlePressEnd() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    if (autoHideTimer.current) {
+      clearTimeout(autoHideTimer.current);
+      autoHideTimer.current = null;
+    }
+    setPressedKey(null);
+  }
+  function handleIconClick(key: string, e: React.MouseEvent) {
+    if (wasLongPressKey.current === key) {
+      e.preventDefault();
+      wasLongPressKey.current = null;
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+      if (autoHideTimer.current) clearTimeout(autoHideTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -218,15 +284,19 @@ export function Sidebar({ user }: { user: User }) {
         </div>
       </aside>
 
-      {/* Top bar (mobile): ホーム・検索・通知・アバター */}
-      <nav className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#e2e8f0] z-30 flex items-center justify-around px-2">
-        <Link href="/" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname === "/" ? "text-[#16a34a] bg-[#dcfce7]" : "text-[#64748b]"}`}>
-          <span className="text-lg leading-none">🏠</span>
+      {/* Top bar (mobile): ロゴ（ホームリンクを兼ねる）・検索・通知・アバター
+          プロフィールはアバター自体が「自分」への入口を兼ねるため、別アイコンにはせず
+          ドロップダウンメニューの先頭に含める（アイコンの二重化を避ける） */}
+      <nav className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#e2e8f0] z-30 flex items-center justify-between px-3">
+        <Link href="/" title="ホーム" className={`flex items-center gap-1.5 text-[#1e8449] font-bold shrink-0 rounded-lg px-2 py-1 -ml-1 transition-colors ${pathname === "/" ? "bg-lime-100" : ""}`}>
+          <TwemojiIcon codepoint="2708" className="h-5 w-5 shrink-0" />
+          <span className="text-[1.05rem]">TripDiary</span>
         </Link>
-        <Link href="/search" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname.startsWith("/search") ? "text-[#16a34a] bg-[#dcfce7]" : "text-[#64748b]"}`}>
+        <div className="flex items-center gap-1">
+        <Link href="/search" title="検索" aria-label="検索" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname.startsWith("/search") ? "bg-lime-100" : "text-[#64748b]"}`}>
           <TwemojiIcon codepoint="1f50d" className="h-5 w-5" />
         </Link>
-        <Link href="/notification" className={`relative flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname === "/notification" ? "text-[#16a34a] bg-[#dcfce7]" : "text-[#64748b]"}`}>
+        <Link href="/notification" title="通知" aria-label="通知" className={`relative flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname === "/notification" ? "bg-lime-100" : "text-[#64748b]"}`}>
           <TwemojiIcon codepoint="1f514" className="h-5 w-5" />
           {unreadCount > 0 && (
             <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-[3px] leading-none">
@@ -237,6 +307,8 @@ export function Sidebar({ user }: { user: User }) {
         <div className="relative" ref={mobileDropdownRef}>
           <button
             onClick={(e) => { e.stopPropagation(); setMobileDropdownOpen((o) => !o); }}
+            title={user.nickname}
+            aria-label={`${user.nickname}のメニュー`}
             className="flex items-center justify-center h-9 w-9 rounded-full bg-[#16a34a]/10 text-sm font-semibold text-[#16a34a]"
           >
             {user.nickname[0]}
@@ -244,8 +316,16 @@ export function Sidebar({ user }: { user: User }) {
           {mobileDropdownOpen && (
             <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-[#e2e8f0] overflow-hidden z-50">
               <Link
+                href={profileHref}
+                className="flex items-center gap-2 px-4 py-[11px] text-[0.9rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
+                onClick={() => setMobileDropdownOpen(false)}
+              >
+                <TwemojiIcon codepoint="1f464" className="h-4 w-4" />
+                プロフィール
+              </Link>
+              <Link
                 href="/settings"
-                className="block px-4 py-[11px] text-[0.9rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
+                className="block px-4 py-[11px] text-[0.9rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors border-t border-[#e2e8f0]"
                 onClick={() => setMobileDropdownOpen(false)}
               >
                 プロフィール編集
@@ -266,26 +346,82 @@ export function Sidebar({ user }: { user: User }) {
             </div>
           )}
         </div>
+        </div>
       </nav>
 
-      {/* Bottom nav (mobile): 新規投稿・プロフィール・マイページ内各タブへの直接リンク（アイコンのみ） */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] z-30 flex overflow-x-auto">
-        {NAV_ITEMS.filter((item): item is NavLink => !("divider" in item) && MOBILE_BOTTOM_KEYS.includes(item.key)).map((item) => {
-          const href = resolveHref(item);
-          const active = isActive(item);
-          return (
-            <Link
-              key={item.key}
-              href={href}
-              title={item.label}
-              aria-label={item.label}
-              className={`flex-1 flex items-center justify-center py-3 min-w-[44px] transition-colors
-                ${active ? "text-[#16a34a]" : "text-[#64748b]"}`}
-            >
-              <TwemojiIcon codepoint={item.icon} className="h-5 w-5" />
-            </Link>
+      {/* Bottom nav (mobile): 新規投稿・プロフィール・マイページ内各タブへの直接リンク（アイコンのみ）。
+          アイコンだけでは意味が分かりにくいため、ログイン直後は軽くバウンドさせて気づいてもらい、
+          長押しでラベルをポップアップ表示できるようにする */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] z-30 flex">
+        {(() => {
+          // NAV_ITEMS.filter() だと NAV_ITEMS 本来の並び順になり、新規投稿を中央に
+          // 配置する意図が反映されないため、MOBILE_BOTTOM_KEYS の順序通りに並べ直す
+          const navItemsByKey = new Map(
+            NAV_ITEMS.filter((item): item is NavLink => !("divider" in item)).map((item) => [item.key, item])
           );
-        })}
+          const mobileBottomItems = MOBILE_BOTTOM_KEYS.map((key) => navItemsByKey.get(key)).filter(
+            (item): item is NavLink => item != null
+          );
+          return mobileBottomItems.map((item, i) => {
+            const href = resolveHref(item);
+            const active = isActive(item);
+            const isCreate = item.key === "posts-new";
+            // ラベルが画面端で切れないよう、左端は左寄せ・右端は右寄せ・それ以外は中央寄せにする
+            const labelAlign =
+              i === 0 ? "left-0" : i === mobileBottomItems.length - 1 ? "right-0" : "left-1/2 -translate-x-1/2";
+            return (
+              <Link
+                key={item.key}
+                href={href}
+                title={item.label}
+                aria-label={item.label}
+                onTouchStart={() => handlePressStart(item.key)}
+                onTouchEnd={handlePressEnd}
+                onTouchCancel={handlePressEnd}
+                onTouchMove={handlePressEnd}
+                onContextMenu={(e) => e.preventDefault()}
+                onClick={(e) => handleIconClick(item.key, e)}
+                className={`relative flex-1 flex items-center justify-center py-3 min-w-[44px] touch-manipulation select-none transition-colors
+                  ${!isCreate && active ? "text-[#16a34a]" : !isCreate ? "text-[#64748b]" : ""}`}
+                // iOS Safari はリンクの長押しで独自の共有/プレビューメニューを表示し、
+                // これは contextmenu イベントの preventDefault では止められない
+                // （-webkit-touch-callout でのみ制御可能）。ここで無効化しないと
+                // メニューが画面を覆い、他のボタンが反応しないように見える原因になる
+                style={{ WebkitTouchCallout: "none" }}
+              >
+                {pressedKey === item.key && (
+                  <span className={`absolute bottom-full mb-1.5 ${labelAlign} whitespace-nowrap rounded-md bg-zinc-800 px-2 py-1 text-[11px] font-medium text-white shadow-lg`}>
+                    {item.label}
+                  </span>
+                )}
+                {isCreate ? (
+                  // 新規投稿は最重要アクションのため、丸型ボタンで視覚的に強調する
+                  <span className={`flex items-center justify-center h-11 w-11 -mt-1 rounded-full border border-yellow-300 shadow-md ${active ? "bg-lime-100" : ""}`}>
+                    <TwemojiIcon
+                      codepoint={item.icon}
+                      className={`h-5 w-5 ${justLoggedIn ? "animate-bounce-dot-once" : ""}`}
+                      style={justLoggedIn ? { animationDelay: `${i * 60}ms` } : undefined}
+                    />
+                  </span>
+                ) : (
+                  // Twemojiは画像のため文字色では選択状態を表せない。上部バーと同様に
+                  // アクティブ時は緑の丸背景を付けて「今どこにいるか」を示す
+                  <span
+                    className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${
+                      active ? "bg-lime-100" : ""
+                    }`}
+                  >
+                    <TwemojiIcon
+                      codepoint={item.icon}
+                      className={`h-5 w-5 ${justLoggedIn ? "animate-bounce-dot-once" : ""}`}
+                      style={justLoggedIn ? { animationDelay: `${i * 60}ms` } : undefined}
+                    />
+                  </span>
+                )}
+              </Link>
+            );
+          });
+        })()}
       </nav>
     </>
   );

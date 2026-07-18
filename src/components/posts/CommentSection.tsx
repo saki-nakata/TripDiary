@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useToast } from "@/contexts/toast-context";
+import { useRequireLogin } from "@/hooks/useRequireLogin";
+import { formatDateSlash } from "@/lib/date";
 import type { Comment } from "@/types/post";
 
 type Props = {
@@ -21,7 +22,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [body, setBody] = useState("");
   const { showToast } = useToast();
-  const router = useRouter();
+  const requireLogin = useRequireLogin();
   // コメント一覧の取得(loadComments)は非同期のため、投稿・削除など後から始まった操作の方が
   // 先に完了することがある。その状態で古いfetchの結果を無条件に適用すると、投稿直後の
   // 一覧が「投稿前の空の状態」で上書きされてしまう（2026-07-06 E2Eテストで発覚）。
@@ -56,7 +57,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!currentUserId) {
-      router.push("/login");
+      requireLogin("コメントするにはログインが必要です");
       return;
     }
     const trimmed = body.trim();
@@ -123,20 +124,23 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
             data-testid="comment-textarea"
             className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-zinc-50 disabled:text-zinc-400"
           />
-          <div className="flex items-center justify-end mt-2">
+          {/* モバイルは文字数カウント＋投稿ボタンを先に表示し、コメント件数を次の行に分離する */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
             {comments.length > 0 && (
-              <span className="text-base font-semibold text-zinc-600 mr-auto ml-5 translate-y-2">{comments.length}件</span>
+              <span className="order-2 sm:order-1 text-base font-semibold text-zinc-600">{comments.length}件</span>
             )}
-            <span className={`text-xs mr-16 translate-x-4 -translate-y-3 ${body.length > 2000 ? "text-red-500" : "text-zinc-400"}`}>
-              {body.length} / 2000 文字
-            </span>
-            <button
-              type="submit"
-              disabled={!body.trim() || submitting}
-              className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? "送信中..." : "コメントを投稿"}
-            </button>
+            <div className="order-1 sm:order-2 flex items-center justify-end gap-3">
+              <span className={`text-xs ${body.length > 2000 ? "text-red-500" : "text-zinc-400"}`}>
+                {body.length} / 2000 文字
+              </span>
+              <button
+                type="submit"
+                disabled={!body.trim() || submitting}
+                className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? "送信中..." : "コメントを投稿"}
+              </button>
+            </div>
           </div>
         </form>
       ) : (
@@ -179,7 +183,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
                   <p className="mt-1 text-sm text-zinc-700 whitespace-pre-wrap">{comment.body}</p>
                   <div className="flex items-center mt-1">
                     <span className="text-xs text-zinc-400">
-                      {new Date(comment.createdAt).toLocaleDateString("ja-JP")}
+                      {formatDateSlash(comment.createdAt)}
                     </span>
                     {canDelete && (
                       <>

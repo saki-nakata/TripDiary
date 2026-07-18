@@ -2,24 +2,26 @@
 
 import { useState } from "react";
 import { useToast } from "@/contexts/toast-context";
-import { useRouter } from "next/navigation";
+import { useRequireLogin } from "@/hooks/useRequireLogin";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Props = {
   userId: string;
   initialFollowing: boolean;
   isLoggedIn: boolean;
+  /** "sm" は検索結果一覧などカードが密集する場所向けの小さめサイズ */
+  size?: "sm" | "md";
 };
 
-export function FollowButton({ userId, initialFollowing, isLoggedIn }: Props) {
+export function FollowButton({ userId, initialFollowing, isLoggedIn, size = "md" }: Props) {
   const [following, setFollowing] = useState(initialFollowing);
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
-  const router = useRouter();
+  const requireLogin = useRequireLogin();
 
   async function handleClick() {
     if (!isLoggedIn) {
-      router.push("/login");
+      requireLogin("フォローするにはログインが必要です");
       return;
     }
     if (loading) return;
@@ -47,14 +49,22 @@ export function FollowButton({ userId, initialFollowing, isLoggedIn }: Props) {
       disabled={loading}
       data-testid="follow-button"
       title={following ? "フォローを解除" : "フォローする"}
-      className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
+      className={`flex rounded-full font-semibold transition-colors shrink-0 ${
+        size === "sm"
+          ? "flex-col items-center justify-center gap-0.5 px-2 py-1 text-[0.65rem] leading-none sm:flex-row sm:gap-1.5 sm:px-5 sm:py-2 sm:text-sm"
+          : "flex-row items-center gap-1.5 px-5 py-2 text-sm"
+      } ${
         following
           ? "bg-green-50 text-green-600 hover:bg-green-100"
           : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
       }`}
     >
-      {following ? <TwemojiIcon codepoint="1f465" className="h-4 w-4" /> : <span>➕</span>}
-      {following ? "フォロー中" : "フォロー"}
+      {following ? (
+        <TwemojiIcon codepoint="1f465" className={size === "sm" ? "h-3 w-3 sm:h-4 sm:w-4" : "h-4 w-4"} />
+      ) : (
+        <span>➕</span>
+      )}
+      <span>{following ? "フォロー中" : "フォロー"}</span>
     </button>
   );
 }

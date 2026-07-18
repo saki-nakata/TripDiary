@@ -62,11 +62,13 @@ function PostCountLineChart({
   max,
   gradientId,
   labelFormatter,
+  rotateLabelsOnMobile = false,
 }: {
   data: { key: string | number; label: string; count: number }[];
   max: number;
   gradientId: string;
   labelFormatter: (d: { key: string | number; label: string; count: number }) => string;
+  rotateLabelsOnMobile?: boolean;
 }) {
   if (data.length === 0) return null;
 
@@ -84,7 +86,7 @@ function PostCountLineChart({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-stretch gap-2">
+      <div className="flex items-stretch gap-1 sm:gap-2">
         <div className="relative h-32 w-full flex-1">
           <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full overflow-visible" preserveAspectRatio="none">
             {yTicks.map((t, i) => {
@@ -120,12 +122,16 @@ function PostCountLineChart({
           ))}
         </div>
       </div>
-      <div className="flex items-stretch gap-2">
-        <div className="relative h-5 flex-1">
+      <div className="flex items-stretch gap-1 sm:gap-2">
+        <div className={`relative flex-1 ${rotateLabelsOnMobile ? "h-10 sm:h-5" : "h-5"}`}>
           {points.map((p) => (
             <span
               key={p.d.key}
-              className="absolute -translate-x-1/2 whitespace-nowrap text-sm text-zinc-500"
+              className={`absolute whitespace-nowrap text-sm text-zinc-500 ${
+                rotateLabelsOnMobile
+                  ? "origin-top -rotate-45 sm:rotate-0 -translate-x-1/2 sm:-translate-x-1/2 -ml-1.5 sm:ml-0"
+                  : "-translate-x-1/2"
+              }`}
               style={{ left: `${p.x}%` }}
             >
               {labelFormatter(p.d)}
@@ -202,12 +208,12 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
             <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-4 w-4" /> {yearLabel}の訪問エリア
           </p>
           <PrefectureMapView visitedLocations={stats.visitedLocations} className="mx-auto mb-4 h-auto w-full max-w-xs" />
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap justify-center sm:justify-start gap-2">
             {stats.visitedLocations.map((loc) => (
               <Link
                 key={loc}
                 href={`/search?tab=area&location=${encodeURIComponent(loc)}`}
-                className="rounded-full border border-pink-400 bg-yellow-100 px-3.5 py-1.5 text-sm font-semibold text-amber-500 transition-colors hover:bg-yellow-200"
+                className="rounded-full border border-pink-400 bg-yellow-100 px-3 py-1 text-xs sm:px-3.5 sm:py-1.5 sm:text-sm font-semibold text-amber-500 transition-colors hover:bg-yellow-200"
               >
                 {loc}
               </Link>
@@ -224,15 +230,15 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
           </p>
           <div className="space-y-3">
             {stats.categoryBreakdown.map((c) => (
-              <div key={c.category} className="flex items-center gap-2.5">
-                <span className="w-24 shrink-0 text-sm text-zinc-700">{c.category}</span>
+              <div key={c.category} className="flex items-center gap-1.5 sm:gap-2.5">
+                <span className="w-24 shrink-0 truncate text-xs text-zinc-700">{c.category}</span>
                 <div className="h-3.5 flex-1 rounded-full bg-zinc-100">
                   <div
                     className="h-3.5 rounded-full bg-gradient-to-r from-[#7c3aed] via-[#9333ea] via-85% to-[#ff6ec7] transition-[width] duration-700"
                     style={{ width: `${(c.count / maxCategoryCount) * 100}%` }}
                   />
                 </div>
-                <span className="w-12 shrink-0 text-right text-sm text-zinc-500">{c.count}件</span>
+                <span className="w-9 sm:w-12 shrink-0 text-right text-sm text-zinc-500">{c.count}件</span>
               </div>
             ))}
           </div>
@@ -246,10 +252,11 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
         </p>
         {year === "all" ? (
           <PostCountLineChart
-            data={stats.yearlyPostCount.map((y) => ({ key: y.year, label: `${y.year}年（${y.count}件）`, count: y.count }))}
+            data={stats.yearlyPostCount.map((y) => ({ key: y.year, label: `${y.year}年`, count: y.count }))}
             max={maxYearlyPostCount}
             gradientId="yearlyLineGradient"
             labelFormatter={(d) => d.label}
+            rotateLabelsOnMobile
           />
         ) : (
           <PostCountLineChart
@@ -257,6 +264,7 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
             max={maxMonthlyPostCount}
             gradientId="monthlyLineGradient"
             labelFormatter={(d) => d.label}
+            rotateLabelsOnMobile
           />
         )}
       </div>

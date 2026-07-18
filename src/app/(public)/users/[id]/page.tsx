@@ -15,6 +15,7 @@ import { PostCard } from "@/components/posts/PostCard";
 import { FollowButton } from "@/components/users/FollowButton";
 import { BackButton } from "@/components/posts/BackButton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { formatDateSlash } from "@/lib/date";
 import type { Post } from "@/types/post";
 
 type Props = {
@@ -48,12 +49,14 @@ export default async function UserProfilePage({ params, searchParams }: Props) {
     isSelf ? countCommentsReceived(id) : Promise.resolve(0),
   ]);
 
+  // フォロワー・フォロー中は、モバイルのみ Instagram/X と同様にヘッダーの数字タップで開く
+  // （desktopOnly タブは max-sm:hidden でモバイルでは隠す）。デスクトップは従来どおりタブで表示。
   const TABS = [
     { key: "posts", label: "投稿", count: profile.postCount },
-    { key: "comments", label: "投稿したコメント", count: commentsWrittenCount },
-    { key: "comments-received", label: "自分へのコメント", count: commentsReceivedCount, selfOnly: true },
-    { key: "followers", label: "フォロワー", count: profile.followerCount },
-    { key: "following", label: "フォロー中", count: profile.followingCount },
+    { key: "comments", label: "投稿したコメント", shortLabel: "コメント", count: commentsWrittenCount },
+    { key: "comments-received", label: "自分へのコメント", shortLabel: "自分宛", count: commentsReceivedCount, selfOnly: true },
+    { key: "followers", label: "フォロワー", count: profile.followerCount, desktopOnly: true },
+    { key: "following", label: "フォロー中", count: profile.followingCount, desktopOnly: true },
   ] as const;
 
   const activeTab = tab === "comments-received" && !isSelf ? "posts" : tab;
@@ -70,78 +73,148 @@ export default async function UserProfilePage({ params, searchParams }: Props) {
         {/* Header */}
         {/* !isSelfの場合、モバイルは絶対配置のBackButton（top-1、高さ約30px）と
             重なるため、その分の余白を確保する（md以上は自然な余白があるため不要） */}
-        <div className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 ${!isSelf ? "pt-9 md:pt-0" : ""}`}>
-          <div className="relative w-[100px] h-[100px] rounded-full overflow-hidden bg-zinc-200 shrink-0">
-            {profile.image ? (
-              <Image src={profile.image} alt={profile.nickname} fill sizes="100px" className="object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-3xl text-zinc-500 font-medium">
-                {profile.nickname[0]}
-              </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
+        <div className={`flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-4 ${!isSelf ? "pt-9 md:pt-0" : ""}`}>
+          <div className="flex items-center gap-4">
+            <div className="relative w-[88px] h-[88px] sm:w-[100px] sm:h-[100px] rounded-full overflow-hidden bg-zinc-200 shrink-0">
+              {profile.image ? (
+                <Image src={profile.image} alt={profile.nickname} fill sizes="100px" className="object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-3xl text-zinc-500 font-medium">
+                  {profile.nickname[0]}
+                </div>
+              )}
+            </div>
+            <div className="sm:hidden flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold text-zinc-900">{profile.nickname}</h1>
               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${rankColor}`}>
                 🏅 {profile.tabiRank}（{profile.tabiScore}pt）
               </span>
             </div>
-            <p className="text-sm text-zinc-600 mt-1 whitespace-pre-wrap">
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="hidden sm:flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-zinc-900">{profile.nickname}</h1>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${rankColor}`}>
+                🏅 {profile.tabiRank}（{profile.tabiScore}pt）
+              </span>
+            </div>
+            <p className="text-sm text-zinc-600 mt-1 whitespace-pre-wrap break-words">
               {profile.bio || <span className="text-zinc-400">bioが設定されていません</span>}
             </p>
-            <div className="flex gap-5 mt-3">
-              <div className="text-center">
+            <div className="flex gap-3 sm:gap-5 mt-3 items-center">
+              {/* デスクトップ（従来どおり）: 投稿・フォロワー・フォロー中の素のカウント。
+                  フォロワー/フォロー中はデスクトップではタブ側で開く */}
+              <div className="hidden sm:block text-center">
                 <p className="text-lg font-bold text-zinc-900 leading-none">{profile.postCount}</p>
                 <p className="text-xs text-zinc-500 mt-1">投稿</p>
               </div>
-              <div className="text-center">
+              <div className="hidden sm:block text-center">
                 <p className="text-lg font-bold text-zinc-900 leading-none">{profile.followerCount}</p>
                 <p className="text-xs text-zinc-500 mt-1">フォロワー</p>
               </div>
-              <div className="text-center">
+              <div className="hidden sm:block text-center">
                 <p className="text-lg font-bold text-zinc-900 leading-none">{profile.followingCount}</p>
                 <p className="text-xs text-zinc-500 mt-1">フォロー中</p>
               </div>
-            </div>
-            <div className="mt-3 flex gap-2">
-              {isSelf ? (
+              {/* モバイル（案A）: フォロワー・フォロー中はタップで一覧が開くチップ（投稿数はタブ側に表示） */}
+              <Link
+                href={`/users/${id}?tab=followers`}
+                className={`sm:hidden text-center rounded-xl border px-4 py-1.5 transition-colors active:bg-zinc-200 ${
+                  activeTab === "followers" ? "border-[#16a34a] bg-[#dcfce7]" : "border-zinc-200"
+                }`}
+              >
+                <p className="text-lg font-bold text-zinc-900 leading-none">{profile.followerCount}</p>
+                <p className="text-xs text-zinc-500 mt-1">フォロワー ›</p>
+              </Link>
+              <Link
+                href={`/users/${id}?tab=following`}
+                className={`sm:hidden text-center rounded-xl border px-4 py-1.5 transition-colors active:bg-zinc-200 ${
+                  activeTab === "following" ? "border-[#16a34a] bg-[#dcfce7]" : "border-zinc-200"
+                }`}
+              >
+                <p className="text-lg font-bold text-zinc-900 leading-none">{profile.followingCount}</p>
+                <p className="text-xs text-zinc-500 mt-1">フォロー中 ›</p>
+              </Link>
+              {!isSelf && (
+                <div className="sm:hidden ml-auto mr-2 scale-110 origin-right">
+                  <FollowButton
+                    userId={profile.id}
+                    initialFollowing={profile.followedByCurrentUser}
+                    isLoggedIn={!!viewerId}
+                    size="sm"
+                  />
+                </div>
+              )}
+              {isSelf && (
+                <div className="sm:hidden ml-auto mr-1 -mt-2">
+                  <Link
+                    href="/settings"
+                    className="flex flex-col items-center gap-0.5 rounded-full border border-zinc-200 px-3 py-1.5 text-[0.65rem] leading-none text-zinc-600 hover:bg-zinc-50 transition-colors"
+                  >
+                    <span>✏️</span>
+                    <span>プロフィール編集</span>
+                  </Link>
+                </div>
+              )}
+              {/* デスクトップ: プロフィール編集はカウント行の右寄せ（本人のみ） */}
+              {isSelf && (
                 <Link
                   href="/settings"
-                  className="px-4 py-1.5 rounded-full border border-zinc-200 text-zinc-600 text-sm font-semibold hover:bg-zinc-50 transition-colors"
+                  className="hidden sm:inline-flex ml-auto px-4 py-1.5 rounded-full border border-zinc-200 text-zinc-600 text-sm font-semibold hover:bg-zinc-50 transition-colors"
                 >
                   ✏️ プロフィール編集
                 </Link>
-              ) : (
+              )}
+            </div>
+            {/* デスクトップの非本人フォローボタン（本人のプロフィール編集はカウント行へ移動） */}
+            {!isSelf && (
+              <div className="mt-3 hidden sm:block">
                 <FollowButton
                   userId={profile.id}
                   initialFollowing={profile.followedByCurrentUser}
                   isLoggedIn={!!viewerId}
                 />
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="-mt-2 flex gap-1 border-b border-zinc-200 overflow-x-auto overflow-y-hidden">
+        <div className="-mt-2 flex gap-3 sm:gap-1 border-b border-zinc-200 overflow-x-auto overflow-y-hidden">
           {TABS.filter((t) => !("selfOnly" in t) || isSelf).map((t) => (
             <Link
               key={t.key}
               href={`/users/${id}?tab=${t.key}`}
-              className={`rounded-t-lg px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
+              className={`rounded-t-lg px-2 sm:px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
+                "desktopOnly" in t ? "max-sm:hidden" : ""
+              } ${
                 activeTab === t.key
                   ? "border-[#16a34a] text-[#16a34a]"
                   : "border-transparent text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
               }`}
             >
-              {t.label} ({t.count})
+              {/* モバイルは短縮ラベル（あれば）、デスクトップは正式ラベル */}
+              <span className="sm:hidden">
+                {("shortLabel" in t ? t.shortLabel : t.label)} ({t.count})
+              </span>
+              <span className="hidden sm:inline">
+                {t.label} ({t.count})
+              </span>
             </Link>
           ))}
         </div>
 
         {/* Tab content */}
         <div>
+          {/* モバイルはフォロワー・フォロー中がタブに無いため、一覧表示時は見出しで文脈を示す
+              （デスクトップはタブがアクティブ表示されるので見出しは出さない） */}
+          {(activeTab === "followers" || activeTab === "following") && (
+            <h2 className="sm:hidden mb-3 text-base font-bold text-zinc-800">
+              {activeTab === "followers"
+                ? `フォロワー (${profile.followerCount})`
+                : `フォロー中 (${profile.followingCount})`}
+            </h2>
+          )}
           {activeTab === "posts" && (await renderPosts(id, viewerId))}
           {activeTab === "comments" && (await renderCommentsWritten(id))}
           {activeTab === "comments-received" && isSelf && (await renderCommentsReceived(id))}
@@ -190,7 +263,7 @@ async function renderCommentsWritten(authorId: string) {
               『{c.post.title}』（{c.post.author.nickname}）
             </p>
             <p className="text-sm text-zinc-700">{c.body}</p>
-            <p className="text-xs text-zinc-400 mt-1">{new Date(c.createdAt).toLocaleDateString("ja-JP")}</p>
+            <p className="text-xs text-zinc-400 mt-1">{formatDateSlash(c.createdAt)}</p>
           </div>
         </Link>
       ))}
@@ -225,7 +298,7 @@ async function renderCommentsReceived(authorId: string) {
               <span className="font-bold text-zinc-600">{c.author.nickname}</span> さんから『{c.post.title}』へ
             </p>
             <p className="text-sm text-zinc-700">{c.body}</p>
-            <p className="text-xs text-zinc-400 mt-1">{new Date(c.createdAt).toLocaleDateString("ja-JP")}</p>
+            <p className="text-xs text-zinc-400 mt-1">{formatDateSlash(c.createdAt)}</p>
           </div>
         </Link>
       ))}
@@ -265,7 +338,7 @@ async function renderUserList(userId: string, type: "followers" | "following", v
             </div>
           </Link>
           {viewerId && viewerId !== u.id && (
-            <FollowButton userId={u.id} initialFollowing={followingSet.has(u.id)} isLoggedIn={!!viewerId} />
+            <FollowButton userId={u.id} initialFollowing={followingSet.has(u.id)} isLoggedIn={!!viewerId} size="sm" />
           )}
         </div>
       ))}

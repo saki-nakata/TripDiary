@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { Post } from "@/types/post";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { CATEGORY_COLORS } from "@/lib/constants";
 
 export function TopRatedSection({ posts }: { posts: Post[] }) {
   if (posts.length === 0) return null;
@@ -30,18 +31,24 @@ export function TopRatedSection({ posts }: { posts: Post[] }) {
                 />
               )}
               {post.category && (
-                <span className="absolute top-2 left-2 bg-white/90 px-2 py-0.5 rounded-full text-xs font-semibold">
+                <span
+                  className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600"
+                  }`}
+                >
                   <CategoryIcon category={post.category} /> {post.category}
                 </span>
               )}
             </div>
             <div className="p-3">
               <p className="text-sm font-semibold text-zinc-800 line-clamp-1">{post.title}</p>
-              <div className="flex items-center gap-1 mt-1">
+              <div className="flex items-center flex-wrap gap-1 mt-1">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <span key={i} className={i < (post.rating ?? 0) ? "text-yellow-400" : "text-zinc-200"}>★</span>
                 ))}
-                <span className="text-xs text-zinc-400 ml-1">📍 {post.location}</span>
+                <span className="flex items-center gap-1 ml-auto text-[0.78rem] text-[#16a34a] border border-zinc-300 rounded-full px-2 py-0.5 font-medium whitespace-nowrap">
+                  <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" /> {post.location}
+                </span>
               </div>
             </div>
           </Link>

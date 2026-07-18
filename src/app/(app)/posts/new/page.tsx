@@ -19,7 +19,7 @@ export default async function NewPostPage({ searchParams }: Props) {
       <h1 className="flex items-center gap-2 text-2xl font-bold text-zinc-900">
         <TwemojiIcon codepoint="1f4dd" className="h-6 w-6" /> 旅スポットを投稿する
       </h1>
-      <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-8">
+      <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 md:p-8">
         <PostForm
           planId={planId}
           presetTitle={presetTitle}

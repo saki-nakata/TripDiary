@@ -17,6 +17,7 @@ import { ScrollToHash } from "@/components/posts/ScrollToHash";
 import { CATEGORY_COLORS } from "@/lib/constants";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { formatDateSlash } from "@/lib/date";
 import type { Post, CostBreakdownItem } from "@/types/post";
 
 type Props = {
@@ -36,7 +37,7 @@ export default async function PostDetailPage({ params }: Props) {
   const isAuthor = userId === post.authorId;
 
   const visitedAtDate = new Date(post.visitedAt);
-  const visitedDate = `${visitedAtDate.getFullYear()}/${visitedAtDate.getMonth() + 1}/${visitedAtDate.getDate()} (${visitedAtDate.toLocaleDateString("ja-JP", { weekday: "short" })})`;
+  const visitedDate = `${formatDateSlash(visitedAtDate)} (${visitedAtDate.toLocaleDateString("ja-JP", { weekday: "short" })})`;
 
   return (
     <div className="relative">
@@ -61,10 +62,14 @@ export default async function PostDetailPage({ params }: Props) {
                 <CategoryIcon category={post.category} /> {post.category}
               </span>
             )}
-            <span className="inline-flex items-center gap-1 text-zinc-500 text-sm">
+            <span className="inline-flex items-center gap-1 text-[#16a34a] text-sm font-medium">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3.5 w-3.5" /> {post.location}
             </span>
-            <span className="text-zinc-400 text-sm ml-auto">訪問日：{visitedDate}</span>
+            <span className="inline-flex items-center gap-1 text-zinc-400 text-sm ml-auto">
+              <TwemojiIcon codepoint="1f4c5" alt="📅" className="sm:hidden h-3.5 w-3.5" />
+              <span className="hidden sm:inline">訪問日：</span>
+              {visitedDate}
+            </span>
           </div>
           <h1 className="text-3xl font-bold text-zinc-900 leading-snug">{post.title}</h1>
           <div className="flex items-center gap-3 flex-wrap">
@@ -118,6 +123,7 @@ export default async function PostDetailPage({ params }: Props) {
             postId={post.id}
             initialWishlisted={post.isWishlisted ?? false}
             isLoggedIn={!!userId}
+            isAuthor={isAuthor}
           />
           <VisitedButton
             postId={post.id}
@@ -174,7 +180,7 @@ export default async function PostDetailPage({ params }: Props) {
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {related.map((r) => (
-                <PostCard key={r.id} post={r as unknown as Post} />
+                <PostCard key={r.id} post={r as unknown as Post} compactMobileMeta />
               ))}
             </div>
           </div>

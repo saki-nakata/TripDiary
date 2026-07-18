@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/contexts/toast-context";
 import { StarRating } from "./StarRating";
+import { DateField } from "./DateField";
 import { LocationPickerWrapper } from "@/components/map/LocationPickerWrapper";
 import { CATEGORIES, CATEGORY_ICONS, LOCATIONS } from "@/lib/constants";
 import { postSchema, type PostInput } from "@/lib/validations/post";
@@ -296,7 +297,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
           <div className="flex items-center justify-between">
             <label className="text-base font-bold text-zinc-700">写真</label>
             {imageUrls.length > 1 && (
-              <p className="text-xs text-zinc-400">（ドラッグ&ドロップで並び順を変更できます）</p>
+              <p className="hidden sm:block text-xs text-zinc-400">（ドラッグ&ドロップで並び順を変更できます）</p>
             )}
           </div>
           {imageUrls.length > 0 && (
@@ -331,11 +332,16 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            {uploadingCount > 0
-              ? "アップロード中…"
-              : isDragging
-                ? "📷 ここにドロップして追加"
-                : "📷 クリックまたはドラッグ&ドロップで写真を追加"}
+            {uploadingCount > 0 ? (
+              "アップロード中…"
+            ) : isDragging ? (
+              "📷 ここにドロップして追加"
+            ) : (
+              <>
+                <span className="sm:hidden">📷 クリックで写真を追加</span>
+                <span className="hidden sm:inline">📷 クリックまたはドラッグ&ドロップで写真を追加</span>
+              </>
+            )}
             <input
               ref={fileInputRef}
               type="file"
@@ -349,16 +355,22 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
         </div>
 
         {/* 訪問日・エリア */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
             <label className="text-base font-bold text-zinc-700">
               訪問日 <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
-              {...register("visitedAt")}
-              max={new Date().toISOString().slice(0, 10)}
-              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.visitedAt ? "border-red-400" : "border-zinc-200"}`}
+            <Controller
+              name="visitedAt"
+              control={control}
+              render={({ field }) => (
+                <DateField
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  max={new Date().toISOString().slice(0, 10)}
+                  error={!!errors.visitedAt}
+                />
+              )}
             />
             {errors.visitedAt && <p className="text-xs text-red-500">{errors.visitedAt.message}</p>}
           </div>
@@ -380,7 +392,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
         </div>
 
         {/* カテゴリ・評価 */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
             <label className="text-base font-bold text-zinc-700">
               カテゴリ <span className="text-red-500">*</span>

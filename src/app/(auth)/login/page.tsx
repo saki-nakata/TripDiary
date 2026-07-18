@@ -13,6 +13,7 @@ import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const urlError = searchParams.get("error");
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
   const [showPassword, setShowPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -30,10 +31,15 @@ export default function LoginPage() {
 
   function onSubmit(data: LoginInput) {
     startTransition(async () => {
+      // ログイン成功後の初回表示でモバイルのボトムナビを軽くバウンドさせ、
+      // 長押しでラベルが出せることに気づいてもらうためのフラグ。
+      // signIn()はデフォルトでリダイレクトするため、成功後にコードは戻ってこない。
+      // 失敗時にフラグが残っても実害はない（次に成功した時に消費されるだけ）
+      sessionStorage.setItem("justLoggedIn", "true");
       await signIn("credentials", {
         email: data.email,
         password: data.password,
-        callbackUrl: "/",
+        callbackUrl,
       });
     });
   }
@@ -95,7 +101,10 @@ export default function LoginPage() {
                     onMouseDown={() => setShowPassword(true)}
                     onMouseUp={() => setShowPassword(false)}
                     onMouseLeave={() => setShowPassword(false)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none"
+                    onTouchStart={() => setShowPassword(true)}
+                    onTouchEnd={() => setShowPassword(false)}
+                    onTouchCancel={() => setShowPassword(false)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none touch-manipulation"
                     tabIndex={-1}
                     aria-label={showPassword ? "パスワードを隠す" : "パスワードを表示"}
                   >

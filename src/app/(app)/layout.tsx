@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </Suspense>
         {/* Offset for sidebar / mobile top bar & bottom nav */}
         <div className="ml-16 max-md:ml-0 sidebar:ml-60 pt-14 md:pt-0 pb-16 md:pb-0">
-          <main className="px-10 py-6">{children}</main>
+          <main className="px-2 md:px-10 py-6">{children}</main>
         </div>
       </div>
     </ToastProvider>

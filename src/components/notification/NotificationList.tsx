@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { formatDateSlash } from "@/lib/date";
 
 type Notification = {
   id: string;
@@ -24,7 +25,7 @@ function formatRelativeDate(iso: string) {
   if (hours < 24) return `${hours}時間前`;
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days}日前`;
-  return new Date(iso).toLocaleDateString("ja-JP");
+  return formatDateSlash(iso);
 }
 
 function NotificationItem({

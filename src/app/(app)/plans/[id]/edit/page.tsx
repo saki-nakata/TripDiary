@@ -42,7 +42,7 @@ export default async function EditPlanPage({ params }: Props) {
       <h1 className="flex items-center gap-2 text-2xl font-bold text-zinc-900">
         <TwemojiIcon codepoint="270f" className="h-6 w-6" /> 旅行プランを編集する
       </h1>
-      <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-8">
+      <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 md:p-8">
         <PlanForm initialData={plan as unknown as PlanDetail} wishlistPosts={wishlistPosts} />
       </div>
     </div>
