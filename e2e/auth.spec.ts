@@ -54,9 +54,11 @@ test.describe.serial("認証フロー", () => {
     await page.fill("#password", "wrongpassword");
     await page.click('button[type="submit"]');
 
+    // ログイン処理はbcryptの意図的に重い比較処理を含み、CI上の並列実行時はCPU競合で
+    // デフォルトの5秒タイムアウトを超えることがあるため、明示的に延長する
     await expect(
       page.getByText("メールアドレスまたはパスワードが正しくありません")
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15000 });
   });
 
   test("未認証で /dashboard → /login にリダイレクト", async ({ page }) => {
