@@ -88,8 +88,9 @@ export function PlanActions({ planId, completed, variant = "full" }: Props) {
           data-testid="plan-completed-checkbox"
           checked={completed}
           onChange={handleToggleComplete}
-          className={completed ? "h-4 w-4 cursor-pointer rounded border-zinc-300 accent-green-600 focus:ring-green-500" : "sr-only"}
+          className="sr-only"
         />
+        {completed && <TwemojiIcon codepoint="2705" alt="完了" className="h-4 w-4" />}
         {completed ? "完了済み" : "未完了"}
       </label>
       <div className="mt-0.5 flex gap-2">
