@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createSolidColorPng } from "./utils/testImage";
+import { pickDate } from "./utils/dateField";
 
 const TEST_EMAIL = "test_playwright_posts@example.com";
 const TEST_USER = {
@@ -42,7 +43,7 @@ test.describe.serial("投稿の主要フロー（作成 → 詳細表示 → い
     await page.fill('textarea[name="body"]', POST.body);
     await page.selectOption('select[name="location"]', POST.location);
     await page.selectOption('select[name="category"]', POST.category);
-    await page.fill('input[name="visitedAt"]', "2026-01-01");
+    await pickDate(page, "visited-at-field", "2026-01-01");
 
     await page.click('button[type="submit"]');
 
@@ -108,7 +109,7 @@ test.describe.serial("投稿の主要フロー（作成 → 詳細表示 → い
     await page.fill('textarea[name="body"]', "画像並び替えのE2Eテストです。");
     await page.selectOption('select[name="location"]', "東京都");
     await page.selectOption('select[name="category"]', "観光");
-    await page.fill('input[name="visitedAt"]', "2026-01-01");
+    await pickDate(page, "visited-at-field", "2026-01-01");
 
     await page.locator('input[type="file"]').setInputFiles([
       { name: "red.png", mimeType: "image/png", buffer: createSolidColorPng(255, 0, 0) },

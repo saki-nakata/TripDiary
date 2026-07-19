@@ -7,7 +7,9 @@ const TEST_USER = {
   password: "Password1234",
 };
 
-test.describe("認証フロー", () => {
+// 「新規登録」テストで作成したアカウントを「ログイン」テストが使い回すため、
+// 同一ワーカーでの順次実行を保証する（posts.spec.ts等と同じ理由、2026-07-19対応）
+test.describe.serial("認証フロー", () => {
   test.beforeAll(async ({ request }) => {
     // 既存ユーザーがいれば削除してからテスト用ユーザーを作成
     await request.delete(`/api/test/cleanup?email=${encodeURIComponent(TEST_EMAIL)}`);
@@ -24,7 +26,15 @@ test.describe("認証フロー", () => {
 
     // `/dashboard` は認証済みなら `/`（ホーム）へリダイレクトするだけのスタブ（実装計画書 Phase 1-E/2-A 参照）
     await expect(page).toHaveURL("/", { timeout: 15000 });
-    await expect(page.getByRole("button", { name: /テストユーザー/ })).toBeVisible();
+    // 認証後レイアウトの確定を待つ。並列フルスイート実行時はCPU負荷でCSSの初回ペイントが
+    // 一瞬遅れ、モバイル用・デスクトップ用の2つのユーザーメニューボタン（表示切り替えのみで
+    // 両方DOMに存在）が同時に visible 判定になり、:visible 絞り込みでも2要素マッチ→strict違反で
+    // 落ちることがある（テスト設計書10節・account-settings.spec.ts と同種の既知の不安定要因）。
+    // レイアウト確定を待ったうえで、可視の先頭要素に絞って strict 違反を回避する。
+    await page.waitForLoadState("networkidle");
+    await expect(
+      page.getByRole("button", { name: /テストユーザー/ }).and(page.locator(":visible")).first()
+    ).toBeVisible();
   });
 
   test("ログイン → ホーム画面遷移", async ({ page }) => {

@@ -22,8 +22,8 @@ export default async function PublicLayout({ children }: { children: React.React
           <Suspense>
             <Sidebar user={user} />
           </Suspense>
-          <div className="ml-16 max-md:ml-0 sidebar:ml-60 pt-14 md:pt-0 pb-16 md:pb-0">
-            <main className="px-2 md:px-10 py-6">{children}</main>
+          <div className="ml-32 max-md:ml-0 sidebar:ml-60 pt-14 md:pt-0 pb-16 md:pb-0">
+            <main className="px-2 md:px-3 lg:px-10 py-6">{children}</main>
           </div>
         </div>
       </ToastProvider>
@@ -63,7 +63,7 @@ export default async function PublicLayout({ children }: { children: React.React
         <GuestMobileNav />
 
         <div className="md:ml-60 pt-14 md:pt-0 pb-16 md:pb-0">
-          <main className="px-2 md:px-10 py-6">{children}</main>
+          <main className="px-2 md:px-3 lg:px-10 py-6">{children}</main>
         </div>
       </div>
     </ToastProvider>

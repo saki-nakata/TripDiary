@@ -51,7 +51,7 @@ export function FollowButton({ userId, initialFollowing, isLoggedIn, size = "md"
       title={following ? "フォローを解除" : "フォローする"}
       className={`flex rounded-full font-semibold transition-colors shrink-0 ${
         size === "sm"
-          ? "flex-col items-center justify-center gap-0.5 px-2 py-1 text-[0.65rem] leading-none sm:flex-row sm:gap-1.5 sm:px-5 sm:py-2 sm:text-sm"
+          ? "flex-col items-center justify-center gap-0.5 px-2 py-1 text-[0.65rem] leading-none sm:flex-row sm:gap-1.5 sm:px-5 sm:py-2 sm:text-sm md:flex-col md:gap-0.5 md:px-2 md:py-1 md:text-[0.65rem] xl:flex-row xl:gap-1.5 xl:px-5 xl:py-2 xl:text-sm"
           : "flex-row items-center gap-1.5 px-5 py-2 text-sm"
       } ${
         following
@@ -60,7 +60,7 @@ export function FollowButton({ userId, initialFollowing, isLoggedIn, size = "md"
       }`}
     >
       {following ? (
-        <TwemojiIcon codepoint="1f465" className={size === "sm" ? "h-3 w-3 sm:h-4 sm:w-4" : "h-4 w-4"} />
+        <TwemojiIcon codepoint="1f465" className={size === "sm" ? "h-3 w-3 sm:h-4 sm:w-4 md:h-3 md:w-3 xl:h-4 xl:w-4" : "h-4 w-4"} />
       ) : (
         <span>➕</span>
       )}

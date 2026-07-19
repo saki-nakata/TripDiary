@@ -10,6 +10,7 @@ type Props = {
   onChange: (value: string) => void;
   max?: string;
   error?: boolean;
+  testId?: string;
 };
 
 function parseLocalDate(value: string): Date | null {
@@ -30,7 +31,7 @@ function formatDisplay(date: Date): string {
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
 }
 
-export function DateField({ value, onChange, max, error }: Props) {
+export function DateField({ value, onChange, max, error, testId }: Props) {
   const [open, setOpen] = useState(false);
   const selected = parseLocalDate(value);
   const maxDate = parseLocalDate(max ?? "");
@@ -87,6 +88,7 @@ export function DateField({ value, onChange, max, error }: Props) {
     <div className="relative" ref={containerRef}>
       <button
         type="button"
+        data-testid={testId}
         onClick={() => (open ? setOpen(false) : openCalendar())}
         className={`w-full flex items-center justify-between rounded-lg border px-3 py-2 text-sm bg-white text-left focus:outline-none focus:ring-2 focus:ring-green-500 ${
           error ? "border-red-400" : "border-zinc-200"
@@ -137,6 +139,7 @@ export function DateField({ value, onChange, max, error }: Props) {
                 <button
                   key={i}
                   type="button"
+                  data-date={formatValue(new Date(year, month, day))}
                   onClick={() => pickDay(day)}
                   disabled={isDisabled(day)}
                   className={`h-8 w-8 flex items-center justify-center rounded-full text-sm transition-colors ${

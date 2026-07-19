@@ -13,16 +13,24 @@ export function GuestMobileNav() {
 
   return (
     <>
-      {/* Top bar: ロゴ（ホームリンク兼用） */}
-      <nav className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#e2e8f0] z-30 flex items-center px-4">
+      {/* Top bar: ロゴ・ホーム */}
+      <nav className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#e2e8f0] z-30 flex items-center justify-between px-4">
         <Link
           href="/"
-          className={`flex items-center gap-1.5 text-[#1a6b3a] font-bold rounded-lg px-2 py-1 -ml-1 transition-colors ${
-            homeActive ? "bg-lime-100" : ""
-          }`}
+          className="flex items-center gap-1.5 text-[#1a6b3a] font-bold rounded-lg px-2 py-1 -ml-1"
         >
           <TwemojiIcon codepoint="2708" alt="✈️" className="h-5 w-5" />
           <span className="text-[1.05rem]">TripDiary</span>
+        </Link>
+        <Link
+          href="/"
+          title="ホーム"
+          aria-label="ホーム"
+          className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${
+            homeActive ? "bg-lime-100" : "text-[#64748b]"
+          }`}
+        >
+          <span className="text-lg leading-none">🏠</span>
         </Link>
       </nav>
 

@@ -31,7 +31,7 @@ export function MyPostActions({ postId }: Props) {
 
   return (
     <>
-      <div className="absolute top-2 right-2 flex gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-2 right-2 flex gap-1.5 opacity-100 xl:opacity-0 xl:group-hover:opacity-100 transition-opacity">
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -39,7 +39,7 @@ export function MyPostActions({ postId }: Props) {
             router.push(`/posts/${postId}/edit`);
           }}
           title="編集"
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-100 sm:border-transparent bg-white/90 shadow hover:bg-green-100 text-sm"
+          className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-100 xl:border-transparent bg-white/60 xl:bg-white/80 shadow hover:bg-green-100 text-sm"
         >
           <TwemojiIcon codepoint="270f" className="h-4 w-4" />
         </button>
@@ -50,7 +50,7 @@ export function MyPostActions({ postId }: Props) {
             setShowModal(true);
           }}
           title="削除"
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-100 sm:border-transparent bg-white/90 shadow hover:bg-red-100 text-sm"
+          className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-100 xl:border-transparent bg-white/60 xl:bg-white/80 shadow hover:bg-red-100 text-sm"
         >
           <TwemojiIcon codepoint="1f5d1" className="h-4 w-4" />
         </button>

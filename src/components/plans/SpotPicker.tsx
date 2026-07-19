@@ -72,7 +72,7 @@ function SpotListItem({ post, onAdd }: { post: PlanSpotPost; onAdd: (post: PlanS
         </div>
         <span
           aria-label="追加"
-          className="hidden sm:flex mr-3 h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 text-xs font-bold leading-none text-green-600"
+          className="hidden sm:flex mr-3 md:mr-1 xl:mr-3 h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 text-xs font-bold leading-none text-green-600"
         >
           ＋
         </span>
@@ -106,7 +106,7 @@ function SortableSelectedItem({
     <li
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 sm:gap-3 rounded-lg border border-zinc-200 bg-white p-2 ${isDragging ? "opacity-50 shadow-md" : ""}`}
+      className={`flex items-center gap-2 sm:gap-3 md:gap-1 xl:gap-3 rounded-lg border border-zinc-200 bg-white p-2 ${isDragging ? "opacity-50 shadow-md" : ""}`}
     >
       <div className="flex items-center gap-[0.2rem] sm:gap-3">
         {draggable && (
@@ -169,7 +169,7 @@ function SortableSelectedItem({
         type="button"
         onClick={() => onRemove(spot.id)}
         aria-label="削除"
-        className="hidden sm:block shrink-0 rounded px-1.5 py-0.5 text-red-400 hover:text-red-600"
+        className="hidden sm:flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-red-300 text-red-400 hover:text-red-600"
       >
         <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
       </button>
@@ -330,7 +330,7 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between">
           <p className="text-sm font-bold text-zinc-700">
-            選択済みスポット{selected.length > 0 ? `（${selected.length}）` : ""}
+            選択済みスポット{selected.length > 0 ? `（${selected.length}件）` : ""}
           </p>
           {selected.length >= 2 && (
             <p className="basis-full sm:basis-auto text-xs text-zinc-400">ドラッグ&ドロップで並び順を変更できます</p>

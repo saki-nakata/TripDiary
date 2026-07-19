@@ -42,16 +42,16 @@ export default async function PostDetailPage({ params }: Props) {
   return (
     <div className="relative">
       <ScrollToHash />
-      <div className="absolute left-0 top-1 z-10 md:left-2">
+      <div className="absolute left-0 top-0 z-10 md:left-2">
         <BackButton />
       </div>
       <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-7 -mt-4">
 
         {/* Header */}
-        {/* pt-9: モバイルは絶対配置のBackButton（top-1、高さ約30px）と最初の行が
-            重なるため、その分の余白を確保する（md以上はBackButtonとの間に
-            自然な余白があるため不要） */}
-        <div className="space-y-3 pt-9 md:pt-0">
+        {/* pt-4: スマホ用の余白。md〜lg（768〜1279px、iPad Pro縦向き含む）は
+            コンテナのパディングが p-8 でも -mt-4 と相殺すると余白が足りず重なる
+            ため pt-9 に広げ、本当にPC幅と言える xl（1280px）で解除する */}
+        <div className="space-y-3 pt-5 md:pt-3 lg:pt-1 xl:pt-0">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             {post.category && (
               <span
@@ -178,7 +178,7 @@ export default async function PostDetailPage({ params }: Props) {
             <p className="flex items-center gap-1.5 text-base font-semibold text-zinc-800 mb-3">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-4 w-4" /> {post.location}の関連スポット
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-3 xl:grid-cols-4 gap-4">
               {related.map((r) => (
                 <PostCard key={r.id} post={r as unknown as Post} compactMobileMeta />
               ))}

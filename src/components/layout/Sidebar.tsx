@@ -164,18 +164,18 @@ export function Sidebar({ user }: { user: User }) {
     <>
       {/* Sidebar (desktop / tablet) */}
       <aside className="hidden md:flex flex-col fixed top-0 left-0 h-full bg-white border-r border-[#e2e8f0] z-30
-        w-16 sidebar:w-60 transition-all overflow-y-auto">
+        w-32 sidebar:w-60 transition-all">
         {/* Logo */}
         <Link
           href="/"
           className="flex items-center gap-2 px-3 sidebar:px-5 pt-6 mb-5 text-[#1e8449] font-bold hover:opacity-80 transition-opacity shrink-0 justify-start"
         >
           <TwemojiIcon codepoint="2708" className="h-6 w-6 shrink-0" />
-          <span className="hidden sidebar:inline text-[1.35rem]">TripDiary</span>
+          <span className="hidden md:inline text-[0.95rem] sidebar:text-[1.35rem]">TripDiary</span>
         </Link>
 
         {/* Nav */}
-        <nav className="flex-1 px-2 sidebar:px-5 flex flex-col gap-[4px]">
+        <nav className="flex-1 px-2 sidebar:px-5 flex flex-col gap-[4px] overflow-y-auto">
           {NAV_ITEMS.map((item, i) => {
             if ("divider" in item) {
               return <div key={i} className="border-t border-[#e2e8f0] my-2" />;
@@ -185,9 +185,10 @@ export function Sidebar({ user }: { user: User }) {
                 <span
                   key={item.key}
                   title="Phase 4 実装後に有効化"
-                  className="flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] text-zinc-300 cursor-not-allowed justify-start"
+                  className="flex flex-col sidebar:flex-row items-center sidebar:justify-start gap-1.5 sidebar:gap-3 px-1 sidebar:px-3 py-1.5 sidebar:py-[7px] rounded-lg text-[0.95rem] text-zinc-300 cursor-not-allowed"
                 >
-                  <TwemojiIcon codepoint={item.icon} className="h-[1.1rem] w-6 shrink-0" />
+                  <TwemojiIcon codepoint={item.icon} className="h-[1.4rem] sidebar:h-[1.1rem] w-6 shrink-0" />
+                  <span className="sidebar:hidden text-[0.8rem] leading-none text-center line-clamp-1">{item.label}</span>
                   <span className="hidden sidebar:block">{item.label}</span>
                 </span>
               );
@@ -199,17 +200,18 @@ export function Sidebar({ user }: { user: User }) {
                 key={item.key}
                 href={href}
                 title={item.label}
-                className={`flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] transition-colors justify-start
+                className={`flex flex-col sidebar:flex-row items-center sidebar:justify-start gap-1.5 sidebar:gap-3 px-1 sidebar:px-3 py-1.5 sidebar:py-[7px] rounded-lg text-[0.95rem] transition-colors
                   ${active
                     ? "bg-[#dcfce7] text-[#16a34a] font-semibold"
                     : "text-[#1e293b] hover:bg-[#f8fafc]"
                   }`}
               >
                 {item.key === "dashboard" ? (
-                  <span className="w-6 shrink-0 text-center text-[1.1rem]">🏠</span>
+                  <span className="w-6 shrink-0 text-center text-[1.4rem] sidebar:text-[1.1rem]">🏠</span>
                 ) : (
-                  <TwemojiIcon codepoint={item.icon} className="h-[1.1rem] w-6 shrink-0" />
+                  <TwemojiIcon codepoint={item.icon} className="h-[1.4rem] sidebar:h-[1.1rem] w-6 shrink-0" />
                 )}
+                <span className="sidebar:hidden text-[0.8rem] leading-none text-center line-clamp-1">{item.label}</span>
                 <span className="hidden sidebar:block">{item.label}</span>
               </Link>
             );
@@ -223,20 +225,21 @@ export function Sidebar({ user }: { user: User }) {
           <Link
             href="/notification"
             title="通知"
-            className={`flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] transition-colors justify-start
+            className={`flex flex-col sidebar:flex-row items-center sidebar:justify-start gap-1.5 sidebar:gap-3 px-1 sidebar:px-3 py-1.5 sidebar:py-[7px] rounded-lg text-[0.95rem] transition-colors
               ${pathname === "/notification"
                 ? "bg-[#dcfce7] text-[#16a34a] font-semibold"
                 : "text-[#1e293b] hover:bg-[#f8fafc]"
               }`}
           >
-            <span className="relative flex h-[1.1rem] w-6 shrink-0 items-center justify-center">
-              <TwemojiIcon codepoint="1f514" className="h-[1.1rem] w-[1.1rem]" />
+            <span className="relative flex h-[1.4rem] sidebar:h-[1.1rem] w-6 shrink-0 items-center justify-center">
+              <TwemojiIcon codepoint="1f514" className="h-[1.4rem] w-[1.4rem] sidebar:h-[1.1rem] sidebar:w-[1.1rem]" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-[3px] leading-none">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
             </span>
+            <span className="sidebar:hidden text-[0.8rem] leading-none text-center">通知</span>
             <span className="hidden sidebar:block">通知</span>
           </Link>
 
@@ -246,18 +249,21 @@ export function Sidebar({ user }: { user: User }) {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={(e) => { e.stopPropagation(); setDropdownOpen((o) => !o); }}
-              className="w-full flex items-center gap-[10px] px-2 py-[6px] rounded-[10px] hover:bg-[#f8fafc] transition-colors justify-start"
+              className="w-full flex flex-col sidebar:flex-row items-center sidebar:justify-start gap-1.5 sidebar:gap-[10px] px-1 sidebar:px-2 py-1.5 sidebar:py-[6px] rounded-[10px] hover:bg-[#f8fafc] transition-colors"
             >
               <div className="w-8 h-8 rounded-full bg-[#16a34a]/10 flex items-center justify-center shrink-0 text-sm font-semibold text-[#16a34a]">
                 {user.nickname[0]}
               </div>
+              <span className="sidebar:hidden text-[0.8rem] leading-none text-center truncate max-w-full">
+                {user.nickname}
+              </span>
               <span className="hidden sidebar:block text-[0.9rem] font-semibold text-[#1e293b] truncate">
                 {user.nickname}
               </span>
             </button>
 
             {dropdownOpen && (
-              <div className="absolute bottom-full left-0 mb-2 w-full bg-white rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-[#e2e8f0] overflow-hidden z-50">
+              <div className="absolute bottom-full left-0 mb-2 w-40 sidebar:w-full bg-white rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-[#e2e8f0] overflow-hidden z-50">
                 <Link
                   href="/settings"
                   className="block px-4 py-[11px] text-[0.9rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
@@ -288,11 +294,14 @@ export function Sidebar({ user }: { user: User }) {
           プロフィールはアバター自体が「自分」への入口を兼ねるため、別アイコンにはせず
           ドロップダウンメニューの先頭に含める（アイコンの二重化を避ける） */}
       <nav className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#e2e8f0] z-30 flex items-center justify-between px-3">
-        <Link href="/" title="ホーム" className={`flex items-center gap-1.5 text-[#1e8449] font-bold shrink-0 rounded-lg px-2 py-1 -ml-1 transition-colors ${pathname === "/" ? "bg-lime-100" : ""}`}>
+        <Link href="/" title="ホーム" className="flex items-center gap-1.5 text-[#1e8449] font-bold shrink-0 rounded-lg px-2 py-1 -ml-1">
           <TwemojiIcon codepoint="2708" className="h-5 w-5 shrink-0" />
           <span className="text-[1.05rem]">TripDiary</span>
         </Link>
         <div className="flex items-center gap-1">
+        <Link href="/" title="ホーム" aria-label="ホーム" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname === "/" ? "bg-lime-100" : "text-[#64748b]"}`}>
+          <span className="text-lg leading-none">🏠</span>
+        </Link>
         <Link href="/search" title="検索" aria-label="検索" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname.startsWith("/search") ? "bg-lime-100" : "text-[#64748b]"}`}>
           <TwemojiIcon codepoint="1f50d" className="h-5 w-5" />
         </Link>

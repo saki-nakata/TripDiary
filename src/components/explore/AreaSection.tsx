@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { CardImage } from "@/components/posts/CardImage";
 
 type AreaItem = { location: string; count: number; thumbnailUrl: string | null };
 
@@ -24,14 +24,13 @@ export function AreaSection({ areas }: { areas: AreaItem[] }) {
             href={`/search?tab=area&location=${encodeURIComponent(area.location)}`}
             className="rounded-xl overflow-hidden bg-white border border-zinc-200 transition-all hover:-translate-y-1 hover:border-zinc-300 hover:shadow-md"
           >
-            <div className="relative h-20 bg-zinc-100">
+            <div className="relative h-20 bg-zinc-100 overflow-hidden">
               {area.thumbnailUrl && (
-                <Image
+                <CardImage
                   src={area.thumbnailUrl}
                   alt={area.location}
-                  fill
                   sizes="140px"
-                  className="object-cover"
+                  containerRatio={140 / 80}
                 />
               )}
             </div>

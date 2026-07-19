@@ -49,7 +49,7 @@ export function PlanActions({ planId, completed, variant = "full" }: Props) {
           onClick={() => router.push(`/plans/${planId}/edit`)}
           aria-label="編集"
           title="編集"
-          className="rounded-lg border border-zinc-100 sm:border-transparent p-2 text-zinc-500 hover:bg-green-100 hover:text-zinc-700 transition-colors"
+          className="rounded-lg border border-zinc-100 md:border-zinc-200 xl:border-transparent xl:group-hover:border-zinc-200 xl:hover:border-zinc-100 p-2 text-zinc-500 hover:bg-green-100 hover:text-zinc-700 transition-colors"
         >
           <TwemojiIcon codepoint="270f" className="h-4 w-4" />
         </button>
@@ -57,7 +57,7 @@ export function PlanActions({ planId, completed, variant = "full" }: Props) {
           onClick={() => setShowDeleteModal(true)}
           aria-label="削除"
           title="削除"
-          className="rounded-lg border border-zinc-100 sm:border-transparent p-2 text-zinc-500 hover:bg-red-50 hover:text-red-500 transition-colors"
+          className="rounded-lg border border-zinc-100 md:border-zinc-200 xl:border-transparent xl:group-hover:border-zinc-200 xl:hover:border-zinc-100 p-2 text-zinc-500 hover:bg-red-50 hover:text-red-500 transition-colors"
         >
           <TwemojiIcon codepoint="1f5d1" className="h-4 w-4" />
         </button>

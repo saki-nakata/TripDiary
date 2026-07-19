@@ -63,14 +63,14 @@ export default async function PlanDetailPage({ params }: Props) {
 
   return (
     <div className="relative">
-      <div className="absolute left-0 top-1 z-10 md:left-2">
+      <div className="absolute left-0 top-0 z-10 md:left-2">
         <BackButton />
       </div>
       <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-8 -mt-4">
-        {/* pt-9: モバイルは絶対配置のBackButton（top-1、高さ約30px）とタイトルが
-            重なるため、その分の余白を確保する（md以上はBackButtonとの間に
-            自然な余白があるため不要） */}
-        <div className="flex flex-wrap items-start justify-between gap-3 pt-9 md:pt-0">
+        {/* pt-4: スマホ用の余白。md〜lg（768〜1279px、iPad Pro縦向き含む）は
+            コンテナのパディングが p-8 でも -mt-4 と相殺すると余白が足りず重なる
+            ため pt-9 に広げ、本当にPC幅と言える xl（1280px）で解除する */}
+        <div className="flex flex-wrap items-start justify-between gap-3 pt-5 md:pt-3 lg:pt-1 xl:pt-0">
           <div className="-mt-2">
             <h1 className="text-2xl font-bold text-[#1e293b]">{plan.title}</h1>
             {(plan.startDate || plan.endDate) && (

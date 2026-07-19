@@ -49,14 +49,14 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
 
   return (
     <div className="relative">
-      <div className="absolute left-0 top-1 z-10 md:left-2">
+      <div className="absolute left-0 top-0 z-10 md:left-2">
         <BackButton />
       </div>
-      <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4 -mt-4">
-        {/* pt-9: モバイルは絶対配置のBackButton（top-1、高さ約30px）と見出しが
-            重なるため、その分の余白を確保する（md以上はBackButtonとの間に
-            自然な余白があるため不要） */}
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1e293b] pt-9 md:pt-0">
+      <div className="max-w-6xl mx-auto p-4 md:p-5 lg:p-8 space-y-4 -mt-4">
+        {/* pt-4: スマホ用の余白。md〜lg（768〜1279px、iPad Pro縦向き含む）は
+            コンテナのパディングが p-8 でも -mt-4 と相殺すると余白が足りず重なる
+            ため pt-9 に広げ、本当にPC幅と言える xl（1280px）で解除する */}
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1e293b] pt-5 md:pt-3 lg:pt-1 xl:pt-0">
           <TwemojiIcon codepoint="1f50d" className="h-6 w-6" /> 検索
         </h1>
 

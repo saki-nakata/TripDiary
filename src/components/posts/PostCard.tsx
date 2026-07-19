@@ -7,6 +7,7 @@ import { CategoryIcon } from "@/components/ui/category-icon";
 import { MyPostActions } from "./MyPostActions";
 import { PostCardTitle } from "./PostCardTitle";
 import { CommentIconLink } from "./CommentIconLink";
+import { CardImage } from "./CardImage";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { formatDateSlash } from "@/lib/date";
 import styles from "./PostCard.module.css";
@@ -33,14 +34,13 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
       href={`/posts/${post.id}`}
       className={`${styles.card} group flex flex-col rounded-xl border border-zinc-200 bg-white overflow-hidden`}
     >
-      <div className="relative aspect-[4/3] bg-zinc-100">
+      <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
         {thumbnail ? (
-          <Image
+          <CardImage
             src={thumbnail}
             alt={post.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            imgClassName="group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-4xl text-zinc-300">

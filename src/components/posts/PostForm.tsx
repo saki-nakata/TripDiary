@@ -61,7 +61,7 @@ function SortableImageThumb({
         type="button"
         onPointerDown={(e) => e.stopPropagation()}
         onClick={() => onRemove(url)}
-        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white shadow rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white shadow rounded-full flex items-center justify-center opacity-100 xl:opacity-0 xl:group-hover:opacity-100 transition-opacity"
       >
         <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
       </button>
@@ -369,6 +369,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
                   onChange={field.onChange}
                   max={new Date().toISOString().slice(0, 10)}
                   error={!!errors.visitedAt}
+                  testId="visited-at-field"
                 />
               )}
             />
