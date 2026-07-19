@@ -10,6 +10,7 @@ import { CategoryIcon } from "@/components/ui/category-icon";
 import { BackButton } from "@/components/posts/BackButton";
 import { PlanMapViewWrapper } from "@/components/map/PlanMapViewWrapper";
 import type { PlanMapSpot } from "@/components/map/PlanMapView";
+import { formatDateSlash } from "@/lib/date";
 import type { PlanDetail } from "@/types/plan";
 
 type Props = {
@@ -27,11 +28,6 @@ function formatDateWithWeekday(iso: string) {
   const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
   const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   return `${y}/${String(m).padStart(2, "0")}/${String(d).padStart(2, "0")}（${weekday}）`;
-}
-
-function formatDateSlash(iso: string) {
-  const [y, m, d] = iso.slice(0, 10).split("-");
-  return `${y}/${m}/${d}`;
 }
 
 export default async function PlanDetailPage({ params }: Props) {
@@ -67,11 +63,14 @@ export default async function PlanDetailPage({ params }: Props) {
 
   return (
     <div className="relative">
-      <div className="absolute left-0 top-1 z-10 md:left-2">
+      <div className="absolute left-0 top-0 z-10 md:left-2">
         <BackButton />
       </div>
       <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-8 -mt-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        {/* pt-4: スマホ用の余白。md〜lg（768〜1279px、iPad Pro縦向き含む）は
+            コンテナのパディングが p-8 でも -mt-4 と相殺すると余白が足りず重なる
+            ため pt-9 に広げ、本当にPC幅と言える xl（1280px）で解除する */}
+        <div className="flex flex-wrap items-start justify-between gap-3 pt-5 md:pt-3 lg:pt-1 xl:pt-0">
           <div className="-mt-2">
             <h1 className="text-2xl font-bold text-[#1e293b]">{plan.title}</h1>
             {(plan.startDate || plan.endDate) && (
@@ -133,8 +132,6 @@ export default async function PlanDetailPage({ params }: Props) {
             <EmptyState
               codepoint="1f5fa"
               message="まだスポットが登録されていません"
-              ctaLabel="編集してスポットを追加"
-              ctaHref={`/plans/${plan.id}/edit`}
             />
           ) : (
             <ul className="space-y-2">
@@ -147,9 +144,9 @@ export default async function PlanDetailPage({ params }: Props) {
                 return (
                   <li
                     key={spot.post?.id ?? `free-${i}`}
-                    className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3"
+                    className="flex items-center gap-1.5 sm:gap-3 rounded-xl border border-zinc-200 bg-white p-3"
                   >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
+                    <span className="-ml-1 sm:ml-0 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
                       {i + 1}
                     </span>
                     {image ? (
@@ -191,14 +188,19 @@ export default async function PlanDetailPage({ params }: Props) {
                     </div>
                     <Link
                       href={`/posts/new?planId=${plan.id}&presetTitle=${encodeURIComponent(title)}&presetLocation=${encodeURIComponent(location)}&presetCategory=${encodeURIComponent(category ?? "")}${image ? `&presetImageUrl=${encodeURIComponent(image.url)}` : ""}`}
-                      className="flex shrink-0 items-center gap-1 rounded-lg bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-100 transition-colors"
+                      className="-mr-1 sm:mr-0 flex shrink-0 items-center gap-1 rounded-lg bg-green-50 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-semibold text-green-700 hover:bg-green-100 transition-colors"
                     >
-                      <TwemojiIcon
-                        codepoint="1f4dd"
-                        alt="📝"
-                        className="h-3 w-3"
-                      />{" "}
-                      旅を記録
+                      <span className="sm:hidden flex flex-col items-center leading-tight">
+                        <span className="flex items-center gap-1">
+                          <TwemojiIcon codepoint="1f4dd" alt="📝" className="h-3 w-3" />
+                          旅
+                        </span>
+                        を記録
+                      </span>
+                      <span className="hidden sm:flex items-center gap-1">
+                        <TwemojiIcon codepoint="1f4dd" alt="📝" className="h-3 w-3" />
+                        旅を記録
+                      </span>
                     </Link>
                   </li>
                 );
@@ -237,15 +239,22 @@ export default async function PlanDetailPage({ params }: Props) {
                         <img
                           src={post.images[0].url}
                           alt=""
-                          className="h-12 w-12 rounded-lg object-cover"
+                          className="h-12 w-12 rounded-lg object-cover mt-2 sm:mt-0"
                         />
                       ) : (
-                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-lg">
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-lg mt-2 sm:mt-0">
                           <CategoryIcon category={post.category ?? "その他"} />
                         </span>
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-zinc-800">
+                        {spotNumber && (
+                          <div className="sm:hidden flex justify-end mb-1 -mt-1">
+                            <span className="shrink-0 rounded-full border border-green-500 px-2 py-0.5 text-[11px] text-zinc-800">
+                              プランのスポット{toCircledNumber(spotNumber)}
+                            </span>
+                          </div>
+                        )}
+                        <p className="min-w-0 truncate text-sm font-medium text-zinc-800 -mt-1 sm:mt-0">
                           {post.title}
                         </p>
                         <p className="flex items-center gap-1.5 truncate text-xs text-zinc-400">
@@ -273,7 +282,7 @@ export default async function PlanDetailPage({ params }: Props) {
                         </p>
                       </div>
                       {spotNumber && (
-                        <span className="shrink-0 rounded-full border border-green-500 px-2 py-0.5 text-[11px] text-zinc-800">
+                        <span className="hidden sm:inline-block shrink-0 rounded-full border border-green-500 px-2 py-0.5 text-[11px] text-zinc-800">
                           プランのスポット{toCircledNumber(spotNumber)}
                         </span>
                       )}

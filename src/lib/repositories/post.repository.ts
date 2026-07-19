@@ -280,10 +280,13 @@ export async function findLocationCounts() {
     }),
   ]);
 
-  const thumbnailByLocation = new Map<string, string | null>();
+  // 各エリアの最初に見つかった投稿ではなく、画像を持つ最初の投稿のURLを使う
+  // （最初の投稿に画像が無いだけで、そのエリアのサムネイルが永久にnullになってしまうのを防ぐ）
+  const thumbnailByLocation = new Map<string, string>();
   for (const post of posts) {
-    if (!thumbnailByLocation.has(post.location)) {
-      thumbnailByLocation.set(post.location, post.images[0]?.url ?? null);
+    const url = post.images[0]?.url;
+    if (url && !thumbnailByLocation.has(post.location)) {
+      thumbnailByLocation.set(post.location, url);
     }
   }
 

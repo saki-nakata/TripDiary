@@ -53,18 +53,26 @@ function SpotListItem({ post, onAdd }: { post: PlanSpotPost; onAdd: (post: PlanS
         )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-zinc-800">{post.title}</p>
-          <p className="flex items-center gap-1 truncate text-xs text-zinc-400">
-            <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-2.5 w-2.5" /> {post.location}
-            {post.category ? (
-              <>
-                {" / "}<CategoryIcon category={post.category} /> {post.category}
-              </>
-            ) : ""}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="min-w-0 flex items-center gap-1 truncate text-xs text-zinc-400">
+              <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-2.5 w-2.5" /> {post.location}
+              {post.category ? (
+                <>
+                  {" / "}<CategoryIcon category={post.category} /> {post.category}
+                </>
+              ) : ""}
+            </p>
+            <span
+              aria-label="追加"
+              className="sm:hidden flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 text-xs font-bold leading-none text-green-600"
+            >
+              ＋
+            </span>
+          </div>
         </div>
         <span
           aria-label="追加"
-          className="mr-3 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 text-xs font-bold leading-none text-green-600"
+          className="hidden sm:flex mr-3 md:mr-1 xl:mr-3 h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 text-xs font-bold leading-none text-green-600"
         >
           ＋
         </span>
@@ -98,30 +106,32 @@ function SortableSelectedItem({
     <li
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 rounded-lg border border-zinc-200 bg-white p-2 ${isDragging ? "opacity-50 shadow-md" : ""}`}
+      className={`flex items-center gap-2 sm:gap-3 md:gap-1 xl:gap-3 rounded-lg border border-zinc-200 bg-white p-2 ${isDragging ? "opacity-50 shadow-md" : ""}`}
     >
-      {draggable && (
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          aria-label="ドラッグして並び替え"
-          title="ドラッグして並び替え"
-          className="shrink-0 cursor-grab touch-none rounded p-1 text-zinc-400 hover:text-zinc-600 active:cursor-grabbing"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="9" cy="6" r="1.5" />
-            <circle cx="15" cy="6" r="1.5" />
-            <circle cx="9" cy="12" r="1.5" />
-            <circle cx="15" cy="12" r="1.5" />
-            <circle cx="9" cy="18" r="1.5" />
-            <circle cx="15" cy="18" r="1.5" />
-          </svg>
-        </button>
-      )}
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
-        {index + 1}
-      </span>
+      <div className="flex items-center gap-[0.2rem] sm:gap-3">
+        {draggable && (
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            aria-label="ドラッグして並び替え"
+            title="ドラッグして並び替え"
+            className="-ml-1 sm:ml-0 shrink-0 cursor-grab touch-none rounded p-1 text-zinc-400 hover:text-zinc-600 active:cursor-grabbing"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="9" cy="6" r="1.5" />
+              <circle cx="15" cy="6" r="1.5" />
+              <circle cx="9" cy="12" r="1.5" />
+              <circle cx="15" cy="12" r="1.5" />
+              <circle cx="9" cy="18" r="1.5" />
+              <circle cx="15" cy="18" r="1.5" />
+            </svg>
+          </button>
+        )}
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
+          {index + 1}
+        </span>
+      </div>
       {image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={image.url} alt="" className="h-10 w-10 rounded object-cover" />
@@ -132,24 +142,34 @@ function SortableSelectedItem({
       )}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-zinc-800">{title}</p>
-        <p className="flex items-center gap-1 truncate text-xs text-zinc-400">
-          {location && (
-            <>
-              <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-2.5 w-2.5" /> {location}
-            </>
-          )}
-          {category ? (
-            <>
-              {" / "}<CategoryIcon category={category} /> {category}
-            </>
-          ) : ""}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="min-w-0 flex items-center gap-1 truncate text-xs text-zinc-400">
+            {location && (
+              <>
+                <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-2.5 w-2.5" /> {location}
+              </>
+            )}
+            {category ? (
+              <>
+                {" / "}<CategoryIcon category={category} /> {category}
+              </>
+            ) : ""}
+          </p>
+          <button
+            type="button"
+            onClick={() => onRemove(spot.id)}
+            aria-label="削除"
+            className="sm:hidden flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-red-300 text-red-400 hover:text-red-600"
+          >
+            <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
+          </button>
+        </div>
       </div>
       <button
         type="button"
         onClick={() => onRemove(spot.id)}
         aria-label="削除"
-        className="shrink-0 rounded px-1.5 py-0.5 text-red-400 hover:text-red-600"
+        className="hidden sm:flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-red-300 text-red-400 hover:text-red-600"
       >
         <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
       </button>
@@ -214,7 +234,7 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
       ...selected,
       {
         kind: "free",
-        id: `free-${crypto.randomUUID()}`,
+        id: `free-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         title,
         location: freeLocation,
         category: freeCategory || null,
@@ -308,12 +328,12 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
     <div className="space-y-4">
       {/* 選択済みスポット */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between">
           <p className="text-sm font-bold text-zinc-700">
-            選択済みスポット{selected.length > 0 ? `（${selected.length}）` : ""}
+            選択済みスポット{selected.length > 0 ? `（${selected.length}件）` : ""}
           </p>
           {selected.length >= 2 && (
-            <p className="text-xs text-zinc-400">ドラッグ&ドロップで並び順を変更できます</p>
+            <p className="basis-full sm:basis-auto text-xs text-zinc-400">ドラッグ&ドロップで並び順を変更できます</p>
           )}
         </div>
         {selected.length === 0 ? (
@@ -495,7 +515,7 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
           />
           {freeErrors.title && <p className="text-xs text-red-500">{freeErrors.title}</p>}
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex flex-1 flex-col gap-1">
             <div className="flex items-center gap-2">
               <label className="shrink-0 text-xs font-semibold text-zinc-700">

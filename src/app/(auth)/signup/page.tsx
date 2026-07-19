@@ -121,7 +121,10 @@ export default function SignupPage() {
                     onMouseDown={() => setShowPassword(true)}
                     onMouseUp={() => setShowPassword(false)}
                     onMouseLeave={() => setShowPassword(false)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none"
+                    onTouchStart={() => setShowPassword(true)}
+                    onTouchEnd={() => setShowPassword(false)}
+                    onTouchCancel={() => setShowPassword(false)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none touch-manipulation"
                     tabIndex={-1}
                     aria-label={showPassword ? "パスワードを隠す" : "パスワードを表示"}
                   >
@@ -160,7 +163,10 @@ export default function SignupPage() {
                     onMouseDown={() => setShowConfirmPassword(true)}
                     onMouseUp={() => setShowConfirmPassword(false)}
                     onMouseLeave={() => setShowConfirmPassword(false)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none"
+                    onTouchStart={() => setShowConfirmPassword(true)}
+                    onTouchEnd={() => setShowConfirmPassword(false)}
+                    onTouchCancel={() => setShowConfirmPassword(false)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none touch-manipulation"
                     tabIndex={-1}
                     aria-label={showConfirmPassword ? "パスワードを隠す" : "パスワードを表示"}
                   >

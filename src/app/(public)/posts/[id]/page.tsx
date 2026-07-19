@@ -17,6 +17,7 @@ import { ScrollToHash } from "@/components/posts/ScrollToHash";
 import { CATEGORY_COLORS } from "@/lib/constants";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { formatDateSlash } from "@/lib/date";
 import type { Post, CostBreakdownItem } from "@/types/post";
 
 type Props = {
@@ -36,18 +37,21 @@ export default async function PostDetailPage({ params }: Props) {
   const isAuthor = userId === post.authorId;
 
   const visitedAtDate = new Date(post.visitedAt);
-  const visitedDate = `${visitedAtDate.getFullYear()}/${visitedAtDate.getMonth() + 1}/${visitedAtDate.getDate()} (${visitedAtDate.toLocaleDateString("ja-JP", { weekday: "short" })})`;
+  const visitedDate = `${formatDateSlash(visitedAtDate)} (${visitedAtDate.toLocaleDateString("ja-JP", { weekday: "short" })})`;
 
   return (
     <div className="relative">
       <ScrollToHash />
-      <div className="absolute left-0 top-1 z-10 md:left-2">
+      <div className="absolute left-0 top-0 z-10 md:left-2">
         <BackButton />
       </div>
       <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-7 -mt-4">
 
         {/* Header */}
-        <div className="space-y-3">
+        {/* pt-4: スマホ用の余白。md〜lg（768〜1279px、iPad Pro縦向き含む）は
+            コンテナのパディングが p-8 でも -mt-4 と相殺すると余白が足りず重なる
+            ため pt-9 に広げ、本当にPC幅と言える xl（1280px）で解除する */}
+        <div className="space-y-3 pt-5 md:pt-3 lg:pt-1 xl:pt-0">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             {post.category && (
               <span
@@ -58,10 +62,14 @@ export default async function PostDetailPage({ params }: Props) {
                 <CategoryIcon category={post.category} /> {post.category}
               </span>
             )}
-            <span className="inline-flex items-center gap-1 text-zinc-500 text-sm">
+            <span className="inline-flex items-center gap-1 text-[#16a34a] text-sm font-medium">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3.5 w-3.5" /> {post.location}
             </span>
-            <span className="text-zinc-400 text-sm ml-auto">訪問日：{visitedDate}</span>
+            <span className="inline-flex items-center gap-1 text-zinc-400 text-sm ml-auto">
+              <TwemojiIcon codepoint="1f4c5" alt="📅" className="sm:hidden h-3.5 w-3.5" />
+              <span className="hidden sm:inline">訪問日：</span>
+              {visitedDate}
+            </span>
           </div>
           <h1 className="text-3xl font-bold text-zinc-900 leading-snug">{post.title}</h1>
           <div className="flex items-center gap-3 flex-wrap">
@@ -115,6 +123,7 @@ export default async function PostDetailPage({ params }: Props) {
             postId={post.id}
             initialWishlisted={post.isWishlisted ?? false}
             isLoggedIn={!!userId}
+            isAuthor={isAuthor}
           />
           <VisitedButton
             postId={post.id}
@@ -169,9 +178,9 @@ export default async function PostDetailPage({ params }: Props) {
             <p className="flex items-center gap-1.5 text-base font-semibold text-zinc-800 mb-3">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-4 w-4" /> {post.location}の関連スポット
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-3 xl:grid-cols-4 gap-4">
               {related.map((r) => (
-                <PostCard key={r.id} post={r as unknown as Post} />
+                <PostCard key={r.id} post={r as unknown as Post} compactMobileMeta />
               ))}
             </div>
           </div>

@@ -4,12 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { CategoryIcon } from "@/components/ui/category-icon";
+import { formatDateSlash } from "@/lib/date";
 import type { TimelineYearGroup } from "@/types/stats";
-
-function formatDateSlash(iso: string) {
-  const [y, m, d] = iso.slice(0, 10).split("-");
-  return `${y}/${m}/${d}`;
-}
 
 function YearSection({ group }: { group: TimelineYearGroup }) {
   const [expanded, setExpanded] = useState(false);
@@ -36,7 +32,7 @@ function YearSection({ group }: { group: TimelineYearGroup }) {
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-base font-semibold text-zinc-800">{post.title}</p>
-                <p className="flex items-center gap-1.5 truncate text-sm text-zinc-400">
+                <p className="flex items-center gap-1.5 truncate text-[0.82rem] sm:text-sm text-zinc-400">
                   <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" />{" "}
                   {post.location}
                   {post.category && (
@@ -46,8 +42,12 @@ function YearSection({ group }: { group: TimelineYearGroup }) {
                     </>
                   )}
                 </p>
+                <p className="sm:hidden flex items-center gap-1.5 text-[0.82rem] text-zinc-500">
+                  <TwemojiIcon codepoint="1f4c5" alt="📅" className="h-3 w-3" />
+                  {formatDateSlash(post.visitedAt)}
+                </p>
               </div>
-              <span className="mr-3 flex shrink-0 items-center gap-1 text-xs text-zinc-600">
+              <span className="hidden sm:flex mr-3 shrink-0 items-center gap-1 text-[0.82rem] text-zinc-600">
                 <TwemojiIcon codepoint="1f4c5" alt="📅" className="h-3 w-3" />
                 {formatDateSlash(post.visitedAt)}
               </span>

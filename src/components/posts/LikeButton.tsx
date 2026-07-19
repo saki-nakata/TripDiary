@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/contexts/toast-context";
-import { useRouter } from "next/navigation";
+import { useRequireLogin } from "@/hooks/useRequireLogin";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Props = {
@@ -18,12 +18,12 @@ export function LikeButton({ postId, initialLiked, initialCount, isLoggedIn, dis
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
-  const router = useRouter();
+  const requireLogin = useRequireLogin();
 
   async function handleClick() {
     if (disabled) return;
     if (!isLoggedIn) {
-      router.push("/login");
+      requireLogin("いいねするにはログインが必要です");
       return;
     }
     if (loading) return;

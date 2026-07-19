@@ -9,9 +9,10 @@ import { PostCard } from "@/components/posts/PostCard";
 import { BackButton } from "@/components/posts/BackButton";
 import { FollowButton } from "@/components/users/FollowButton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { CATEGORIES, LOCATIONS } from "@/lib/constants";
+import { CATEGORIES, LOCATIONS, CATEGORY_COLORS } from "@/lib/constants";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { formatDateSlash } from "@/lib/date";
 import type { PostsResponse } from "@/types/post";
 
 type AreaItem = { location: string; count: number; thumbnailUrl: string | null };
@@ -28,9 +29,9 @@ type UserItem = {
 type UsersResponse = { users: UserItem[]; nextCursor: string | null; hasMore: boolean };
 
 const TABS = [
-  { key: "post", label: "🗾 旅スポット" },
-  { key: "area", label: "📍 エリア" },
-  { key: "user", label: "👥 ユーザー" },
+  { key: "post", icon: "🗾", label: "旅スポット" },
+  { key: "area", icon: "📍", label: "エリア" },
+  { key: "user", icon: "👥", label: "ユーザー" },
 ] as const;
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -48,11 +49,14 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
 
   return (
     <div className="relative">
-      <div className="absolute left-0 top-1 z-10 md:left-2">
+      <div className="absolute left-0 top-0 z-10 md:left-2">
         <BackButton />
       </div>
-      <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4 -mt-4">
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1e293b]">
+      <div className="max-w-6xl mx-auto p-4 md:p-5 lg:p-8 space-y-4 -mt-4">
+        {/* pt-4: スマホ用の余白。md〜lg（768〜1279px、iPad Pro縦向き含む）は
+            コンテナのパディングが p-8 でも -mt-4 と相殺すると余白が足りず重なる
+            ため pt-9 に広げ、本当にPC幅と言える xl（1280px）で解除する */}
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1e293b] pt-5 md:pt-3 lg:pt-1 xl:pt-0">
           <TwemojiIcon codepoint="1f50d" className="h-6 w-6" /> 検索
         </h1>
 
@@ -71,11 +75,12 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`relative px-4 py-2 text-[0.95rem] font-medium transition-colors ${
+              className={`relative flex-1 sm:flex-none flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-2 sm:px-4 py-2 text-[0.8rem] sm:text-[0.95rem] font-medium transition-colors whitespace-nowrap ${
                 tab === t.key ? "text-[#16a34a]" : "text-zinc-500 hover:text-zinc-700"
               }`}
             >
-              {t.label}
+              <span className="text-base sm:text-[0.95rem]">{t.icon}</span>
+              <span>{t.label}</span>
               {tab === t.key && (
                 <span className="absolute -bottom-px left-3 right-0 h-0.5 bg-[#16a34a]" />
               )}
@@ -139,7 +144,7 @@ function PostSearchTab({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap justify-center sm:justify-start gap-2">
         <button
           onClick={() => setCategory("")}
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
@@ -154,13 +159,13 @@ function PostSearchTab({
           <button
             key={c}
             onClick={() => setCategory(c)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 px-3 py-1.5 rounded-full text-[0.7rem] sm:text-sm font-medium transition-colors border whitespace-nowrap ${
               category === c
                 ? "bg-blue-400 text-white border-blue-400"
                 : "bg-white text-zinc-500 border-zinc-200 hover:border-blue-400 hover:text-blue-500"
             }`}
           >
-            <CategoryIcon category={c} /> {c}
+            <CategoryIcon category={c} /> <span>{c}</span>
           </button>
         ))}
       </div>
@@ -173,7 +178,8 @@ function PostSearchTab({
       )}
 
       {showSort && (
-        <div className="flex gap-2">
+        <div className="flex items-center justify-center sm:justify-start gap-2">
+          <span className="sm:hidden text-sm text-zinc-500">並び順：</span>
           <button
             onClick={() => setSort("latest")}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
@@ -197,22 +203,98 @@ function PostSearchTab({
         <EmptyState codepoint="1f3d4" message="該当するスポットがありません" />
       ) : sort === "popular" ? (
         <div className="space-y-2">
-          {posts.slice(0, 20).map((post, i) => (
-            <Link
-              key={post.id}
-              href={`/posts/${post.id}`}
-              className="flex items-center gap-3 p-3 rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors"
-            >
-              <span className="w-8 text-center text-lg font-bold text-zinc-400">
-                {i < 3 ? MEDALS[i] : i + 1}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-zinc-900 truncate">{post.title}</p>
-                <p className="text-xs text-zinc-500">📍 {post.location}</p>
-              </div>
-              <span className="text-sm text-zinc-400">❤️ {post._count.likes}</span>
-            </Link>
-          ))}
+          {posts.slice(0, 20).map((post, i) => {
+            const thumbnail = post.images[0]?.url ?? null;
+            return (
+              <Link
+                key={post.id}
+                href={`/posts/${post.id}`}
+                className="flex items-center gap-3 p-3 rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors"
+              >
+                <span
+                  className={`w-8 text-center font-bold text-zinc-400 ${
+                    i < 3 ? "text-4xl relative -left-2" : "text-lg -ml-2 sm:ml-0"
+                  }`}
+                >
+                  {i < 3 ? MEDALS[i] : i + 1}
+                </span>
+                <div className="relative w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-zinc-100 -ml-3 sm:ml-0">
+                  {thumbnail ? (
+                    <Image
+                      src={thumbnail}
+                      alt={post.title}
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-lg text-zinc-300">
+                      <CategoryIcon category={post.category ?? "その他"} />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  {/* モバイル: タイトル→エリア+カテゴリ→ユーザー名+日付 の3行（②③はハート+カウントと横並び） */}
+                  <p className="sm:hidden text-sm font-semibold text-zinc-900 truncate">{post.title}</p>
+                  <p className="sm:hidden flex items-center gap-2 text-xs text-zinc-500">
+                    <span className="flex-1 min-w-0 flex items-center gap-2">
+                      <span className="truncate">📍 {post.location}</span>
+                      {post.category && (
+                        <span
+                          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[0.65rem] font-medium ${
+                            CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          <CategoryIcon category={post.category} /> {post.category}
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 flex items-center gap-0.5">
+                      <span className="text-sm">❤️</span>
+                      <span className="text-sm text-zinc-400">{post._count.likes}</span>
+                    </span>
+                  </p>
+                  <p className="sm:hidden mt-0.5 flex items-center gap-2 text-xs text-zinc-500">
+                    <span className="shrink-0 inline-flex items-center gap-0.5 truncate">
+                      <TwemojiIcon codepoint="1f464" alt="👤" className="h-3 w-3" />
+                      {post.author.nickname}
+                    </span>
+                    <span className="shrink-0 inline-flex items-center gap-0.5">
+                      <TwemojiIcon codepoint="1f4c5" alt="📅" className="h-3 w-3" />
+                      {formatDateSlash(post.createdAt)}
+                    </span>
+                  </p>
+
+                  {/* PC/タブレット: タイトル / エリア+カテゴリ+ユーザー名+日付 の2行 */}
+                  <p className="hidden sm:block text-sm font-semibold text-zinc-900 truncate">{post.title}</p>
+                  <p className="hidden sm:flex items-center gap-3 text-xs text-zinc-500">
+                    <span className="truncate">📍 {post.location}</span>
+                    {post.category && (
+                      <span
+                        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[0.65rem] font-medium ${
+                          CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        <CategoryIcon category={post.category} /> {post.category}
+                      </span>
+                    )}
+                    <span className="shrink-0 inline-flex items-center gap-0.5 truncate">
+                      <TwemojiIcon codepoint="1f464" alt="👤" className="h-3 w-3" />
+                      {post.author.nickname}
+                    </span>
+                    <span className="shrink-0 inline-flex items-center gap-0.5">
+                      <TwemojiIcon codepoint="1f4c5" alt="📅" className="h-3 w-3" />
+                      {formatDateSlash(post.createdAt)}
+                    </span>
+                  </p>
+                </div>
+                <div className="hidden sm:flex items-center justify-center self-stretch shrink-0 gap-1">
+                  <span className="text-base">❤️</span>
+                  <span className="text-sm text-zinc-400">{post._count.likes}</span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
@@ -269,7 +351,7 @@ function AreaSearchTab({ q, initialLocation }: { q: string; initialLocation?: st
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap justify-center sm:justify-start gap-2">
         {areas.map((area) => (
           <button
             key={area.location}
@@ -286,12 +368,15 @@ function AreaSearchTab({ q, initialLocation }: { q: string; initialLocation?: st
       </div>
 
       {selectedArea && (
-        <PostSearchTab
-          location={selectedArea.location}
-          q={q}
-          showSort={false}
-          locationLabel={selectedArea.location}
-        />
+        <>
+          <hr className="border-t border-dashed border-zinc-200" />
+          <PostSearchTab
+            location={selectedArea.location}
+            q={q}
+            showSort={false}
+            locationLabel={selectedArea.location}
+          />
+        </>
       )}
     </div>
   );
@@ -320,13 +405,13 @@ function UserSearchTab({ q, viewerId }: { q: string; viewerId?: string }) {
         <EmptyState codepoint="1f464" message="ユーザーが見つかりません" />
       )}
 
-      <div className="space-y-2">
+      <div className={`space-y-2 sm:pl-8 ${viewerId ? "sm:max-w-5xl" : "sm:max-w-4xl"}`}>
         {users.map((u) => (
           <div
             key={u.id}
-            className="flex items-center gap-3 p-3 rounded-xl border border-zinc-200 transition-colors hover:border-zinc-300 hover:bg-zinc-100"
+            className="flex items-center gap-3 py-3 pl-3 pr-2 sm:py-3 sm:pl-5 sm:pr-3 rounded-xl border border-zinc-200 transition-colors hover:border-zinc-300 hover:bg-zinc-100"
           >
-            <Link href={`/users/${u.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+            <Link href={`/users/${u.id}`} className="flex items-center gap-3 sm:gap-5 flex-1 min-w-0">
               <div className="relative w-12 h-12 rounded-full overflow-hidden bg-zinc-200 shrink-0">
                 {u.image ? (
                   <Image src={u.image} alt={u.nickname} fill sizes="48px" className="object-cover" />
@@ -336,21 +421,21 @@ function UserSearchTab({ q, viewerId }: { q: string; viewerId?: string }) {
                   </div>
                 )}
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="min-w-0 flex-1 sm:space-y-1">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
                   <p className="text-sm font-medium text-zinc-900 truncate">{u.nickname}</p>
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 text-[11px] font-semibold px-2 py-0.5 shrink-0">
                     ✈️ {u.tabiScore}pts
                   </span>
                 </div>
                 {u.bio && <p className="text-xs text-zinc-500 truncate">{u.bio}</p>}
-                <p className="text-xs text-zinc-400 mt-0.5">
+                <p className="text-xs text-zinc-400 mt-0.5 sm:mt-0">
                   {u._count.posts}件の投稿 ・ フォロワー {u._count.followers}人
                 </p>
               </div>
             </Link>
             {viewerId && viewerId !== u.id && (
-              <FollowButton userId={u.id} initialFollowing={u.followedByCurrentUser} isLoggedIn={!!viewerId} />
+              <FollowButton userId={u.id} initialFollowing={u.followedByCurrentUser} isLoggedIn={!!viewerId} size="sm" />
             )}
           </div>
         ))}

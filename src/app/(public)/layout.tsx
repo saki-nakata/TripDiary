@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { GuestSidebarNav } from "@/components/layout/GuestSidebarNav";
+import { GuestMobileNav } from "@/components/layout/GuestMobileNav";
 import { ToastProvider } from "@/contexts/toast-context";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
@@ -20,8 +22,8 @@ export default async function PublicLayout({ children }: { children: React.React
           <Suspense>
             <Sidebar user={user} />
           </Suspense>
-          <div className="ml-16 max-md:ml-0 sidebar:ml-60 pb-16 md:pb-0">
-            <main className="px-10 py-6">{children}</main>
+          <div className="ml-32 max-md:ml-0 sidebar:ml-60 pt-14 md:pt-0 pb-16 md:pb-0">
+            <main className="px-2 md:px-3 lg:px-10 py-6">{children}</main>
           </div>
         </div>
       </ToastProvider>
@@ -39,60 +41,29 @@ export default async function PublicLayout({ children }: { children: React.React
             <TwemojiIcon codepoint="2708" alt="✈️" className="h-6 w-6" />
             <span className="text-[1.35rem]">TripDiary</span>
           </Link>
-          <nav className="px-4 flex flex-col gap-1">
-            <Link
-              href="/"
-              className="flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
-            >
-              <span className="w-6 flex justify-center"><TwemojiIcon codepoint="1f3e0" alt="🏠" className="h-[1.1rem] w-[1.1rem]" /></span>
-              <span>ホーム</span>
-            </Link>
-            <Link
-              href="/search"
-              className="flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
-            >
-              <span className="w-6 flex justify-center"><TwemojiIcon codepoint="1f50d" alt="🔍" className="h-[1.1rem] w-[1.1rem]" /></span>
-              <span>検索</span>
-            </Link>
-          </nav>
+          <GuestSidebarNav />
           <div className="mt-auto px-4 pb-8 flex flex-col gap-3">
             <Link
               href="/login"
-              className="block text-center py-2.5 rounded-lg bg-[#2d8a52] text-white text-[0.9rem] font-semibold hover:bg-[#1a6b3a] transition-colors"
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-[#2d8a52] text-white text-[0.9rem] font-semibold hover:bg-[#1a6b3a] transition-colors"
             >
+              <span className="text-lg leading-none -ml-1">🔑</span>
               ログイン
             </Link>
             <Link
               href="/signup"
-              className="block text-center py-2.5 rounded-lg border-[1.5px] border-[#1a6b3a] text-[#1a6b3a] text-[0.9rem] font-semibold hover:bg-[#dcfce7] transition-colors"
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg border-[1.5px] border-[#1a6b3a] text-[#1a6b3a] text-[0.9rem] font-semibold hover:bg-[#dcfce7] transition-colors"
             >
+              <span className="text-lg leading-none -ml-1">🌱</span>
               新規登録
             </Link>
           </div>
         </aside>
 
-        {/* Bottom nav (mobile, unauthenticated) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] z-30 flex">
-          <Link href="/" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
-            <TwemojiIcon codepoint="1f3e0" alt="🏠" className="h-5 w-5" />
-            <span>ホーム</span>
-          </Link>
-          <Link href="/search" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
-            <TwemojiIcon codepoint="1f50d" alt="🔍" className="h-5 w-5" />
-            <span>検索</span>
-          </Link>
-          <Link href="/login" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
-            <TwemojiIcon codepoint="1f511" alt="🔑" className="h-5 w-5" />
-            <span>ログイン</span>
-          </Link>
-          <Link href="/signup" className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-[#64748b]">
-            <TwemojiIcon codepoint="270d" alt="✍️" className="h-5 w-5" />
-            <span>新規登録</span>
-          </Link>
-        </nav>
+        <GuestMobileNav />
 
-        <div className="md:ml-60 pb-16 md:pb-0">
-          <main className="px-10 py-6">{children}</main>
+        <div className="md:ml-60 pt-14 md:pt-0 pb-16 md:pb-0">
+          <main className="px-2 md:px-3 lg:px-10 py-6">{children}</main>
         </div>
       </div>
     </ToastProvider>

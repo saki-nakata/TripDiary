@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useToast } from "@/contexts/toast-context";
 import { planSchema, type PlanInput } from "@/lib/validations/plan";
 import { SpotPicker, type SelectedSpot } from "./SpotPicker";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { DateField } from "@/components/posts/DateField";
 import type { PlanDetail, PlanSpotPost, PlanSpotInput, BudgetBreakdownItem } from "@/types/plan";
 
 type Props = {
@@ -29,6 +30,7 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
   const { showToast } = useToast();
   const isEdit = !!initialData;
 
+  const [completed, setCompleted] = useState(initialData?.completed ?? false);
   const [budgetBreakdown, setBudgetBreakdown] = useState<BudgetBreakdownItem[]>(
     initialData?.budgetBreakdown ?? []
   );
@@ -55,6 +57,7 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
   const {
     register,
     handleSubmit,
+    control,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<PlanInput>({
@@ -106,6 +109,10 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
         throw new Error(err.error ?? "エラーが発生しました");
       }
 
+      if (isEdit && completed !== initialData!.completed) {
+        await fetch(`/api/plans/${initialData!.id}/complete`, { method: "PATCH" });
+      }
+
       const saved = await res.json();
       showToast(isEdit ? "プランを更新しました" : "プランを作成しました");
       router.push(`/plans/${saved.id}`);
@@ -137,21 +144,25 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
       </div>
 
       {/* 日程 */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
           <label className="text-base font-bold text-zinc-700">出発日</label>
-          <input
-            type="date"
-            {...register("startDate")}
-            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          <Controller
+            name="startDate"
+            control={control}
+            render={({ field }) => (
+              <DateField value={field.value ?? ""} onChange={field.onChange} error={!!errors.startDate} />
+            )}
           />
         </div>
         <div className="space-y-1">
           <label className="text-base font-bold text-zinc-700">帰着日</label>
-          <input
-            type="date"
-            {...register("endDate")}
-            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.endDate ? "border-red-400" : "border-zinc-200"}`}
+          <Controller
+            name="endDate"
+            control={control}
+            render={({ field }) => (
+              <DateField value={field.value ?? ""} onChange={field.onChange} error={!!errors.endDate} />
+            )}
           />
           {errors.endDate && <p className="text-xs text-red-500">{errors.endDate.message}</p>}
         </div>
@@ -216,6 +227,30 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
         <label className="text-base font-bold text-zinc-700">スポット</label>
         <SpotPicker initialSelected={initialSelectedSpots} wishlistPosts={wishlistPosts} onChange={setSpots} />
       </div>
+
+      {/* 完了ステータス（編集時のみ） */}
+      {isEdit && (
+        <div className="flex justify-center sm:justify-start gap-3 -mt-3">
+          <button
+            type="button"
+            onClick={() => setCompleted(false)}
+            className={`w-28 sm:w-auto sm:flex-1 rounded-full border px-4 py-2 text-sm font-semibold text-blue-700 transition-colors ${
+              !completed ? "border-blue-500 bg-blue-50" : "border-zinc-200 hover:bg-zinc-50"
+            }`}
+          >
+            未完了
+          </button>
+          <button
+            type="button"
+            onClick={() => setCompleted(true)}
+            className={`w-28 sm:w-auto sm:flex-1 rounded-full border px-4 py-2 text-sm font-semibold text-red-700 transition-colors ${
+              completed ? "border-red-500 bg-red-50" : "border-zinc-200 hover:bg-zinc-50"
+            }`}
+          >
+            完了済み
+          </button>
+        </div>
+      )}
 
       {/* 送信ボタン */}
       <div className="flex max-w-md mx-auto gap-6 pt-2">

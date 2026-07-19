@@ -26,7 +26,7 @@ export default async function NewPlanPage() {
       <h1 className="flex items-center gap-2 text-2xl font-bold text-zinc-900">
         <TwemojiIcon codepoint="1f9ed" className="h-6 w-6" /> 旅行プランを作成する
       </h1>
-      <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-8">
+      <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 md:p-8">
         <PlanForm wishlistPosts={wishlistPosts} />
       </div>
     </div>

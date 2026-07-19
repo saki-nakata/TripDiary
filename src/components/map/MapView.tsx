@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 // Fix default marker icons in webpack/Next.js
 const defaultIcon = L.icon({
@@ -80,7 +79,7 @@ export function MapView({ lat, lng, label, heading, className }: Props) {
               className="absolute -top-10 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md hover:opacity-70 transition-opacity"
               aria-label="閉じる"
             >
-              <TwemojiIcon codepoint="2716" alt="閉じる" className="h-4 w-4" />
+              <span className="text-lg leading-none text-red-500">✕</span>
             </button>
             <MapContainer center={[lat, lng]} zoom={14} className="h-full w-full rounded-xl" scrollWheelZoom>
               <TileLayer

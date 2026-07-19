@@ -7,7 +7,9 @@ import { CategoryIcon } from "@/components/ui/category-icon";
 import { MyPostActions } from "./MyPostActions";
 import { PostCardTitle } from "./PostCardTitle";
 import { CommentIconLink } from "./CommentIconLink";
+import { CardImage } from "./CardImage";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { formatDateSlash } from "@/lib/date";
 import styles from "./PostCard.module.css";
 
 type Props = {
@@ -16,9 +18,12 @@ type Props = {
   viewerId?: string;
   /** true の場合、自分の投稿カードに費用を表示する（マイページの自分の投稿タブでのみ使用） */
   showCost?: boolean;
+  /** true の場合、モバイルのみニックネーム/エリア/日付/いいね・コメント数を4行に分けて表示する
+   *  （投稿詳細ページの関連スポット専用。他の一覧では使わない） */
+  compactMobileMeta?: boolean;
 };
 
-export function PostCard({ post, viewerId, showCost = false }: Props) {
+export function PostCard({ post, viewerId, showCost = false, compactMobileMeta = false }: Props) {
   const isOwner = viewerId != null && viewerId === post.authorId;
   const thumbnail = post.images[0]?.url ?? null;
   const category = post.category ?? "その他";
@@ -29,14 +34,13 @@ export function PostCard({ post, viewerId, showCost = false }: Props) {
       href={`/posts/${post.id}`}
       className={`${styles.card} group flex flex-col rounded-xl border border-zinc-200 bg-white overflow-hidden`}
     >
-      <div className="relative aspect-[4/3] bg-zinc-100">
+      <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
         {thumbnail ? (
-          <Image
+          <CardImage
             src={thumbnail}
             alt={post.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            imgClassName="group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-4xl text-zinc-300">
@@ -63,7 +67,38 @@ export function PostCard({ post, viewerId, showCost = false }: Props) {
       <div className="flex flex-col flex-1 gap-2 p-4">
         <PostCardTitle title={post.title} />
 
-        <div className="flex items-center gap-1.5 text-[0.82rem] text-zinc-500 min-w-0 flex-wrap">
+        {compactMobileMeta && (
+          <div className="sm:hidden flex flex-col gap-1 text-[0.82rem] text-zinc-500">
+            <div className="flex items-center gap-1.5 min-w-0">
+              {post.author.image ? (
+                <Image
+                  src={post.author.image}
+                  alt={post.author.nickname}
+                  width={22}
+                  height={22}
+                  className="w-[22px] h-[22px] rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-[22px] h-[22px] rounded-full bg-zinc-200 flex items-center justify-center text-[10px] text-zinc-500 font-medium shrink-0">
+                  {post.author.nickname[0]}
+                </div>
+              )}
+              <span className="truncate" title={post.author.nickname}>{post.author.nickname}</span>
+            </div>
+            <span className="flex items-center gap-1 w-fit text-[0.78rem] text-[#16a34a] border border-zinc-300 rounded-full px-2 py-0.5 font-medium">
+              <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" /> {post.location}
+            </span>
+            <span>{formatDateSlash(post.createdAt)}</span>
+            <div className="flex items-center gap-3 text-zinc-400">
+              <span className="flex items-center gap-1">
+                <TwemojiIcon codepoint="2764" alt="❤️" className="h-3.5 w-3.5" /> {post._count.likes}
+              </span>
+              <CommentIconLink postId={post.id} count={post._count.comments} />
+            </div>
+          </div>
+        )}
+
+        <div className={`${compactMobileMeta ? "hidden sm:flex" : "flex"} items-center gap-1.5 text-[0.82rem] text-zinc-500 min-w-0 flex-wrap`}>
           {post.author.image ? (
             <Image
               src={post.author.image}
@@ -79,7 +114,7 @@ export function PostCard({ post, viewerId, showCost = false }: Props) {
           )}
           <span className="truncate max-w-[6.5rem]" title={post.author.nickname}>{post.author.nickname}</span>
           <span className="ml-auto flex items-center gap-1.5 shrink-0">
-            <span className="flex items-center gap-1 text-[0.78rem] text-[#16a34a] bg-green-100 rounded-full px-2 py-0.5 font-medium">
+            <span className="flex items-center gap-1 text-[0.78rem] text-[#16a34a] border border-zinc-300 rounded-full px-2 py-0.5 font-medium">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" /> {post.location}
             </span>
             {showCost && post.cost != null && post.cost > 0 && (
@@ -90,18 +125,18 @@ export function PostCard({ post, viewerId, showCost = false }: Props) {
           </span>
         </div>
 
-        <div className="flex items-center gap-3 text-[0.82rem] text-zinc-400 mt-auto pt-1">
+        <div className={`${compactMobileMeta ? "hidden sm:flex" : "flex"} items-center flex-wrap gap-x-2 gap-y-1 text-[0.82rem] text-zinc-400 mt-auto pt-1`}>
           <span className="flex items-center gap-1">
             <TwemojiIcon codepoint="2764" alt="❤️" className="h-3.5 w-3.5" /> {post._count.likes}
           </span>
           <CommentIconLink postId={post.id} count={post._count.comments} />
           {post.rating ? (
-            <span className="mx-auto">
+            <span className="sm:mx-auto">
               <StarRating value={post.rating} readonly size="sm" />
             </span>
           ) : null}
-          <span className="ml-auto text-sm font-medium text-zinc-500">
-            {new Date(post.createdAt).toLocaleDateString("ja-JP")}
+          <span className={`ml-auto text-zinc-500 ${compactMobileMeta ? "text-xs" : "text-[0.82rem]"}`}>
+            {formatDateSlash(post.createdAt)}
           </span>
         </div>
       </div>

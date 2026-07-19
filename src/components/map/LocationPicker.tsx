@@ -156,7 +156,7 @@ export function LocationPicker({ lat, lng, onChange, label }: Props) {
               className="absolute -top-10 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md hover:opacity-70 transition-opacity"
               aria-label="閉じる"
             >
-              <TwemojiIcon codepoint="2716" alt="閉じる" className="h-4 w-4" />
+              <span className="text-lg leading-none text-red-500">✕</span>
             </button>
             <PinMap
               center={center}

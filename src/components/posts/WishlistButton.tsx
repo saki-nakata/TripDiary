@@ -2,24 +2,25 @@
 
 import { useState } from "react";
 import { useToast } from "@/contexts/toast-context";
-import { useRouter } from "next/navigation";
+import { useRequireLogin } from "@/hooks/useRequireLogin";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Props = {
   postId: string;
   initialWishlisted: boolean;
   isLoggedIn: boolean;
+  isAuthor?: boolean;
 };
 
-export function WishlistButton({ postId, initialWishlisted, isLoggedIn }: Props) {
+export function WishlistButton({ postId, initialWishlisted, isLoggedIn, isAuthor = false }: Props) {
   const [wishlisted, setWishlisted] = useState(initialWishlisted);
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
-  const router = useRouter();
+  const requireLogin = useRequireLogin();
 
   async function handleClick() {
     if (!isLoggedIn) {
-      router.push("/login");
+      requireLogin("「行きたい」に追加するにはログインが必要です");
       return;
     }
     if (loading) return;
@@ -51,8 +52,13 @@ export function WishlistButton({ postId, initialWishlisted, isLoggedIn }: Props)
       }`}
       title={wishlisted ? "行きたいを解除" : "行きたいに追加"}
     >
-      {wishlisted ? <TwemojiIcon codepoint="1f516" className="h-4 w-4" /> : <span>🔖</span>}
-      <span className="hidden sm:inline">{wishlisted ? "また行きたい！" : "また行きたい？"}</span>
+      <span className="flex items-center justify-center h-4 w-4 shrink-0">
+        {wishlisted ? <TwemojiIcon codepoint="1f516" className="h-4 w-4" /> : <span>🔖</span>}
+      </span>
+      <span className="hidden sm:inline">
+        {isAuthor ? (wishlisted ? "また行きたい！" : "また行きたい？") : wishlisted ? "行きたい！" : "行きたい？"}
+      </span>
+      <span className="sm:hidden">{isAuthor ? "また行きたい" : "行きたい"}</span>
     </button>
   );
 }

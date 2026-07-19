@@ -19,6 +19,7 @@ import { ReportTimeline } from "@/components/plans/ReportTimeline";
 import { PlanActions } from "@/components/plans/PlanActions";
 import { CompletedPlansAccordion } from "@/components/plans/CompletedPlansAccordion";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { formatDateSlash } from "@/lib/date";
 import type { Post } from "@/types/post";
 import type { Plan } from "@/types/plan";
 
@@ -78,27 +79,11 @@ export default async function MyPage({ searchParams }: Props) {
             </span>
           )}
         </h1>
-        <span className="rounded-md bg-rose-50 text-rose-800 text-sm px-3 py-1.5 border border-rose-200 border-l-[3px] border-l-rose-500 font-medium shrink-0">
-          🔒 この画面は自分のみ表示
-        </span>
-      </div>
-
-      {/* Tabs（モバイルのみ表示。デスクトップはサイドバーのマイページ各項目から切り替える） */}
-      <div className="md:hidden flex gap-1 border-b border-zinc-200 overflow-x-auto overflow-y-hidden">
-        {TABS.map((t) => (
-          <Link
-            key={t.key}
-            href={`/mypage?tab=${t.key}`}
-            title={t.label}
-            className={`flex items-center px-3 py-2 border-b-2 -mb-px transition-colors ${
-              activeTab === t.key
-                ? "border-[#16a34a] text-[#16a34a]"
-                : "border-transparent text-zinc-500 hover:text-zinc-700"
-            }`}
-          >
-            <TwemojiIcon codepoint={t.icon} className="h-5 w-5" />
-          </Link>
-        ))}
+        <div className="basis-full sm:basis-auto flex justify-end -mt-2 sm:mt-0 -mr-1 sm:mr-0">
+          <span className="rounded-md bg-rose-50 text-rose-800 text-xs sm:text-sm px-3 py-1.5 border border-rose-200 border-l-[3px] border-l-rose-500 font-medium shrink-0">
+            🔒 この画面は自分のみ表示
+          </span>
+        </div>
       </div>
 
       {/* Tab content */}
@@ -136,10 +121,6 @@ async function renderReport(userId: string, yearParam?: string) {
   );
 }
 
-function formatDateSlash(iso: string) {
-  const [y, m, d] = iso.slice(0, 10).split("-");
-  return `${y}/${m}/${d}`;
-}
 
 function PlanListItem({ plan }: { plan: Plan }) {
   return (
@@ -161,7 +142,7 @@ function PlanListItem({ plan }: { plan: Plan }) {
         <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-[13px] font-semibold text-zinc-500">
           {plan.spotCount ?? 0}スポット
         </span>
-        <div className="opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="opacity-100 xl:opacity-0 transition-opacity xl:group-hover:opacity-100">
           <PlanActions planId={plan.id} completed={plan.completed} variant="icons" />
         </div>
       </div>
@@ -174,10 +155,6 @@ async function renderPlans(userId: string) {
   const activePlans = plans.filter((p) => !p.completed);
   const completedPlans = plans.filter((p) => p.completed);
 
-  if (plans.length === 0) {
-    return <EmptyState codepoint="1f9ed" message="まだ旅行プランがありません" ctaLabel="プランを作成する" ctaHref="/plans/new" />;
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -188,8 +165,10 @@ async function renderPlans(userId: string) {
           ＋ 新しいプラン
         </Link>
       </div>
-      {activePlans.length === 0 ? (
-        <EmptyState codepoint="1f9ed" message="進行中のプランがありません" ctaLabel="プランを作成する" ctaHref="/plans/new" />
+      {plans.length === 0 ? (
+        <EmptyState codepoint="1f9ed" message="まだ旅行プランがありません" />
+      ) : activePlans.length === 0 ? (
+        <EmptyState codepoint="1f9ed" message="進行中のプランがありません" />
       ) : (
         <div className="max-w-5xl space-y-2">
           {activePlans.map((plan) => (
