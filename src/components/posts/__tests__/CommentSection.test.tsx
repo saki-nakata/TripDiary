@@ -6,6 +6,8 @@ import { CommentSection } from "@/components/posts/CommentSection";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 const POST_ID = "post-1";
