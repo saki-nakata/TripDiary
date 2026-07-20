@@ -34,6 +34,34 @@ describe("checkRateLimit", () => {
     expect(() => checkRateLimit("key-e", 5, 1000)).not.toThrow();
     vi.useRealTimers();
   });
+
+  it("ENABLE_TEST_ENDPOINTSがtrue_上限回数を超過してもエラーを投げない", () => {
+    const original = process.env.ENABLE_TEST_ENDPOINTS;
+    process.env.ENABLE_TEST_ENDPOINTS = "true";
+    try {
+      for (let i = 0; i < 10; i++) {
+        expect(() => checkRateLimit("key-f", 5, 1000)).not.toThrow();
+      }
+    } finally {
+      process.env.ENABLE_TEST_ENDPOINTS = original;
+    }
+  });
+
+  it("ENABLE_TEST_ENDPOINTSがtrueでもNODE_ENVがproductionなら制限は有効なまま", () => {
+    const originalFlag = process.env.ENABLE_TEST_ENDPOINTS;
+    const originalEnv = process.env.NODE_ENV;
+    process.env.ENABLE_TEST_ENDPOINTS = "true";
+    // @ts-expect-error NODE_ENVはreadonly型だがテストのため上書きする
+    process.env.NODE_ENV = "production";
+    try {
+      for (let i = 0; i < 5; i++) checkRateLimit("key-g", 5, 1000);
+      expect(() => checkRateLimit("key-g", 5, 1000)).toThrow(RateLimitError);
+    } finally {
+      process.env.ENABLE_TEST_ENDPOINTS = originalFlag;
+      // @ts-expect-error 上記と同様
+      process.env.NODE_ENV = originalEnv;
+    }
+  });
 });
 
 describe("getClientIp", () => {

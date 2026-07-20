@@ -13,6 +13,14 @@ const buckets = new Map<string, Bucket>();
  * 超過時は `RateLimitError` を投げる（呼び出し元でハンドリングする）。
  */
 export function checkRateLimit(key: string, limit: number, windowMs: number): void {
+  // E2E/CIはローカル実行同様、単一の永続プロセス（next start）に対して複数のspecファイルが
+  // 同じテストユーザーで繰り返しログインするため、実際の攻撃と区別できずすぐに誤爆する。
+  // ENABLE_TEST_ENDPOINTS は test/cleanup と同じ「本番環境変数には絶対設定しない」フラグのため、
+  // NODE_ENV==="production" ではこの値に関わらず無視するハードガードを入れた上で無効化する。
+  if (process.env.NODE_ENV !== "production" && process.env.ENABLE_TEST_ENDPOINTS === "true") {
+    return;
+  }
+
   const now = Date.now();
   const bucket = buckets.get(key);
 
