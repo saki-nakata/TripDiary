@@ -4,8 +4,9 @@ import { createPlanService, findPlansByUserIdService } from "@/lib/services/plan
 import { planSchema } from "@/lib/validations/plan";
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError, ValidationError } from "@/lib/errors";
+import { withRequestLogging } from "@/lib/request-logging";
 
-export async function GET() {
+async function handleGET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -19,7 +20,7 @@ export async function GET() {
   }
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -38,3 +39,6 @@ export async function POST(req: NextRequest) {
     return handleApiError(e);
   }
 }
+
+export const GET = withRequestLogging(handleGET);
+export const POST = withRequestLogging(handlePOST);

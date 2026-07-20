@@ -4,8 +4,9 @@ import { getYearlyStatsService } from "@/lib/services/stats.service";
 import { statsYearQuerySchema } from "@/lib/validations/stats";
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError, ValidationError } from "@/lib/errors";
+import { withRequestLogging } from "@/lib/request-logging";
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -25,3 +26,5 @@ export async function GET(req: NextRequest) {
     return handleApiError(e);
   }
 }
+
+export const GET = withRequestLogging(handleGET);

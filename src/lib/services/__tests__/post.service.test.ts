@@ -14,6 +14,9 @@ vi.mock("@/lib/repositories/post.repository", () => ({
   findCategoryCounts: vi.fn(),
   findTopRatedByCategory: vi.fn(),
 }));
+vi.mock("@/lib/repositories/plan.repository", () => ({
+  findPlanAuthorId: vi.fn(),
+}));
 
 import {
   findPostById,
@@ -28,6 +31,7 @@ import {
   findCategoryCounts,
   findTopRatedByCategory,
 } from "@/lib/repositories/post.repository";
+import { findPlanAuthorId } from "@/lib/repositories/plan.repository";
 import {
   createPostService,
   updatePostService,
@@ -62,6 +66,43 @@ describe("createPostService", () => {
 
     expect(createPost).toHaveBeenCalledWith(AUTHOR_ID, expect.objectContaining({ title: title40 }));
   });
+
+  // ─── planId所有権チェック（4-Bの積み残し・5-Dで対応） ───
+  it("createPost_planId未指定_プラン所有権チェックをせず作成される", async () => {
+    vi.mocked(createPost).mockResolvedValue({ id: POST_ID } as never);
+
+    await createPostService(AUTHOR_ID, basePostInput);
+
+    expect(findPlanAuthorId).not.toHaveBeenCalled();
+    expect(createPost).toHaveBeenCalledWith(AUTHOR_ID, basePostInput);
+  });
+
+  it("createPost_他人のplanIdを指定_ForbiddenErrorかつrepository作成が呼ばれない", async () => {
+    vi.mocked(findPlanAuthorId).mockResolvedValue(OTHER_USER_ID);
+
+    await expect(
+      createPostService(AUTHOR_ID, { ...basePostInput, planId: "plan-1" })
+    ).rejects.toThrow(ForbiddenError);
+    expect(createPost).not.toHaveBeenCalled();
+  });
+
+  it("createPost_存在しないplanId_NotFoundErrorかつrepository作成が呼ばれない", async () => {
+    vi.mocked(findPlanAuthorId).mockResolvedValue(null);
+
+    await expect(
+      createPostService(AUTHOR_ID, { ...basePostInput, planId: "plan-1" })
+    ).rejects.toThrow(NotFoundError);
+    expect(createPost).not.toHaveBeenCalled();
+  });
+
+  it("createPost_本人のplanIdを指定_正常に作成される", async () => {
+    vi.mocked(findPlanAuthorId).mockResolvedValue(AUTHOR_ID);
+    vi.mocked(createPost).mockResolvedValue({ id: POST_ID } as never);
+
+    await createPostService(AUTHOR_ID, { ...basePostInput, planId: "plan-1" });
+
+    expect(createPost).toHaveBeenCalledWith(AUTHOR_ID, { ...basePostInput, planId: "plan-1" });
+  });
 });
 
 describe("updatePostService", () => {
@@ -89,6 +130,27 @@ describe("updatePostService", () => {
     await updatePostService(AUTHOR_ID, POST_ID, basePostInput);
 
     expect(updatePost).toHaveBeenCalledWith(POST_ID, basePostInput);
+  });
+
+  // ─── planId所有権チェック（4-Bの積み残し・5-Dで対応） ───
+  it("updatePost_本人の投稿を他人のplanIdに変更_ForbiddenErrorかつrepository更新が呼ばれない", async () => {
+    vi.mocked(findPostById).mockResolvedValue({ authorId: AUTHOR_ID } as never);
+    vi.mocked(findPlanAuthorId).mockResolvedValue(OTHER_USER_ID);
+
+    await expect(
+      updatePostService(AUTHOR_ID, POST_ID, { ...basePostInput, planId: "plan-1" })
+    ).rejects.toThrow(ForbiddenError);
+    expect(updatePost).not.toHaveBeenCalled();
+  });
+
+  it("updatePost_本人の投稿を本人のplanIdに変更_正常に更新される", async () => {
+    vi.mocked(findPostById).mockResolvedValue({ authorId: AUTHOR_ID } as never);
+    vi.mocked(findPlanAuthorId).mockResolvedValue(AUTHOR_ID);
+    vi.mocked(updatePost).mockResolvedValue({ id: POST_ID } as never);
+
+    await updatePostService(AUTHOR_ID, POST_ID, { ...basePostInput, planId: "plan-1" });
+
+    expect(updatePost).toHaveBeenCalledWith(POST_ID, { ...basePostInput, planId: "plan-1" });
   });
 });
 

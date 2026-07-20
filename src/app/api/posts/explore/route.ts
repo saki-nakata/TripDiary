@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { findExplorePostsService } from "@/lib/services/post.service";
 import { handleApiError } from "@/lib/api-error";
+import { withRequestLogging } from "@/lib/request-logging";
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   try {
     const session = await auth();
     const { searchParams } = req.nextUrl;
@@ -30,3 +31,5 @@ export async function GET(req: NextRequest) {
     return handleApiError(e);
   }
 }
+
+export const GET = withRequestLogging(handleGET);

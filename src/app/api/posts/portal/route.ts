@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getPortalDataService } from "@/lib/services/post.service";
 import { handleApiError } from "@/lib/api-error";
+import { withRequestLogging } from "@/lib/request-logging";
 
-export async function GET() {
+async function handleGET() {
   try {
     const data = await getPortalDataService();
     return NextResponse.json(data);
@@ -10,3 +11,5 @@ export async function GET() {
     return handleApiError(e);
   }
 }
+
+export const GET = withRequestLogging(handleGET);

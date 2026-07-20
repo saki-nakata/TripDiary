@@ -4,10 +4,11 @@ import { findPlanByIdService, updatePlanService, deletePlanService } from "@/lib
 import { planSchema } from "@/lib/validations/plan";
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError, ValidationError } from "@/lib/errors";
+import { withRequestLogging } from "@/lib/request-logging";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_req: NextRequest, { params }: Params) {
+async function handleGET(_req: NextRequest, { params }: Params) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -22,7 +23,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   }
 }
 
-export async function PUT(req: NextRequest, { params }: Params) {
+async function handlePUT(req: NextRequest, { params }: Params) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -43,7 +44,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+async function handleDELETE(_req: NextRequest, { params }: Params) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -57,3 +58,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     return handleApiError(e);
   }
 }
+
+export const GET = withRequestLogging(handleGET);
+export const PUT = withRequestLogging(handlePUT);
+export const DELETE = withRequestLogging(handleDELETE);

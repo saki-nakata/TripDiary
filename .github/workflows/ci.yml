@@ -9,10 +9,12 @@ on:
 # CIに必要な環境変数（.env.testはgitignore対象でCIには存在しないため、
 # vitest.config.tsのloadEnv({ path: ".env.test" })は無視され、
 # ここでGitHub Actionsのenv:として渡す値がそのまま使われる）
+# ENABLE_TEST_ENDPOINTS はここではなく e2e ジョブのみに設定する
+# （/api/test/cleanup 用に必要な一方、testジョブ〔vitest〕にまで効くとPhase 5-Dの
+# レート制限テスト自体が無効化されてしまうため）
 env:
   DATABASE_URL: mysql://tripdiary:tripdiary@127.0.0.1:3307/tripdiary_test
   AUTH_SECRET: ci-dummy-auth-secret-not-for-production
-  ENABLE_TEST_ENDPOINTS: "true"
 
 jobs:
   lint:
@@ -75,6 +77,8 @@ jobs:
     # ローカルより低速なランナーでは同種の不安定さが再発しやすい。
     # 安定性を見極めるまでは non-blocking とする（必須化の判断はPhase 5-C-2で確定）
     continue-on-error: true
+    env:
+      ENABLE_TEST_ENDPOINTS: "true"
     services:
       mysql-test:
         image: mysql:8.0

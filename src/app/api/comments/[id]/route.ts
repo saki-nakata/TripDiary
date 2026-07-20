@@ -3,10 +3,11 @@ import { auth } from "@/lib/auth";
 import { deleteCommentService } from "@/lib/services/comment.service";
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError } from "@/lib/errors";
+import { withRequestLogging } from "@/lib/request-logging";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+async function handleDELETE(_req: NextRequest, { params }: Params) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -20,3 +21,5 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     return handleApiError(e);
   }
 }
+
+export const DELETE = withRequestLogging(handleDELETE);

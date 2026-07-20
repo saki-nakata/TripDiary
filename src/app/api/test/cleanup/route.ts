@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { withRequestLogging } from "@/lib/request-logging";
 
-export async function DELETE(req: NextRequest) {
+async function handleDELETE(req: NextRequest) {
   // NODE_ENV ではなく専用フラグでガードする。CIのe2eジョブは本番相当ビルド
   // （NODE_ENV=production）でアプリを起動するが、既存E2Eはこのエンドポイントに
   // 依存するため NODE_ENV では判定できない。Phase 6の本番環境変数には
@@ -20,3 +21,5 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export const DELETE = withRequestLogging(handleDELETE);

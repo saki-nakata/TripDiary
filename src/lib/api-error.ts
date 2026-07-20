@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { logger } from "./logger";
 import { captureException } from "./monitoring";
-import { UnauthorizedError, NotFoundError, ForbiddenError, ValidationError, ConflictError } from "./errors";
+import { UnauthorizedError, NotFoundError, ForbiddenError, ValidationError, ConflictError, RateLimitError } from "./errors";
 
 export function handleApiError(e: unknown): NextResponse {
   if (e instanceof UnauthorizedError) {
@@ -23,6 +23,10 @@ export function handleApiError(e: unknown): NextResponse {
   if (e instanceof ConflictError) {
     logger.warn({ errorType: "ConflictError", message: e.message }, "API request failed: conflict");
     return NextResponse.json({ error: e.message }, { status: 409 });
+  }
+  if (e instanceof RateLimitError) {
+    logger.warn({ errorType: "RateLimitError", message: e.message }, "API request failed: rate limited");
+    return NextResponse.json({ error: e.message }, { status: 429 });
   }
   logger.error({ err: e }, "API request failed: unhandled error");
   // 5xx（未捕捉例外）のみ監視SaaSへ送信（現状はDSN未設定のためno-op）

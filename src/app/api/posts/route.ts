@@ -4,8 +4,9 @@ import { createPostService, findFollowingPostsService } from "@/lib/services/pos
 import { postSchema } from "@/lib/validations/post";
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError, ValidationError } from "@/lib/errors";
+import { withRequestLogging } from "@/lib/request-logging";
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -42,3 +43,6 @@ export async function POST(req: NextRequest) {
     return handleApiError(e);
   }
 }
+
+export const GET = withRequestLogging(handleGET);
+export const POST = withRequestLogging(handlePOST);

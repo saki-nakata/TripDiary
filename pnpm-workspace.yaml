@@ -1,3 +1,8 @@
+overrides:
+  # next@16.2.10がpostcss@8.4.31を推移的依存として引っ張っており、
+  # </style>未エスケープによるXSS脆弱性（GHSA-qx2v-qp2m-jg93）がある。8.5.10以上に強制する
+  postcss: '>=8.5.10'
+
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true

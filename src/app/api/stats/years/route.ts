@@ -3,8 +3,9 @@ import { auth } from "@/lib/auth";
 import { getAvailableYearsService } from "@/lib/services/stats.service";
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError } from "@/lib/errors";
+import { withRequestLogging } from "@/lib/request-logging";
 
-export async function GET() {
+async function handleGET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -17,3 +18,5 @@ export async function GET() {
     return handleApiError(e);
   }
 }
+
+export const GET = withRequestLogging(handleGET);
