@@ -4,10 +4,11 @@ import { changePasswordService } from "@/lib/services/user.service";
 import { passwordChangeApiSchema } from "@/lib/validations/user";
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError, ValidationError } from "@/lib/errors";
+import { withRequestLogging } from "@/lib/request-logging";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function PATCH(req: NextRequest, { params }: Params) {
+async function handlePATCH(req: NextRequest, { params }: Params) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -27,3 +28,5 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return handleApiError(e);
   }
 }
+
+export const PATCH = withRequestLogging(handlePATCH);

@@ -3,9 +3,15 @@ import { signupService } from "@/lib/services/auth.service";
 import { signupApiSchema } from "@/lib/validations/auth";
 import { handleApiError } from "@/lib/api-error";
 import { ValidationError } from "@/lib/errors";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { withRequestLogging } from "@/lib/request-logging";
 
-export async function POST(req: NextRequest) {
+export const runtime = "nodejs";
+
+async function handlePOST(req: NextRequest) {
   try {
+    checkRateLimit(`signup:${getClientIp(req)}`, 10, 60 * 60 * 1000);
+
     const body = await req.json();
 
     const parsed = signupApiSchema.safeParse(body);
@@ -19,3 +25,5 @@ export async function POST(req: NextRequest) {
     return handleApiError(e);
   }
 }
+
+export const POST = withRequestLogging(handlePOST);

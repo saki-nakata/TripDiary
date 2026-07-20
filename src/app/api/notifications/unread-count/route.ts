@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getUnreadCountService } from "@/lib/services/notification.service";
 import { handleApiError } from "@/lib/api-error";
+import { withRequestLogging } from "@/lib/request-logging";
 
-export async function GET() {
+async function handleGET() {
   try {
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ count: 0 });
@@ -14,3 +15,5 @@ export async function GET() {
     return handleApiError(e);
   }
 }
+
+export const GET = withRequestLogging(handleGET);

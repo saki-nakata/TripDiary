@@ -11,6 +11,7 @@ vi.mock("@/lib/services/upload.service", () => ({
 
 import { auth } from "@/lib/auth";
 import { saveUploadedFile } from "@/lib/services/upload.service";
+import { __resetRateLimitForTests } from "@/lib/rate-limit";
 import { POST } from "@/app/api/upload/avatar/route";
 
 const authMock = auth as unknown as Mock;
@@ -23,7 +24,10 @@ function makeFormDataRequest(file?: File) {
 }
 
 describe("POST /api/upload/avatar", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __resetRateLimitForTests();
+  });
 
   // ─── POST ───
   it("POST_未認証_401", async () => {
@@ -66,5 +70,18 @@ describe("POST /api/upload/avatar", () => {
       expect.any(File),
       { maxSize: 5 * 1024 * 1024, allowedTypes: ["image/jpeg", "image/png", "image/webp"] }
     );
+  });
+
+  it("POST_同一ユーザーから上限を超えて送信_429", async () => {
+    authMock.mockResolvedValue({ user: { id: USER_ID } } as never);
+    vi.mocked(saveUploadedFile).mockResolvedValue({ url: "/uploads/avatar.jpg" });
+
+    for (let i = 0; i < 10; i++) {
+      const res = await POST(makeFormDataRequest(new File(["x"], "a.jpg", { type: "image/jpeg" })));
+      expect(res.status).toBe(200);
+    }
+    const res = await POST(makeFormDataRequest(new File(["x"], "a.jpg", { type: "image/jpeg" })));
+
+    expect(res.status).toBe(429);
   });
 });

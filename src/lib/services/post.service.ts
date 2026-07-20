@@ -15,10 +15,16 @@ import {
   findCategoryCounts,
   findTopRatedByCategory,
 } from "@/lib/repositories/post.repository";
+import { findPlanAuthorId } from "@/lib/repositories/plan.repository";
 import type { PostInput } from "@/lib/validations/post";
 import { NotFoundError, ForbiddenError } from "@/lib/errors";
 
 export async function createPostService(userId: string, data: PostInput) {
+  if (data.planId) {
+    const planAuthorId = await findPlanAuthorId(data.planId);
+    if (!planAuthorId) throw new NotFoundError();
+    if (planAuthorId !== userId) throw new ForbiddenError();
+  }
   return createPost(userId, data);
 }
 
@@ -68,6 +74,11 @@ export async function updatePostService(userId: string, id: string, data: PostIn
   const post = await findPostById(id);
   if (!post) throw new NotFoundError();
   if (post.authorId !== userId) throw new ForbiddenError();
+  if (data.planId) {
+    const planAuthorId = await findPlanAuthorId(data.planId);
+    if (!planAuthorId) throw new NotFoundError();
+    if (planAuthorId !== userId) throw new ForbiddenError();
+  }
   return updatePost(id, data);
 }
 

@@ -3,10 +3,11 @@ import { auth } from "@/lib/auth";
 import { toggleLikeService } from "@/lib/services/like.service";
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError } from "@/lib/errors";
+import { withRequestLogging } from "@/lib/request-logging";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function POST(_req: NextRequest, { params }: Params) {
+async function handlePOST(_req: NextRequest, { params }: Params) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -20,3 +21,5 @@ export async function POST(_req: NextRequest, { params }: Params) {
     return handleApiError(e);
   }
 }
+
+export const POST = withRequestLogging(handlePOST);

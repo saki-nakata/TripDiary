@@ -4,10 +4,11 @@ import { findCommentsByPostIdService, createCommentService } from "@/lib/service
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError, ValidationError } from "@/lib/errors";
 import { z } from "zod";
+import { withRequestLogging } from "@/lib/request-logging";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(req: NextRequest, { params }: Params) {
+async function handleGET(req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
     const { searchParams } = req.nextUrl;
@@ -25,7 +26,7 @@ const commentSchema = z.object({
   body: z.string().min(1, "コメントを入力してください").max(2000, "コメントは2000文字以内で入力してください"),
 });
 
-export async function POST(req: NextRequest, { params }: Params) {
+async function handlePOST(req: NextRequest, { params }: Params) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -45,3 +46,6 @@ export async function POST(req: NextRequest, { params }: Params) {
     return handleApiError(e);
   }
 }
+
+export const GET = withRequestLogging(handleGET);
+export const POST = withRequestLogging(handlePOST);

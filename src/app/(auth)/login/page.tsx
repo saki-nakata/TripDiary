@@ -13,6 +13,7 @@ import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const urlError = searchParams.get("error");
+  const urlErrorCode = searchParams.get("code");
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
   const [showPassword, setShowPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -64,7 +65,9 @@ export default function LoginPage() {
 
           {urlError && (
             <div className="mb-4 rounded-lg bg-[#fef2f2] border border-[#fecaca] px-4 py-3 text-sm text-[#ef4444]">
-              メールアドレスまたはパスワードが正しくありません
+              {urlErrorCode === "rate_limit"
+                ? "ログイン試行回数が多すぎます。しばらくしてから再試行してください。"
+                : "メールアドレスまたはパスワードが正しくありません"}
             </div>
           )}
 
