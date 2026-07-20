@@ -15,9 +15,11 @@ const buckets = new Map<string, Bucket>();
 export function checkRateLimit(key: string, limit: number, windowMs: number): void {
   // E2E/CIはローカル実行同様、単一の永続プロセス（next start）に対して複数のspecファイルが
   // 同じテストユーザーで繰り返しログインするため、実際の攻撃と区別できずすぐに誤爆する。
-  // ENABLE_TEST_ENDPOINTS は test/cleanup と同じ「本番環境変数には絶対設定しない」フラグのため、
-  // NODE_ENV==="production" ではこの値に関わらず無視するハードガードを入れた上で無効化する。
-  if (process.env.NODE_ENV !== "production" && process.env.ENABLE_TEST_ENDPOINTS === "true") {
+  // NODE_ENV では判定できない点に注意（test/cleanup と同じ理由）：`next build`/`next start`は
+  // 常に NODE_ENV=production で動作するため、CIのe2eジョブ（本番相当ビルド）では
+  // `NODE_ENV !== "production"` が常にfalseになりガードとして機能しない。
+  // ENABLE_TEST_ENDPOINTS は「本番環境変数には絶対設定しない」運用のフラグのため、これのみで判定する。
+  if (process.env.ENABLE_TEST_ENDPOINTS === "true") {
     return;
   }
 

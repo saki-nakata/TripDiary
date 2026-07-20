@@ -47,21 +47,6 @@ describe("checkRateLimit", () => {
     }
   });
 
-  it("ENABLE_TEST_ENDPOINTSがtrueでもNODE_ENVがproductionなら制限は有効なまま", () => {
-    const originalFlag = process.env.ENABLE_TEST_ENDPOINTS;
-    const originalEnv = process.env.NODE_ENV;
-    process.env.ENABLE_TEST_ENDPOINTS = "true";
-    // @ts-expect-error NODE_ENVはreadonly型だがテストのため上書きする
-    process.env.NODE_ENV = "production";
-    try {
-      for (let i = 0; i < 5; i++) checkRateLimit("key-g", 5, 1000);
-      expect(() => checkRateLimit("key-g", 5, 1000)).toThrow(RateLimitError);
-    } finally {
-      process.env.ENABLE_TEST_ENDPOINTS = originalFlag;
-      // @ts-expect-error 上記と同様
-      process.env.NODE_ENV = originalEnv;
-    }
-  });
 });
 
 describe("getClientIp", () => {
