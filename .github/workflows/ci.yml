@@ -79,6 +79,11 @@ jobs:
     continue-on-error: true
     env:
       ENABLE_TEST_ENDPOINTS: "true"
+      # bcryptjs（純JS実装）はコストに応じてメインスレッドをブロックする。
+      # 多くのspecがUIログインをbeforeEachで行うため、本番同様のコスト12のままでは
+      # 並列ワーカー下でCPU競合しフレークの一因になっていた（Phase 5-D2、詳細は実装計画書）。
+      # 本番環境変数には絶対に設定しないこと。
+      BCRYPT_COST: "4"
     services:
       mysql-test:
         image: mysql:8.0
