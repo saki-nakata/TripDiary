@@ -68,8 +68,8 @@ export async function getUserProfileService(userId: string, viewerId?: string) {
   };
 }
 
-export async function countUserPostsService(authorId: string) {
-  return countUserPosts(authorId);
+export async function countUserPostsService(authorId: string, year?: number) {
+  return countUserPosts(authorId, year);
 }
 
 export async function countVisitedByUserService(userId: string) {

@@ -43,8 +43,12 @@ export async function updateUserEmail(id: string, email: string) {
   await prisma.user.update({ where: { id }, data: { email } });
 }
 
-export async function countUserPosts(authorId: string) {
-  return prisma.post.count({ where: { authorId } });
+export async function countUserPosts(authorId: string, year?: number) {
+  const dateFilter =
+    year != null
+      ? { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) }
+      : undefined;
+  return prisma.post.count({ where: { authorId, ...(dateFilter ? { visitedAt: dateFilter } : {}) } });
 }
 
 export async function countVisitedByUser(userId: string) {

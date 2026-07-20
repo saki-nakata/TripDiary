@@ -130,14 +130,21 @@ export async function findPostsByAuthorId({
   cursor,
   limit = 20,
   viewerId,
+  year,
 }: {
   authorId: string;
   cursor?: string;
   limit?: number;
   viewerId?: string;
+  /** 指定すると訪問日（visitedAt）がその年のものだけに絞り込む */
+  year?: number;
 }) {
+  const dateFilter =
+    year != null
+      ? { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) }
+      : undefined;
   const posts = await prisma.post.findMany({
-    where: { authorId },
+    where: { authorId, ...(dateFilter ? { visitedAt: dateFilter } : {}) },
     take: limit + 1,
     ...(cursor && { cursor: { id: cursor }, skip: 1 }),
     orderBy: { createdAt: "desc" },

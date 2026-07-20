@@ -16,15 +16,10 @@ export default function SignupPage() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
   });
-
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const passwordValue = watch("password") ?? "";
-  const confirmPasswordValue = watch("confirmPassword") ?? "";
 
   function onSubmit(data: SignupInput) {
     setApiError("");
@@ -113,10 +108,9 @@ export default function SignupPage() {
                   {...register("password")}
                   placeholder="8文字以上で入力してください"
                   autoComplete="new-password"
-                  className={`w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-[#1e293b] placeholder:text-[#94a3b8] outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-white ${errors.password ? "border-red-400 focus:border-red-400" : "border-[#e2e8f0] focus:border-[#16a34a]"}`}
+                  className={`peer w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-[#1e293b] placeholder:text-[#94a3b8] outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-white ${errors.password ? "border-red-400 focus:border-red-400" : "border-[#e2e8f0] focus:border-[#16a34a]"}`}
                 />
-                {passwordValue.length > 0 && (
-                  <button
+                <button
                     type="button"
                     onMouseDown={() => setShowPassword(true)}
                     onMouseUp={() => setShowPassword(false)}
@@ -124,7 +118,7 @@ export default function SignupPage() {
                     onTouchStart={() => setShowPassword(true)}
                     onTouchEnd={() => setShowPassword(false)}
                     onTouchCancel={() => setShowPassword(false)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none touch-manipulation"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none touch-manipulation peer-placeholder-shown:hidden"
                     tabIndex={-1}
                     aria-label={showPassword ? "パスワードを隠す" : "パスワードを表示"}
                   >
@@ -138,8 +132,7 @@ export default function SignupPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                     )}
-                  </button>
-                )}
+                </button>
               </div>
               {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
             </div>
@@ -155,10 +148,9 @@ export default function SignupPage() {
                   {...register("confirmPassword")}
                   placeholder="もう一度入力してください"
                   autoComplete="new-password"
-                  className={`w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-[#1e293b] placeholder:text-[#94a3b8] outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-white ${errors.confirmPassword ? "border-red-400 focus:border-red-400" : "border-[#e2e8f0] focus:border-[#16a34a]"}`}
+                  className={`peer w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-[#1e293b] placeholder:text-[#94a3b8] outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-white ${errors.confirmPassword ? "border-red-400 focus:border-red-400" : "border-[#e2e8f0] focus:border-[#16a34a]"}`}
                 />
-                {confirmPasswordValue.length > 0 && (
-                  <button
+                <button
                     type="button"
                     onMouseDown={() => setShowConfirmPassword(true)}
                     onMouseUp={() => setShowConfirmPassword(false)}
@@ -166,7 +158,7 @@ export default function SignupPage() {
                     onTouchStart={() => setShowConfirmPassword(true)}
                     onTouchEnd={() => setShowConfirmPassword(false)}
                     onTouchCancel={() => setShowConfirmPassword(false)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none touch-manipulation"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none touch-manipulation peer-placeholder-shown:hidden"
                     tabIndex={-1}
                     aria-label={showConfirmPassword ? "パスワードを隠す" : "パスワードを表示"}
                   >
@@ -180,8 +172,7 @@ export default function SignupPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                     )}
-                  </button>
-                )}
+                </button>
               </div>
               {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword.message}</p>}
             </div>

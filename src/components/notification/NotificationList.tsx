@@ -116,8 +116,8 @@ function NotificationItem({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between gap-3">
-          <p className="text-sm text-[#1e293b]">{text}</p>
-          <span className="text-xs text-[#94a3b8] shrink-0 mr-1">{formatRelativeDate(notification.createdAt)}</span>
+          <p className="text-[0.8rem] sm:text-sm text-[#1e293b]">{text}</p>
+          <span className="text-xs text-[#94a3b8] shrink-0 -mr-2 sm:mr-1">{formatRelativeDate(notification.createdAt)}</span>
         </div>
         {type === "comment" && commentBody && (
           <p className="text-xs text-[#64748b] mt-0.5 line-clamp-1">「{commentBody}」</p>

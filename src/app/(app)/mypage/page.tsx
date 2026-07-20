@@ -9,15 +9,17 @@ import {
   countFollowingFeedPostsService,
 } from "@/lib/services/post.service";
 import { findPlansByUserIdService, countActivePlansByUserService } from "@/lib/services/plan.service";
-import { getAvailableYearsService, getYearlyStatsService, getTimelineService } from "@/lib/services/stats.service";
+import { getAvailableYearsService, getYearlyStatsService } from "@/lib/services/stats.service";
 import { countUserPostsService, countVisitedByUserService } from "@/lib/services/user.service";
 import { countWishlistByUserService } from "@/lib/services/wishlist.service";
 import { PostCard } from "@/components/posts/PostCard";
+import { SavedMapSection } from "@/components/posts/SavedMapSection";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ReportSummary } from "@/components/plans/ReportSummary";
-import { ReportTimeline } from "@/components/plans/ReportTimeline";
+import { FollowFeed } from "@/components/posts/FollowFeed";
 import { PlanActions } from "@/components/plans/PlanActions";
 import { CompletedPlansAccordion } from "@/components/plans/CompletedPlansAccordion";
+import { YearFilterBar } from "@/components/mypage/YearFilterBar";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { formatDateSlash } from "@/lib/date";
 import type { Post } from "@/types/post";
@@ -49,8 +51,19 @@ export default async function MyPage({ searchParams }: Props) {
 
   const activeTab = TABS.some((t) => t.key === tab) ? tab : "myposts";
 
+  // 自分の投稿タブの年度切り替え。カウントバッジ・ヘッダーの年度セレクター・
+  // 一覧の絞り込みすべてで同じ year を使い回すため、ここで一度だけ解決する
+  const myPostsYears = activeTab === "myposts" ? await getAvailableYearsService(userId) : [];
+  const parsedMyPostsYear = yearParam ? Number(yearParam) : NaN;
+  const myPostsYear: number | "all" = myPostsYears.includes(parsedMyPostsYear) ? parsedMyPostsYear : "all";
+
+  // 旅行レポートタブの年度切り替え。ヘッダーの年度セレクターとレポート本体で同じ year を使い回す
+  const reportYears = activeTab === "report" ? await getAvailableYearsService(userId) : [];
+  const parsedReportYear = yearParam ? Number(yearParam) : NaN;
+  const reportYear: number | "all" = reportYears.includes(parsedReportYear) ? parsedReportYear : "all";
+
   const [postCount, wishlistCount, visitedCount, followFeedCount, activePlanCount] = await Promise.all([
-    countUserPostsService(userId),
+    countUserPostsService(userId, myPostsYear === "all" ? undefined : myPostsYear),
     countWishlistByUserService(userId),
     countVisitedByUserService(userId),
     countFollowingFeedPostsService(userId),
@@ -79,46 +92,60 @@ export default async function MyPage({ searchParams }: Props) {
             </span>
           )}
         </h1>
-        <div className="basis-full sm:basis-auto flex justify-end -mt-2 sm:mt-0 -mr-1 sm:mr-0">
+        <div
+          className={`basis-full sm:basis-auto flex items-center gap-3 -mt-2 sm:mt-0 -mr-1 sm:mr-0 ${
+            (activeTab === "myposts" && myPostsYears.length > 0) || (activeTab === "report" && reportYears.length > 0)
+              ? "justify-between sm:justify-end"
+              : "justify-end"
+          }`}
+        >
+          {activeTab === "myposts" && myPostsYears.length > 0 && (
+            <div className="sm:hidden">
+              <YearFilterBar tab="myposts" years={myPostsYears} value={myPostsYear} />
+            </div>
+          )}
+          {activeTab === "report" && reportYears.length > 0 && (
+            <div className="sm:hidden">
+              <YearFilterBar tab="report" years={reportYears} value={reportYear} />
+            </div>
+          )}
           <span className="rounded-md bg-rose-50 text-rose-800 text-xs sm:text-sm px-3 py-1.5 border border-rose-200 border-l-[3px] border-l-rose-500 font-medium shrink-0">
             🔒 この画面は自分のみ表示
           </span>
         </div>
       </div>
+      {activeTab === "myposts" && myPostsYears.length > 0 && (
+        <div className="hidden sm:flex justify-start -mt-4">
+          <YearFilterBar tab="myposts" years={myPostsYears} value={myPostsYear} />
+        </div>
+      )}
+      {activeTab === "report" && reportYears.length > 0 && (
+        <div className="hidden sm:flex justify-start -mt-4">
+          <YearFilterBar tab="report" years={reportYears} value={reportYear} />
+        </div>
+      )}
 
       {/* Tab content */}
       <div>
-        {activeTab === "plans" && (await renderPlans(userId))}
-        {activeTab === "myposts" && (await renderMyPosts(userId))}
-        {activeTab === "report" && (await renderReport(userId, yearParam))}
-        {activeTab === "wishlist" && (await renderWishlist(userId))}
-        {activeTab === "visited" && (await renderVisited(userId))}
+        {activeTab === "plans" && (await renderPlans(userId, yearParam))}
+        {activeTab === "myposts" && (await renderMyPosts(userId, myPostsYear))}
+        {activeTab === "report" && (await renderReport(userId, reportYears, reportYear))}
+        {activeTab === "wishlist" && (await renderSaved(userId, "wishlist"))}
+        {activeTab === "visited" && (await renderSaved(userId, "visited"))}
         {activeTab === "follow-feed" && (await renderFollowFeed(userId))}
       </div>
     </div>
   );
 }
 
-async function renderReport(userId: string, yearParam?: string) {
-  const years = await getAvailableYearsService(userId);
+async function renderReport(userId: string, years: number[], year: number | "all") {
   if (years.length === 0) {
     return <EmptyState codepoint="1f4cb" message="まだ旅の記録がありません" ctaLabel="投稿する" ctaHref="/posts/new" />;
   }
 
-  const parsedYear = yearParam ? Number(yearParam) : NaN;
-  const year: number | "all" = years.includes(parsedYear) ? parsedYear : "all";
+  const stats = await getYearlyStatsService(userId, year === "all" ? null : year);
 
-  const [stats, timeline] = await Promise.all([
-    getYearlyStatsService(userId, year === "all" ? null : year),
-    getTimelineService(userId),
-  ]);
-
-  return (
-    <div className="space-y-8">
-      <ReportSummary key={year} years={years} initialYear={year} initialStats={stats} />
-      <ReportTimeline groups={timeline} />
-    </div>
-  );
+  return <ReportSummary key={year} years={years} initialYear={year} initialStats={stats} />;
 }
 
 
@@ -150,10 +177,19 @@ function PlanListItem({ plan }: { plan: Plan }) {
   );
 }
 
-async function renderPlans(userId: string) {
+async function renderPlans(userId: string, yearParam?: string) {
   const plans = await findPlansByUserIdService(userId);
   const activePlans = plans.filter((p) => !p.completed);
-  const completedPlans = plans.filter((p) => p.completed);
+  const completedPlansAll = plans.filter((p) => p.completed);
+
+  // 旅行済みプランの年度切り替え（開始日=startDateの年で判定。未設定のプランは対象外）
+  const completedYears = Array.from(
+    new Set(completedPlansAll.filter((p) => p.startDate).map((p) => new Date(p.startDate!).getFullYear()))
+  ).sort((a, b) => b - a);
+  const parsedYear = yearParam ? Number(yearParam) : NaN;
+  const year: number | "all" = completedYears.includes(parsedYear) ? parsedYear : "all";
+  const completedPlans =
+    year === "all" ? completedPlansAll : completedPlansAll.filter((p) => p.startDate && new Date(p.startDate).getFullYear() === year);
 
   return (
     <div className="space-y-4">
@@ -176,57 +212,69 @@ async function renderPlans(userId: string) {
           ))}
         </div>
       )}
-      {completedPlans.length > 0 && (
-        <CompletedPlansAccordion count={completedPlans.length}>
-          {completedPlans.map((plan) => (
-            <PlanListItem key={plan.id} plan={plan as unknown as Plan} />
-          ))}
-        </CompletedPlansAccordion>
+      {completedPlansAll.length > 0 && (
+        <div className="max-w-5xl">
+          <CompletedPlansAccordion
+            count={completedPlans.length}
+            yearFilter={completedYears.length > 0 ? <YearFilterBar tab="plans" years={completedYears} value={year} /> : undefined}
+          >
+            {completedPlans.length > 0 ? (
+              completedPlans.map((plan) => <PlanListItem key={plan.id} plan={plan as unknown as Plan} />)
+            ) : (
+              <p className="py-6 text-center text-sm text-zinc-400">{year}年の完了済みプランがありません。</p>
+            )}
+          </CompletedPlansAccordion>
+        </div>
       )}
     </div>
   );
 }
 
-async function renderMyPosts(userId: string) {
-  const { posts } = await findPostsByAuthorIdService({ authorId: userId, viewerId: userId });
+async function renderMyPosts(userId: string, year: number | "all") {
+  const { posts } = await findPostsByAuthorIdService({
+    authorId: userId,
+    viewerId: userId,
+    year: year === "all" ? undefined : year,
+  });
+
   if (posts.length === 0) {
-    return <EmptyState codepoint="1f4da" message="まだ投稿がありません" ctaLabel="投稿する" ctaHref="/posts/new" />;
+    return (
+      <EmptyState
+        codepoint="1f4da"
+        message={`${year === "all" ? "まだ投稿がありません" : `${year}年の投稿がありません`}`}
+        ctaLabel={year === "all" ? "投稿する" : undefined}
+        ctaHref={year === "all" ? "/posts/new" : undefined}
+      />
+    );
   }
+
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
       {posts.map((p) => (
-        <PostCard key={p.id} post={p as unknown as Post} viewerId={userId} showCost />
+        <PostCard key={p.id} post={p as unknown as Post} viewerId={userId} />
       ))}
     </div>
   );
 }
 
-async function renderWishlist(userId: string) {
-  const { posts } = await findWishlistedPostsService({ userId });
-  if (posts.length === 0) {
-    return <EmptyState codepoint="1f516" message="行きたいリストがまだありません" ctaLabel="スポットを探す" ctaHref="/" />;
-  }
-  return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-      {posts.map((p) => (
-        <PostCard key={p.id} post={p as unknown as Post} />
-      ))}
-    </div>
-  );
-}
+const SAVED_CONFIG = {
+  wishlist: {
+    fetch: findWishlistedPostsService,
+    empty: { codepoint: "1f516", message: "行きたいリストがまだありません", ctaLabel: "スポットを探す", ctaHref: "/" },
+  },
+  visited: {
+    fetch: findVisitedPostsService,
+    empty: { codepoint: "1f6a9", message: "訪問済みのスポットがありません" },
+  },
+} as const;
 
-async function renderVisited(userId: string) {
-  const { posts } = await findVisitedPostsService({ userId });
+async function renderSaved(userId: string, kind: "wishlist" | "visited") {
+  const cfg = SAVED_CONFIG[kind];
+  const { posts } = await cfg.fetch({ userId });
   if (posts.length === 0) {
-    return <EmptyState codepoint="1f6a9" message="訪問済みのスポットがありません" />;
+    return <EmptyState {...cfg.empty} />;
   }
-  return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-      {posts.map((p) => (
-        <PostCard key={p.id} post={p as unknown as Post} />
-      ))}
-    </div>
-  );
+  return <SavedMapSection posts={posts as unknown as Post[]} kind={kind} />;
 }
 
 async function renderFollowFeed(userId: string) {
@@ -234,11 +282,5 @@ async function renderFollowFeed(userId: string) {
   if (posts.length === 0) {
     return <EmptyState codepoint="1f465" message="フォロー中のユーザーがいません" ctaLabel="ユーザーを探す" ctaHref="/search?tab=user" />;
   }
-  return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-      {posts.map((p) => (
-        <PostCard key={p.id} post={p as unknown as Post} />
-      ))}
-    </div>
-  );
+  return <FollowFeed posts={posts as unknown as Post[]} />;
 }

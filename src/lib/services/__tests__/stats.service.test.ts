@@ -57,17 +57,20 @@ describe("getYearlyStatsService", () => {
     expect(result.completedPlans).toBe(2);
   });
 
-  it("locationが同数の場合は最初に出現したものをtopLocationとする", async () => {
+  it("locationが同数の場合はlocationBreakdownの先頭（都道府県順）と一致するものをtopLocationとする", async () => {
+    // 訪問日は沖縄県が先だが、件数が同数の場合はlocationBreakdown（都道府県順）の並びとtopLocationを一致させる
+    // （最大バブルと「最多訪問エリア」カードが別の県になる不整合を防ぐため）
     vi.mocked(findYearlyPosts).mockResolvedValue([
-      { visitedAt: new Date("2026-01-01"), location: "東京都", category: "観光", cost: null, _count: { images: 0 } },
-      { visitedAt: new Date("2026-02-01"), location: "大阪府", category: "観光", cost: null, _count: { images: 0 } },
+      { visitedAt: new Date("2026-01-01"), location: "沖縄県", category: "観光", cost: null, _count: { images: 0 } },
+      { visitedAt: new Date("2026-02-01"), location: "東京都", category: "観光", cost: null, _count: { images: 0 } },
     ] as never);
     vi.mocked(findYearlyCompletedPlans).mockResolvedValue(0);
 
     const result = await getYearlyStatsService(USER_ID, 2026);
 
+    expect(result.topLocation).toBe(result.locationBreakdown[0]?.location);
     expect(result.topLocation).toBe("東京都");
-    expect(result.visitedLocations).toEqual(["東京都", "大阪府"]);
+    expect(result.visitedLocations).toEqual(["東京都", "沖縄県"]);
   });
 
   it("visitedLocationsは訪問日順ではなく北海道→沖縄県の地理順で並ぶ", async () => {
@@ -177,6 +180,108 @@ describe("getYearlyStatsService", () => {
 
     expect(result.yearlyPostCount).toEqual([]);
     expect(result.monthlyPostCount).toHaveLength(12);
+  });
+
+  it("year指定時（単年）はmonthlyPostCountが月別の投稿数を返し、seasonalPostCountは空配列になる", async () => {
+    vi.mocked(findYearlyPosts).mockResolvedValue([
+      { visitedAt: new Date("2026-03-10"), location: "東京都", category: "観光", cost: null, images: [], _count: { images: 3 } },
+      { visitedAt: new Date("2026-03-20"), location: "大阪府", category: "グルメ", cost: null, images: [], _count: { images: 2 } },
+      { visitedAt: new Date("2026-07-01"), location: "東京都", category: "観光", cost: null, images: [], _count: { images: 5 } },
+    ] as never);
+    vi.mocked(findYearlyCompletedPlans).mockResolvedValue(0);
+
+    const result = await getYearlyStatsService(USER_ID, 2026);
+
+    expect(result.monthlyPostCount).toHaveLength(12);
+    expect(result.monthlyPostCount.find((m) => m.month === 3)?.count).toBe(2);
+    expect(result.monthlyPostCount.find((m) => m.month === 7)?.count).toBe(1);
+    expect(result.monthlyPostCount.find((m) => m.month === 1)?.count).toBe(0);
+    expect(result.seasonalPostCount).toEqual([]);
+  });
+
+  it("averageRatingは評価済み投稿の加重平均、評価が1件もなければnull", async () => {
+    vi.mocked(findYearlyPosts).mockResolvedValue([
+      { visitedAt: new Date("2026-01-01"), location: "東京都", category: "観光", cost: null, rating: 5, images: [], _count: { images: 0 } },
+      { visitedAt: new Date("2026-02-01"), location: "大阪府", category: "観光", cost: null, rating: 3, images: [], _count: { images: 0 } },
+      { visitedAt: new Date("2026-03-01"), location: "福岡県", category: "観光", cost: null, rating: null, images: [], _count: { images: 0 } },
+    ] as never);
+    vi.mocked(findYearlyCompletedPlans).mockResolvedValue(0);
+
+    const result = await getYearlyStatsService(USER_ID, 2026);
+
+    expect(result.averageRating).toBe(4);
+  });
+
+  it("評価済み投稿が0件のときaverageRatingはnull(境界値)", async () => {
+    vi.mocked(findYearlyPosts).mockResolvedValue([
+      { visitedAt: new Date("2026-01-01"), location: "東京都", category: "観光", cost: null, rating: null, images: [], _count: { images: 0 } },
+    ] as never);
+    vi.mocked(findYearlyCompletedPlans).mockResolvedValue(0);
+
+    const result = await getYearlyStatsService(USER_ID, 2026);
+
+    expect(result.averageRating).toBeNull();
+  });
+
+  it("topRatedPostsは評価降順で上位3件、同点は訪問日が新しい方を優先し、評価なしは除外される", async () => {
+    vi.mocked(findYearlyPosts).mockResolvedValue([
+      { id: "p1", title: "投稿1", visitedAt: new Date("2026-01-01"), location: "東京都", category: "観光", cost: null, rating: 3, images: [{ url: "1.jpg" }], _count: { images: 1 } },
+      { id: "p2", title: "投稿2", visitedAt: new Date("2026-02-01"), location: "大阪府", category: "グルメ", cost: null, rating: 5, images: [], _count: { images: 0 } },
+      { id: "p3", title: "投稿3", visitedAt: new Date("2026-03-01"), location: "福岡県", category: "観光", cost: null, rating: null, images: [], _count: { images: 0 } },
+      // p4はp1と同じ★3だが訪問日が新しいため、p1より上位に来るはず
+      { id: "p4", title: "投稿4", visitedAt: new Date("2026-04-01"), location: "京都府", category: "歴史・文化", cost: null, rating: 3, images: [], _count: { images: 0 } },
+      { id: "p5", title: "投稿5", visitedAt: new Date("2026-05-01"), location: "北海道", category: "アクティビティ", cost: null, rating: 4, images: [], _count: { images: 0 } },
+    ] as never);
+    vi.mocked(findYearlyCompletedPlans).mockResolvedValue(0);
+
+    const result = await getYearlyStatsService(USER_ID, 2026);
+
+    expect(result.topRatedPosts).toHaveLength(3);
+    expect(result.topRatedPosts.map((p) => p.id)).toEqual(["p2", "p5", "p4"]);
+    expect(result.topRatedPosts[0]).toEqual({
+      id: "p2",
+      title: "投稿2",
+      location: "大阪府",
+      category: "グルメ",
+      visitedAt: new Date("2026-02-01").toISOString(),
+      rating: 5,
+      thumbnail: null,
+    });
+    expect(result.topRatedPosts[2].id).toBe("p4");
+    // p1はサムネイルを持つ投稿として画像URLが反映されることを確認（p1自体はTOP3圏外だが、別ケースとして混入させず単独検証する）
+  });
+
+  it("topRatedPostsはpost.imagesの先頭URLをthumbnailとして返す", async () => {
+    vi.mocked(findYearlyPosts).mockResolvedValue([
+      { id: "p1", title: "投稿1", visitedAt: new Date("2026-01-01"), location: "東京都", category: "観光", cost: null, rating: 5, images: [{ url: "a.jpg" }, { url: "b.jpg" }], _count: { images: 2 } },
+    ] as never);
+    vi.mocked(findYearlyCompletedPlans).mockResolvedValue(0);
+
+    const result = await getYearlyStatsService(USER_ID, 2026);
+
+    expect(result.topRatedPosts[0].thumbnail).toBe("a.jpg");
+  });
+
+  it("year=null（全期間）はseasonalPostCountが年をまたいだ月別投稿数を返し、monthlyPostCountは空配列になる", async () => {
+    vi.mocked(findYearlyPosts).mockResolvedValue([
+      { visitedAt: new Date("2025-01-01"), location: "東京都", category: "観光", cost: null, images: [], _count: { images: 4 } },
+      { visitedAt: new Date("2025-06-01"), location: "大阪府", category: "グルメ", cost: null, images: [], _count: { images: 1 } },
+      { visitedAt: new Date("2026-01-01"), location: "東京都", category: "観光", cost: null, images: [], _count: { images: 2 } },
+    ] as never);
+    vi.mocked(findYearlyCompletedPlans).mockResolvedValue(0);
+
+    const result = await getYearlyStatsService(USER_ID, null);
+
+    // 1月は2025・2026の2件が合算される（年をまたいだ季節性）
+    expect(result.seasonalPostCount).toHaveLength(12);
+    expect(result.seasonalPostCount.find((m) => m.month === 1)?.count).toBe(2);
+    expect(result.seasonalPostCount.find((m) => m.month === 6)?.count).toBe(1);
+    expect(result.seasonalPostCount.find((m) => m.month === 3)?.count).toBe(0);
+    expect(result.yearlyPostCount).toEqual([
+      { year: 2025, count: 2 },
+      { year: 2026, count: 1 },
+    ]);
+    expect(result.monthlyPostCount).toEqual([]);
   });
 });
 
