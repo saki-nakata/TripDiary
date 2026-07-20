@@ -1,10 +1,14 @@
 import { prisma } from "@/lib/prisma";
 
 const STATS_POST_SELECT = {
+  id: true,
+  title: true,
   visitedAt: true,
   location: true,
   category: true,
   cost: true,
+  rating: true,
+  images: { take: 1, orderBy: { displayOrder: "asc" as const }, select: { url: true } },
   _count: { select: { images: true } },
 } as const;
 

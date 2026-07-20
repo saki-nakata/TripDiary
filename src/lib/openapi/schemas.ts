@@ -235,8 +235,23 @@ export const statsResponseSchema = z
     totalCost: z.number().int(),
     visitedLocations: z.array(z.string()),
     topLocation: z.string().nullable(),
+    locationBreakdown: z.array(z.object({ location: z.string(), count: z.number().int() })),
     categoryBreakdown: z.array(z.object({ category: z.string(), count: z.number().int() })),
+    ratingBreakdown: z.array(z.object({ rating: z.number().int(), count: z.number().int() })),
+    averageRating: z.number().nullable(),
+    topRatedPosts: z.array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        location: z.string(),
+        category: z.string().nullable(),
+        visitedAt: z.string(),
+        rating: z.number().int(),
+        thumbnail: z.string().nullable(),
+      })
+    ),
     monthlyPostCount: z.array(z.object({ month: z.number().int(), count: z.number().int() })),
     yearlyPostCount: z.array(z.object({ year: z.number().int(), count: z.number().int() })),
+    seasonalPostCount: z.array(z.object({ month: z.number().int(), count: z.number().int() })),
   })
   .openapi("StatsResponse");

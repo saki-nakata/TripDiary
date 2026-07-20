@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useInfiniteQuery, useQuery, keepPreviousData } from "@tanstack/react-query";
 import Link from "next/link";
@@ -52,7 +52,7 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
       <div className="absolute left-0 top-0 z-10 md:left-2">
         <BackButton />
       </div>
-      <div className="max-w-6xl mx-auto p-4 md:p-5 lg:p-8 space-y-4 -mt-4">
+      <div className="max-w-6xl mx-auto p-4 md:p-5 lg:p-8 space-y-2 sm:space-y-4 -mt-4">
         {/* pt-4: スマホ用の余白。md〜lg（768〜1279px、iPad Pro縦向き含む）は
             コンテナのパディングが p-8 でも -mt-4 と相殺すると余白が足りず重なる
             ため pt-9 に広げ、本当にPC幅と言える xl（1280px）で解除する */}
@@ -66,8 +66,18 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="スポット名・エリア・ユーザー名で検索…"
-            className="w-full h-11 pl-10 pr-4 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+            className="w-full h-9 sm:h-11 pl-10 pr-9 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
           />
+          {q && (
+            <button
+              type="button"
+              onClick={() => setQ("")}
+              aria-label="検索キーワードを消去"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[0.6rem] text-white hover:bg-red-600"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         <div className="flex gap-1 border-b border-zinc-200">
@@ -75,7 +85,7 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`relative flex-1 sm:flex-none flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-2 sm:px-4 py-2 text-[0.8rem] sm:text-[0.95rem] font-medium transition-colors whitespace-nowrap ${
+              className={`relative flex-1 sm:flex-none flex flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 text-[0.8rem] sm:text-[0.95rem] font-medium transition-colors whitespace-nowrap ${
                 tab === t.key ? "text-[#16a34a]" : "text-zinc-500 hover:text-zinc-700"
               }`}
             >
@@ -144,10 +154,10 @@ function PostSearchTab({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+      <div className="flex flex-wrap justify-center sm:justify-start gap-1.5 sm:gap-2">
         <button
           onClick={() => setCategory("")}
-          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+          className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[0.7rem] sm:text-sm font-medium transition-colors border ${
             category === ""
               ? "bg-blue-400 text-white border-blue-400"
               : "bg-white text-zinc-500 border-zinc-200 hover:border-blue-400 hover:text-blue-500"
@@ -159,7 +169,7 @@ function PostSearchTab({
           <button
             key={c}
             onClick={() => setCategory(c)}
-            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 px-3 py-1.5 rounded-full text-[0.7rem] sm:text-sm font-medium transition-colors border whitespace-nowrap ${
+            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[0.65rem] sm:text-sm font-medium transition-colors border whitespace-nowrap ${
               category === c
                 ? "bg-blue-400 text-white border-blue-400"
                 : "bg-white text-zinc-500 border-zinc-200 hover:border-blue-400 hover:text-blue-500"
@@ -182,7 +192,7 @@ function PostSearchTab({
           <span className="sm:hidden text-sm text-zinc-500">並び順：</span>
           <button
             onClick={() => setSort("latest")}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-full text-[0.8rem] sm:text-sm font-medium transition-colors ${
               sort === "latest" ? "bg-[#16a34a] text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
             }`}
           >
@@ -190,7 +200,7 @@ function PostSearchTab({
           </button>
           <button
             onClick={() => setSort("popular")}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-full text-[0.8rem] sm:text-sm font-medium transition-colors ${
               sort === "popular" ? "bg-[#16a34a] text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
             }`}
           >
@@ -351,12 +361,12 @@ function AreaSearchTab({ q, initialLocation }: { q: string; initialLocation?: st
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+      <div className="flex flex-wrap justify-center sm:justify-start gap-1.5 sm:gap-2">
         {areas.map((area) => (
           <button
             key={area.location}
             onClick={() => setSelected((prev) => (prev === area.location ? null : area.location))}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+            className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[0.72rem] sm:text-sm font-medium border transition-colors ${
               selected === area.location
                 ? "bg-yellow-400 text-zinc-900 border-yellow-400"
                 : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:border-yellow-400 hover:text-yellow-700"
@@ -398,6 +408,24 @@ function UserSearchTab({ q, viewerId }: { q: string; viewerId?: string }) {
   });
 
   const users = query.data?.pages.flatMap((page) => page.users) ?? [];
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !query.hasNextPage) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !query.isFetchingNextPage) {
+          query.fetchNextPage();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+    // query オブジェクト自体は毎レンダー新しい参照になるため、使用する値だけを依存にする
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query.hasNextPage, query.isFetchingNextPage, query.fetchNextPage]);
 
   return (
     <div className="space-y-5">
@@ -442,14 +470,8 @@ function UserSearchTab({ q, viewerId }: { q: string; viewerId?: string }) {
       </div>
 
       {query.hasNextPage && (
-        <div className="flex justify-center">
-          <button
-            onClick={() => query.fetchNextPage()}
-            disabled={query.isFetchingNextPage}
-            className="px-5 py-2 rounded-xl border border-zinc-200 text-sm font-medium hover:bg-zinc-50 transition-colors disabled:opacity-50"
-          >
-            {query.isFetchingNextPage ? "読み込み中..." : "もっと見る"}
-          </button>
+        <div ref={sentinelRef} className="flex justify-center py-4">
+          {query.isFetchingNextPage && <span className="text-sm text-zinc-400">読み込み中...</span>}
         </div>
       )}
     </div>

@@ -20,22 +20,24 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   });
-
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const passwordValue = watch("password") ?? "";
 
   function onSubmit(data: LoginInput) {
     startTransition(async () => {
       // ログイン成功後の初回表示でモバイルのボトムナビを軽くバウンドさせ、
       // 長押しでラベルが出せることに気づいてもらうためのフラグ。
       // signIn()はデフォルトでリダイレクトするため、成功後にコードは戻ってこない。
-      // 失敗時にフラグが残っても実害はない（次に成功した時に消費されるだけ）
-      sessionStorage.setItem("justLoggedIn", "true");
+      // 失敗時にフラグが残っても実害はない（次に成功した時に消費されるだけ）。
+      // iPad SafariはIPアドレス直打ちアクセス時にsessionStorageへの書き込みで例外を
+      // 投げることがあり、ここで止まるとsignIn()自体が呼ばれずログインできなくなる
+      try {
+        sessionStorage.setItem("justLoggedIn", "true");
+      } catch {
+        // ストレージアクセス不可の環境では単に演出をスキップする
+      }
       await signIn("credentials", {
         email: data.email,
         password: data.password,
@@ -93,10 +95,9 @@ export default function LoginPage() {
                   {...register("password")}
                   placeholder="パスワードを入力"
                   autoComplete="current-password"
-                  className={`w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-[#1e293b] placeholder:text-[#94a3b8] outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-white ${errors.password ? "border-red-400 focus:border-red-400" : "border-[#e2e8f0] focus:border-[#16a34a]"}`}
+                  className={`peer w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-[#1e293b] placeholder:text-[#94a3b8] outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-white ${errors.password ? "border-red-400 focus:border-red-400" : "border-[#e2e8f0] focus:border-[#16a34a]"}`}
                 />
-                {passwordValue.length > 0 && (
-                  <button
+                <button
                     type="button"
                     onMouseDown={() => setShowPassword(true)}
                     onMouseUp={() => setShowPassword(false)}
@@ -104,7 +105,7 @@ export default function LoginPage() {
                     onTouchStart={() => setShowPassword(true)}
                     onTouchEnd={() => setShowPassword(false)}
                     onTouchCancel={() => setShowPassword(false)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none touch-manipulation"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none touch-manipulation peer-placeholder-shown:hidden"
                     tabIndex={-1}
                     aria-label={showPassword ? "パスワードを隠す" : "パスワードを表示"}
                   >
@@ -118,8 +119,7 @@ export default function LoginPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                     )}
-                  </button>
-                )}
+                </button>
               </div>
               {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
             </div>

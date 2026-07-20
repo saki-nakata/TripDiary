@@ -147,6 +147,17 @@ describe("user.repository", () => {
     expect(await countCommentsReceived(author.id)).toBe(1);
   });
 
+  it("countUserPosts_yearを指定すると訪問日がその年の投稿のみカウントされる", async () => {
+    const author = await createTestUser("author-year@example.com", "投稿者年度");
+    await createPost(author.id, { title: "2025年の投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2025-12-31" });
+    await createPost(author.id, { title: "2026年の投稿A", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    await createPost(author.id, { title: "2026年の投稿B", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-06-01" });
+
+    expect(await countUserPosts(author.id, 2026)).toBe(2);
+    expect(await countUserPosts(author.id, 2025)).toBe(1);
+    expect(await countUserPosts(author.id)).toBe(3);
+  });
+
   // ─── コメント一覧 ───
   it("findCommentsByAuthor_findCommentsReceivedByAuthor_それぞれ正しいコメントを返す", async () => {
     const author = await createTestUser("author2@example.com", "投稿者2");

@@ -103,6 +103,27 @@ describe("post.repository", () => {
     expect(result.posts[0].title).toBe("自分の投稿");
   });
 
+  it("findPostsByAuthorId_yearを指定すると訪問日がその年の投稿のみ取得される", async () => {
+    const me = await createTestUser("me4b@example.com", "自分4b");
+    await createPost(me.id, { title: "2025年の投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2025-12-31" });
+    await createPost(me.id, { title: "2026年の投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+
+    const result = await findPostsByAuthorId({ authorId: me.id, year: 2026 });
+
+    expect(result.posts).toHaveLength(1);
+    expect(result.posts[0].title).toBe("2026年の投稿");
+  });
+
+  it("findPostsByAuthorId_yearを指定しない場合は全年の投稿が取得される(境界値)", async () => {
+    const me = await createTestUser("me4c@example.com", "自分4c");
+    await createPost(me.id, { title: "2025年の投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2025-12-31" });
+    await createPost(me.id, { title: "2026年の投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+
+    const result = await findPostsByAuthorId({ authorId: me.id });
+
+    expect(result.posts).toHaveLength(2);
+  });
+
   // ─── findWishlistedPosts / findVisitedPosts ───
   it("findWishlistedPosts_行きたい登録した投稿のみ取得される", async () => {
     const me = await createTestUser("me5@example.com", "自分5");

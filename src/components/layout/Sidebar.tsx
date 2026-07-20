@@ -82,13 +82,21 @@ export function Sidebar({ user }: { user: User }) {
   const wasLongPressKey = useRef<string | null>(null);
 
   useEffect(() => {
-    if (sessionStorage.getItem("justLoggedIn")) {
-      sessionStorage.removeItem("justLoggedIn");
-      // sessionStorage はサーバー側で読めずSSR時点で判定できないため、
-      // マウント後にクライアント側でのみ判定してstateに反映する必要がある
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setJustLoggedIn(true);
-      showToast("下のアイコンを長押しすると名前が表示されます", "info", 2500);
+    // iPad SafariはIPアドレス直打ち（HTTPSでもドメインでもないオリジン）でのアクセス時に
+    // プライバシー保護でsessionStorageへのアクセス自体が例外を投げることがある。
+    // ここは全ページ共通のSidebarのuseEffectのため、無視するとハイドレーション全体が
+    // 止まり、アプリ全体でJS操作が効かなくなる（2026-07-19 実機調査で判明）
+    try {
+      if (sessionStorage.getItem("justLoggedIn")) {
+        sessionStorage.removeItem("justLoggedIn");
+        // sessionStorage はサーバー側で読めずSSR時点で判定できないため、
+        // マウント後にクライアント側でのみ判定してstateに反映する必要がある
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setJustLoggedIn(true);
+        showToast("下のアイコンを長押しすると名前が表示されます", "info", 2500);
+      }
+    } catch {
+      // ストレージアクセス不可の環境では単に演出をスキップする
     }
     // showToast は useCallback で安定した参照のため依存配列から除外して問題ない
     // eslint-disable-next-line react-hooks/exhaustive-deps

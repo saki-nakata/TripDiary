@@ -3,6 +3,14 @@
 :root {
   --background: #fdfefc;
   --foreground: #171717;
+  --bubble-scale: 1;
+}
+
+/* エリア別バブルチャートをスマホのみ少し小さめにする（レイアウトのgapも自然に詰まるよう実サイズを縮小） */
+@media (max-width: 639px) {
+  :root {
+    --bubble-scale: 0.75;
+  }
 }
 
 @theme inline {
@@ -38,6 +46,27 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.25s ease-out forwards;
+}
+
+@keyframes bubble-pop {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-bubble-pop {
+  opacity: 0;
+  animation: bubble-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* バブルが下からふわっと浮き上がる。カードのスタッガー演出の後に左から順番に出す用 */
+@keyframes bubble-float-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-bubble-float-in {
+  opacity: 0;
+  animation: bubble-float-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes bounce-dot {
