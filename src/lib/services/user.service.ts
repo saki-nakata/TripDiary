@@ -1,5 +1,6 @@
-import { compare, hash } from "bcryptjs";
+import { compare } from "bcryptjs";
 import { ForbiddenError, NotFoundError, ValidationError, ConflictError } from "@/lib/errors";
+import { hashPassword } from "@/lib/password";
 import {
   findUserById,
   updateUser as updateUserRepo,
@@ -139,7 +140,7 @@ export async function changePasswordService(
     });
   }
 
-  const hashedPassword = await hash(newPassword, 12);
+  const hashedPassword = await hashPassword(newPassword);
   await updateUserPassword(targetUserId, hashedPassword);
 }
 
