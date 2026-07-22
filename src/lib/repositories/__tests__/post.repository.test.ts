@@ -9,6 +9,7 @@ import {
   findVisitedPosts,
   countFollowingFeedPosts,
   findExplorePosts,
+  findTopRatedByCategory,
 } from "@/lib/repositories/post.repository";
 
 async function cleanDatabase() {
@@ -78,7 +79,9 @@ describe("post.repository", () => {
   // ─── findLocationCounts ───
   it("findLocationCounts_エリアごとの投稿件数が集計される", async () => {
     const me = await createTestUser("me3@example.com", "自分3");
-    await createPost(me.id, { title: "投稿A", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    await createPost(me.id, {
+      title: "投稿A", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01", imageUrls: ["https://example.com/tokyo.jpg"],
+    });
     await createPost(me.id, { title: "投稿B", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-02" });
     await createPost(me.id, { title: "投稿C", body: "本文", location: "大阪府", category: "観光", visitedAt: "2026-01-03" });
 
@@ -87,7 +90,39 @@ describe("post.repository", () => {
     const osaka = counts.find((c) => c.location === "大阪府");
 
     expect(tokyo?.count).toBe(2);
+    expect(tokyo?.thumbnailUrl).toBe("https://example.com/tokyo.jpg");
     expect(osaka?.count).toBe(1);
+    expect(osaka?.thumbnailUrl).toBeNull();
+  });
+
+  // ─── findTopRatedByCategory ───
+  it("findTopRatedByCategory_カテゴリごとに最高評価の投稿が1件ずつ返る", async () => {
+    const me = await createTestUser("me-toprated@example.com", "自分");
+    await createPost(me.id, { title: "観光A（評価3）", body: "本文", location: "東京都", category: "観光", rating: 3, visitedAt: "2026-01-01" });
+    await createPost(me.id, { title: "観光B（評価5）", body: "本文", location: "東京都", category: "観光", rating: 5, visitedAt: "2026-01-02" });
+    await createPost(me.id, { title: "グルメA（評価4）", body: "本文", location: "大阪府", category: "グルメ", rating: 4, visitedAt: "2026-01-03" });
+    // 評価なしの投稿は対象外
+    await createPost(me.id, { title: "評価なし", body: "本文", location: "京都府", category: "観光", visitedAt: "2026-01-04" });
+
+    const result = await findTopRatedByCategory();
+
+    expect(result).toHaveLength(2);
+    expect(result.map((p) => p.title)).toEqual(["観光B（評価5）", "グルメA（評価4）"]);
+    const sightseeing = result.find((p) => p.category === "観光");
+    const gourmet = result.find((p) => p.category === "グルメ");
+    expect(sightseeing?.title).toBe("観光B（評価5）");
+    expect(gourmet?.title).toBe("グルメA（評価4）");
+  });
+
+  it("findTopRatedByCategory_excludeIdsで除外した投稿は対象外になる", async () => {
+    const me = await createTestUser("me-toprated2@example.com", "自分");
+    const excluded = await createPost(me.id, { title: "除外対象（評価5）", body: "本文", location: "東京都", category: "観光", rating: 5, visitedAt: "2026-01-01" });
+    await createPost(me.id, { title: "次点（評価3）", body: "本文", location: "東京都", category: "観光", rating: 3, visitedAt: "2026-01-02" });
+
+    const result = await findTopRatedByCategory([excluded.id]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].title).toBe("次点（評価3）");
   });
 
   // ─── findPostsByAuthorId ───

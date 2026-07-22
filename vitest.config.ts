@@ -16,7 +16,7 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["src/**/*.test.{ts,tsx}", "performance/k6/**/*.test.ts"],
     // Repositoryテストは実DBに対して全件deleteManyでクリーンアップするため、
     // 複数テストファイルを並列実行すると共有テーブルの競合でFK制約違反等が発生する。
     // ファイル間は直列実行する（ファイル内のテストはこれまで通り高速）。

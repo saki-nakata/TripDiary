@@ -8,6 +8,9 @@ import {
   countVisitedByUser,
   countLikesReceived,
   countCommentsReceived,
+  countCommentsByAuthor,
+  findCommentsByAuthor,
+  findCommentsReceivedByAuthor,
   computeTabiScoreInputsForUsers,
   searchUsersByNickname,
   findUserPasswordHash,
@@ -69,8 +72,30 @@ export async function getUserProfileService(userId: string, viewerId?: string) {
   };
 }
 
+export async function findUserByIdService(userId: string) {
+  const user = await findUserById(userId);
+  if (!user) throw new NotFoundError("ユーザーが見つかりません");
+  return user;
+}
+
 export async function countUserPostsService(authorId: string, year?: number) {
   return countUserPosts(authorId, year);
+}
+
+export async function countCommentsByAuthorService(authorId: string) {
+  return countCommentsByAuthor(authorId);
+}
+
+export async function countCommentsReceivedService(authorId: string) {
+  return countCommentsReceived(authorId);
+}
+
+export async function findCommentsByAuthorService(authorId: string) {
+  return findCommentsByAuthor(authorId);
+}
+
+export async function findCommentsReceivedByAuthorService(authorId: string) {
+  return findCommentsReceivedByAuthor(authorId);
 }
 
 export async function countVisitedByUserService(userId: string) {

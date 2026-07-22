@@ -136,6 +136,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
               <button
                 type="submit"
                 disabled={!body.trim() || submitting}
+                data-testid="comment-submit"
                 className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? "送信中..." : "コメントを投稿"}

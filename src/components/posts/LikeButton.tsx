@@ -65,7 +65,7 @@ export function LikeButton({ postId, initialLiked, initialCount, isLoggedIn, dis
         alt={showLiked ? "❤️" : "🩶"}
         className="h-4 w-4"
       />
-      <span>{count}</span>
+      <span data-testid="like-count">{count}</span>
     </button>
   );
 }

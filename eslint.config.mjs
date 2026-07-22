@@ -16,7 +16,22 @@ const eslintConfig = defineConfig([
     "prototype/**",
     // Vitest coverage report (generated)
     "coverage/**",
+    // k6 run output (generated)
+    "performance/k6/results/**",
   ]),
+  // k6スクリプト（Phase 5-B）。globalIgnoresで丸ごと除外せず検査対象に含めるが、
+  // k6固有のグローバル（__VU等）とNext固有ルールの誤検知だけをここで無効化する
+  {
+    files: ["performance/k6/**/*.ts"],
+    languageOptions: {
+      globals: { __VU: "readonly", __ITER: "readonly", __ENV: "readonly", open: "readonly" },
+    },
+    rules: {
+      // k6のsimulationは `export default function` がエントリポイントの標準パターンのため、
+      // Next.js向けの匿名default export禁止ルールは誤検知になる
+      "import/no-anonymous-default-export": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

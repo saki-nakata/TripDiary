@@ -31,6 +31,7 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
   return (
     <Link
       data-post-id={post.id}
+      data-testid="post-card"
       href={`/posts/${post.id}`}
       className={`${styles.card} group flex flex-col rounded-xl border border-zinc-200 bg-white overflow-hidden`}
     >

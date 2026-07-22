@@ -3,6 +3,9 @@ node_modules/
 .pnp
 .pnp.js
 
+# Claudeがrm/mv権限の都合で削除できず退避したファイル（ユーザーが手動削除する）
+.pending-deletion/
+
 # next.js
 .next/
 out/
@@ -16,6 +19,7 @@ build/
 .env.test.local
 .env.production.local
 .env.production
+.env.perf
 
 # prisma
 prisma/migrations/dev.db
@@ -55,11 +59,24 @@ post-detail-photo-size.png
 test-results/
 playwright-report/
 
+# perf Playwright: storageStateとWeb Vitals/操作応答時間の結果（実行結果、.gitkeepのみ管理）
+e2e/performance/.auth/
+e2e/performance/results/*
+!e2e/performance/results/.gitkeep
+
 # vitest coverage report
 coverage/
 
 # local one-off scripts
 scripts-tmp-*.js
+.tmp-cookies*.txt
+
+# performance test generated data (performance/seed.ts の出力)
+performance/k6/data/
+
+# performance test results (実行結果。.gitkeepのみ管理)
+performance/k6/results/*
+!performance/k6/results/.gitkeep
 
 # debug
 npm-debug.log*
