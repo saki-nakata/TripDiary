@@ -2,15 +2,15 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/lib/auth";
-import { getUserProfileService } from "@/lib/services/user.service";
-import { findPostsByAuthorIdService } from "@/lib/services/post.service";
 import {
-  findCommentsByAuthor,
-  findCommentsReceivedByAuthor,
-  countCommentsByAuthor,
-  countCommentsReceived,
-} from "@/lib/repositories/user.repository";
-import { findFollowers, findFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
+  getUserProfileService,
+  findCommentsByAuthorService,
+  findCommentsReceivedByAuthorService,
+  countCommentsByAuthorService,
+  countCommentsReceivedService,
+} from "@/lib/services/user.service";
+import { findPostsByAuthorIdService } from "@/lib/services/post.service";
+import { findFollowersService, findFollowingService, findFollowingIdsAmongService } from "@/lib/services/follow.service";
 import { PostCard } from "@/components/posts/PostCard";
 import { FollowButton } from "@/components/users/FollowButton";
 import { BackButton } from "@/components/posts/BackButton";
@@ -45,8 +45,8 @@ export default async function UserProfilePage({ params, searchParams }: Props) {
   }
 
   const [commentsWrittenCount, commentsReceivedCount] = await Promise.all([
-    countCommentsByAuthor(id),
-    isSelf ? countCommentsReceived(id) : Promise.resolve(0),
+    countCommentsByAuthorService(id),
+    isSelf ? countCommentsReceivedService(id) : Promise.resolve(0),
   ]);
 
   // フォロワー・フォロー中は、モバイルのみ Instagram/X と同様にヘッダーの数字タップで開く
@@ -245,7 +245,7 @@ async function renderPosts(authorId: string, viewerId?: string) {
 }
 
 async function renderCommentsWritten(authorId: string) {
-  const comments = await findCommentsByAuthor(authorId);
+  const comments = await findCommentsByAuthorService(authorId);
   if (comments.length === 0) {
     return <EmptyState codepoint="1f4ac" message="まだコメントがありません" />;
   }
@@ -276,7 +276,7 @@ async function renderCommentsWritten(authorId: string) {
 }
 
 async function renderCommentsReceived(authorId: string) {
-  const comments = await findCommentsReceivedByAuthor(authorId);
+  const comments = await findCommentsReceivedByAuthorService(authorId);
   if (comments.length === 0) {
     return <EmptyState codepoint="1f4ac" message="まだコメントを受け取っていません" />;
   }
@@ -311,12 +311,12 @@ async function renderCommentsReceived(authorId: string) {
 }
 
 async function renderUserList(userId: string, type: "followers" | "following", viewerId?: string) {
-  const users = type === "followers" ? await findFollowers(userId) : await findFollowing(userId);
+  const users = type === "followers" ? await findFollowersService(userId) : await findFollowingService(userId);
   if (users.length === 0) {
     return <EmptyState codepoint="1f465" message={type === "followers" ? "フォロワーはまだいません" : "フォロー中のユーザーはいません"} />;
   }
 
-  const followingIds = viewerId ? await findFollowingIdsAmong(viewerId, users.map((u) => u.id)) : [];
+  const followingIds = viewerId ? await findFollowingIdsAmongService(viewerId, users.map((u) => u.id)) : [];
   const followingSet = new Set(followingIds);
 
   return (

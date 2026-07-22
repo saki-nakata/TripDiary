@@ -8,10 +8,10 @@
 
 | 役割 | 技術・バージョン |
 |------|----------------|
-| フロントエンド | Next.js 16.2.9 + TypeScript |
-| スタイリング | Tailwind CSS 4.3.1 |
+| フロントエンド | Next.js 16.2.10 + TypeScript |
+| スタイリング | Tailwind CSS 4.3.2 |
 | バックエンド | Next.js Route Handlers |
-| ORM | Prisma 5.22.0 |
+| ORM | Prisma 6.19.3 |
 | 認証 | Auth.js（next-auth v5 beta.31） |
 | データベース | MySQL（開発: Docker / 本番: AWS RDS 予定） |
 | 画像ストレージ | ローカル保存（開発時点）→ AWS S3 移行予定（実装計画書 Phase 6） |
@@ -37,6 +37,33 @@
 | 地図 | 投稿スポットの位置情報表示（Leaflet + OpenStreetMap） |
 | ユーザー | プロフィール表示 / TabiScore / コメント履歴 / プロフィール編集 / プロフィール画像アップロード |
 | UI | スマートフォン・タブレット・PC に対応したレスポンシブレイアウト |
+
+---
+
+## パフォーマンステスト
+
+perf専用MySQLへ再シードした環境で、k6による負荷試験とPlaywrightによるWeb Vitals計測を実施しています。詳細な実行手順・シナリオ・閾値は[performance/k6/README.md](performance/k6/README.md)を参照してください。
+
+| 種別 | ピーク業務VU | 結果 | 主な実測値 |
+|---|---:|---|---|
+| Smoke | 1 | PASS | p95 120ms / p99 463ms / エラー率 0% |
+| Load | 10 | PASS | steady p95 670ms / p99 744ms / エラー率 0% |
+| Stress | 50 | N/A | vu50 p95 1011ms / p99 1380ms、全体エラー率 0.005% |
+| Spike | 60 | PASS | cooldown p99 655ms / 603ms / エラー率 0.034% |
+
+<details>
+<summary>集約レポートのスクリーンショット</summary>
+
+![Smokeレポート](docs/images/performance-smoke.png)
+
+![Loadレポート](docs/images/performance-load.png)
+
+![Stressレポート](docs/images/performance-stress.png)
+
+![Spikeレポート](docs/images/performance-spike.png)
+
+![Web Vitalsレポート](docs/images/performance-webvitals.png)
+</details>
 
 ---
 

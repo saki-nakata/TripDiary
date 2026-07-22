@@ -69,6 +69,22 @@ describe("follow.repository", () => {
     expect(otherAfterUnfollow.followerCount).toBe(0);
   });
 
+  it("toggleFollow_同じユーザーへ並行してフォローしても全件作成されカウンタが一致する", async () => {
+    const target = await createTestUser("follow-concurrent-target@example.com", "フォロー先");
+    const followers = await Promise.all(
+      Array.from({ length: 12 }, (_, index) => createTestUser(`follow-concurrent-${index}@example.com`, `フォロワー${index}`))
+    );
+
+    await Promise.all(followers.map((follower) => toggleFollow(follower.id, target.id)));
+
+    expect(await prisma.follow.count({ where: { followingId: target.id } })).toBe(followers.length);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: target.id } })).followerCount).toBe(followers.length);
+    const followerRows = await Promise.all(
+      followers.map((follower) => prisma.user.findUniqueOrThrow({ where: { id: follower.id } }))
+    );
+    expect(followerRows.every((user) => user.followingCount === 1)).toBe(true);
+  });
+
   // ─── 一覧 ───
   it("findFollowers_findFollowing_ユーザー情報付きで取得できる", async () => {
     const me = await createTestUser("me4@example.com", "自分4");

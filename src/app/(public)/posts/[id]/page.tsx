@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/lib/auth";
-import { findPostById, findRelatedPosts } from "@/lib/repositories/post.repository";
+import { findPostByIdService, findRelatedPostsService } from "@/lib/services/post.service";
+import { NotFoundError } from "@/lib/errors";
 import { ImageCarousel } from "@/components/posts/ImageCarousel";
 import { StarRating } from "@/components/posts/StarRating";
 import { LikeButton } from "@/components/posts/LikeButton";
@@ -29,10 +30,15 @@ export default async function PostDetailPage({ params }: Props) {
   const session = await auth();
   const userId = session?.user?.id;
 
-  const post = await findPostById(id, userId);
-  if (!post) notFound();
+  let post;
+  try {
+    post = await findPostByIdService(id, userId);
+  } catch (e) {
+    if (e instanceof NotFoundError) notFound();
+    throw e;
+  }
 
-  const related = await findRelatedPosts(id, post.location, 4);
+  const related = await findRelatedPostsService(id, post.location, 4);
 
   const isAuthor = userId === post.authorId;
 

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { findExplorePosts, findLocationCounts } from "@/lib/repositories/post.repository";
+import { findExplorePostsService, findLocationCountsService } from "@/lib/services/post.service";
 import { PostCard } from "@/components/posts/PostCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
@@ -22,8 +22,8 @@ export default async function TagPage({ params }: Props) {
 
   const session = await auth();
   const [{ posts }, locationCounts] = await Promise.all([
-    findExplorePosts({ location, userId: session?.user?.id, limit: 40 }),
-    findLocationCounts(),
+    findExplorePostsService({ location, userId: session?.user?.id, limit: 40 }),
+    findLocationCountsService(),
   ]);
 
   return (

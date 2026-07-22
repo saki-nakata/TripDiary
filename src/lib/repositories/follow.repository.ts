@@ -1,34 +1,46 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { withDeadlockRetry } from "@/lib/prisma-retry";
+
+async function lockUsers(tx: Prisma.TransactionClient, userIds: string[]) {
+  for (const userId of [...new Set(userIds)].sort()) {
+    await tx.$queryRaw(Prisma.sql`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`);
+  }
+}
 
 export async function toggleFollow(followerId: string, followingId: string) {
-  return prisma.$transaction(async (tx) => {
-    const { count } = await tx.follow.deleteMany({ where: { followerId, followingId } });
-    if (count > 0) {
-      // deleteMany・カウンタ更新を同一トランザクションにまとめ、片方だけ失敗する不整合を防ぐ
-      await Promise.all([
-        tx.user.update({ where: { id: followerId }, data: { followingCount: { decrement: 1 } } }),
-        tx.user.update({ where: { id: followingId }, data: { followerCount: { decrement: 1 } } }),
-      ]);
-      return { following: false };
-    }
-
-    try {
-      await tx.follow.create({ data: { followerId, followingId } });
-      await Promise.all([
-        tx.user.update({ where: { id: followerId }, data: { followingCount: { increment: 1 } } }),
-        tx.user.update({ where: { id: followingId }, data: { followerCount: { increment: 1 } } }),
-      ]);
-      return { following: true };
-    } catch (e) {
-      // 同時に別リクエストが先にcreateしていた場合（P2002: 一意制約違反）は、
-      // そちらのトランザクションで既にカウンタも加算済みのため、ここでは何もせず成功扱いにする
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-        return { following: true };
+  // Followの作成前に、関係する2つのUser行をID順で排他ロックする。順序を固定しないと
+  // A→BとB→Aの同時操作が互いに別のUser行を待つデッドロック経路になる。
+  return withDeadlockRetry(() =>
+    prisma.$transaction(async (tx) => {
+      await lockUsers(tx, [followerId, followingId]);
+      const { count } = await tx.follow.deleteMany({ where: { followerId, followingId } });
+      if (count > 0) {
+        // deleteMany・カウンタ更新を同一トランザクションにまとめ、片方だけ失敗する不整合を防ぐ
+        await Promise.all([
+          tx.user.update({ where: { id: followerId }, data: { followingCount: { decrement: 1 } } }),
+          tx.user.update({ where: { id: followingId }, data: { followerCount: { decrement: 1 } } }),
+        ]);
+        return { following: false };
       }
-      throw e;
-    }
-  });
+
+      try {
+        await tx.follow.create({ data: { followerId, followingId } });
+        await Promise.all([
+          tx.user.update({ where: { id: followerId }, data: { followingCount: { increment: 1 } } }),
+          tx.user.update({ where: { id: followingId }, data: { followerCount: { increment: 1 } } }),
+        ]);
+        return { following: true };
+      } catch (e) {
+        // 同時に別リクエストが先にcreateしていた場合（P2002: 一意制約違反）は、
+        // そちらのトランザクションで既にカウンタも加算済みのため、ここでは何もせず成功扱いにする
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+          return { following: true };
+        }
+        throw e;
+      }
+    })
+  );
 }
 
 export async function isFollowing(followerId: string, followingId: string) {

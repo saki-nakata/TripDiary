@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { PostInput } from "@/lib/validations/post";
 
@@ -273,37 +274,30 @@ export async function findLatestPosts(limit = 6) {
 }
 
 export async function findLocationCounts() {
-  const [groups, posts] = await Promise.all([
-    prisma.post.groupBy({
-      by: ["location"],
-      _count: { _all: true },
-    }),
-    prisma.post.findMany({
-      orderBy: [{ likeCount: "desc" }, { createdAt: "desc" }],
-      select: {
-        location: true,
-        images: { take: 1, orderBy: { displayOrder: "asc" }, select: { url: true } },
-      },
-    }),
-  ]);
+  // 地域ごとのサムネイル取得をアプリ側で繰り返すと、地域数に比例してSQLが増える。
+  // 相関副問い合わせに寄せ、集計と「各地域で最も人気のある画像」を1クエリで返す。
+  const rows = await prisma.$queryRaw<Array<{ location: string; count: bigint; thumbnailUrl: string | null }>>`
+    SELECT
+      p.location,
+      COUNT(*) AS count,
+      (
+        SELECT pi.url
+        FROM posts AS candidate
+        INNER JOIN post_images AS pi ON pi.postId = candidate.id
+        WHERE candidate.location = p.location
+        ORDER BY candidate.likeCount DESC, candidate.createdAt DESC, candidate.id ASC, pi.displayOrder ASC, pi.id ASC
+        LIMIT 1
+      ) AS thumbnailUrl
+    FROM posts AS p
+    GROUP BY p.location
+    ORDER BY count DESC
+  `;
 
-  // 各エリアの最初に見つかった投稿ではなく、画像を持つ最初の投稿のURLを使う
-  // （最初の投稿に画像が無いだけで、そのエリアのサムネイルが永久にnullになってしまうのを防ぐ）
-  const thumbnailByLocation = new Map<string, string>();
-  for (const post of posts) {
-    const url = post.images[0]?.url;
-    if (url && !thumbnailByLocation.has(post.location)) {
-      thumbnailByLocation.set(post.location, url);
-    }
-  }
-
-  return groups
-    .map((g) => ({
-      location: g.location,
-      count: g._count._all,
-      thumbnailUrl: thumbnailByLocation.get(g.location) ?? null,
-    }))
-    .sort((a, b) => b.count - a.count);
+  return rows.map((row) => ({
+    location: row.location,
+    count: Number(row.count),
+    thumbnailUrl: row.thumbnailUrl,
+  }));
 }
 
 export async function findCategoryCounts() {
@@ -316,13 +310,35 @@ export async function findCategoryCounts() {
 }
 
 export async function findTopRatedByCategory(excludeIds: string[] = []) {
+  // MySQL 8のROW_NUMBERでカテゴリごとの先頭IDだけを一括で選ぶ。カテゴリ数分の
+  // findFirstを発行せず、フルペイロードも選ばれた投稿に限定する。
+  const excluded = excludeIds.length > 0
+    ? Prisma.sql`AND p.id NOT IN (${Prisma.join(excludeIds)})`
+    : Prisma.empty;
+  const rows = await prisma.$queryRaw<Array<{ id: string; category: string }>>`
+    SELECT ranked.id, ranked.category
+    FROM (
+      SELECT
+        p.id,
+        p.category,
+        p.rating,
+        p.likeCount,
+        ROW_NUMBER() OVER (
+          PARTITION BY p.category
+          ORDER BY p.rating DESC, p.likeCount DESC, p.id ASC
+        ) AS rowNumber
+      FROM posts AS p
+      WHERE p.category IS NOT NULL
+        AND p.rating IS NOT NULL
+        ${excluded}
+    ) AS ranked
+    WHERE ranked.rowNumber = 1
+    ORDER BY ranked.rating DESC, ranked.likeCount DESC, ranked.id ASC
+  `;
+  if (rows.length === 0) return [];
+
   const posts = await prisma.post.findMany({
-    where: {
-      category: { not: null },
-      rating: { not: null },
-      ...(excludeIds.length > 0 && { id: { notIn: excludeIds } }),
-    },
-    orderBy: [{ rating: "desc" }, { likeCount: "desc" }],
+    where: { id: { in: rows.map((row) => row.id) } },
     select: {
       ...POST_SELECT,
       likes: false,
@@ -330,16 +346,11 @@ export async function findTopRatedByCategory(excludeIds: string[] = []) {
       visited: false,
     },
   });
-
-  const seen = new Set<string>();
-  const result: (typeof posts)[number][] = [];
-  for (const post of posts) {
-    if (post.category && !seen.has(post.category)) {
-      seen.add(post.category);
-      result.push(post);
-    }
-  }
-  return result.map((p) => formatPost(p));
+  const postsById = new Map(posts.map((post) => [post.id, post]));
+  return rows.flatMap((row) => {
+    const post = postsById.get(row.id);
+    return post ? [formatPost(post)] : [];
+  });
 }
 
 export async function findRelatedPosts(postId: string, location: string, limit = 3) {

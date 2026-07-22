@@ -1,4 +1,4 @@
-import { toggleFollow } from "@/lib/repositories/follow.repository";
+import { toggleFollow, findFollowers, findFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
 import { createFollowNotification } from "@/lib/services/notification.service";
 import { ValidationError } from "@/lib/errors";
 
@@ -14,4 +14,16 @@ export async function toggleFollowService(followerId: string, followingId: strin
   }
 
   return result;
+}
+
+export async function findFollowersService(userId: string) {
+  return findFollowers(userId);
+}
+
+export async function findFollowingService(userId: string) {
+  return findFollowing(userId);
+}
+
+export async function findFollowingIdsAmongService(viewerId: string, userIds: string[]) {
+  return findFollowingIdsAmong(viewerId, userIds);
 }

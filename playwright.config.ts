@@ -20,12 +20,18 @@ export default defineConfig({
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
   },
-  webServer: {
-    command: "pnpm build && pnpm start",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  // PERF=1（.env.perf）のときはwebServerを無効化する。有効のままだと`pnpm build && pnpm start`が
+  // .env.localの開発DBを対象に起動してしまい、perf:build/perf:start済みのサーバーに接続する
+  // つもりが気づかず開発DBを相手に計測する事故につながる（8-1節）。
+  webServer:
+    process.env.PERF === "1"
+      ? undefined
+      : {
+          command: "pnpm build && pnpm start",
+          url: "http://localhost:3000",
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+        },
   projects: [
     // 通常のE2E（機能フロー検証）。CIでは --project=e2e で実行する
     {
@@ -34,11 +40,20 @@ export default defineConfig({
       testIgnore: "**/performance/**",
       use: { ...devices["Desktop Chrome"] },
     },
-    // パフォーマンス計測（Web Vitals等）。perf専用DBのシードデータに依存するため
+    // perf専用のログイン処理（storageState生成）。perfプロジェクトの前提として1回だけ実行する
+    {
+      name: "perf-setup",
+      testDir: "./e2e/performance",
+      testMatch: /perf\.setup\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    // パフォーマンス計測（Web Vitals・操作応答時間）。perf専用DBのシードデータに依存するため
     // CIには含めず、pnpm perf:vitals でローカル手動実行する（Phase 5-B）
     {
       name: "perf",
       testDir: "./e2e/performance",
+      testIgnore: "**/perf.setup.ts",
+      dependencies: ["perf-setup"],
       use: { ...devices["Desktop Chrome"] },
     },
   ],

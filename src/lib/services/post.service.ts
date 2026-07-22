@@ -14,6 +14,7 @@ import {
   findLocationCounts,
   findCategoryCounts,
   findTopRatedByCategory,
+  findRelatedPosts,
 } from "@/lib/repositories/post.repository";
 import { findPlanAuthorId } from "@/lib/repositories/plan.repository";
 import type { PostInput } from "@/lib/validations/post";
@@ -36,6 +37,21 @@ export async function findPostByIdService(id: string, viewerId?: string) {
 
 export async function findExplorePostsService(options: Parameters<typeof findExplorePosts>[0]) {
   return findExplorePosts(options);
+}
+
+export async function findRelatedPostsService(postId: string, location: string, limit?: number) {
+  return findRelatedPosts(postId, location, limit);
+}
+
+export async function findLocationCountsService() {
+  return findLocationCounts();
+}
+
+export async function findPostForEditService(userId: string, id: string) {
+  const post = await findPostById(id);
+  if (!post) throw new NotFoundError();
+  if (post.authorId !== userId) throw new ForbiddenError();
+  return post;
 }
 
 export async function findFollowingPostsService(options: Parameters<typeof findFollowingPosts>[0]) {

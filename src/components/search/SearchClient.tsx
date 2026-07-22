@@ -66,6 +66,7 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="スポット名・エリア・ユーザー名で検索…"
+            data-testid="search-input"
             className="w-full h-9 sm:h-11 pl-10 pr-9 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
           />
           {q && (
@@ -319,6 +320,7 @@ function PostSearchTab({
           <button
             onClick={() => query.fetchNextPage()}
             disabled={query.isFetchingNextPage}
+            data-testid="search-more-button"
             className="px-5 py-2 rounded-xl border border-zinc-200 text-sm font-medium hover:bg-zinc-50 transition-colors disabled:opacity-50"
           >
             {query.isFetchingNextPage ? "読み込み中..." : "もっと見る"}
