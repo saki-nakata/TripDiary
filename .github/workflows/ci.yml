@@ -108,7 +108,17 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma migrate deploy
-      - run: pnpm exec playwright install --with-deps chromium
+      # Playwrightのブラウザ本体は大きく、毎回の再取得を避ける。
+      # pnpm-lock.yamlをキーにすることで、Playwright更新時は新しいChromiumを取得する。
+      - name: Restore Playwright browser cache
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
       - run: pnpm playwright test --project=e2e
       - uses: actions/upload-artifact@v4
         if: always()
