@@ -18,6 +18,7 @@ import {
   findUserByEmail,
   findUserPasswordHashAndEmail,
   updateUserEmail,
+  deleteUserByEmailForTest,
 } from "@/lib/repositories/user.repository";
 import { isFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
 import type { UserUpdateInput } from "@/lib/validations/user";
@@ -41,6 +42,10 @@ export function tabiRank(score: number) {
   if (score >= 60) return "ゴールドトラベラー";
   if (score >= 30) return "シルバートラベラー";
   return "ブロンズトラベラー";
+}
+
+export async function deleteTestUserByEmailService(email: string) {
+  return deleteUserByEmailForTest(email);
 }
 
 export async function getUserProfileService(userId: string, viewerId?: string) {

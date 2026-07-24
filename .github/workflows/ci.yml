@@ -73,10 +73,10 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
-    # 既存E2Eはdevサーバー高負荷時のタイムアウトで不安定になった経緯があり、
-    # ローカルより低速なランナーでは同種の不安定さが再発しやすい。
-    # 安定性を見極めるまでは non-blocking とする（必須化の判断はPhase 5-C-2で確定）
-    continue-on-error: true
+    # Phase 5-C-2で「TimeLine方式」を採用：ブランチ保護の必須ステータスチェックには含めず
+    # マージはブロックしないが、continue-on-error は付けず失敗時は赤く表示する
+    # （continue-on-errorは失敗を握り潰しワークフロー全体が成功寄りに見えてしまい、
+    #   直近のCI安定性実績をGitHub UI上で追いにくくなるため採用しない）
     env:
       ENABLE_TEST_ENDPOINTS: "true"
       # bcryptjs（純JS実装）はコストに応じてメインスレッドをブロックする。
@@ -108,7 +108,22 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma migrate deploy
-      - run: pnpm exec playwright install --with-deps chromium
+      # Playwrightのブラウザ本体は大きく、毎回の再取得を避ける。
+      # pnpm-lock.yamlをキーにすることで、Playwright更新時は新しいChromiumを取得する。
+      # OS依存ライブラリ(--with-depsが入れるlibnss3等)は~/.cache/ms-playwrightに含まれず、
+      # actions/cacheでは復元できない（ランナーは毎回新規VMのため）。ブラウザ本体のキャッシュが
+      # ヒットしてもOS依存ライブラリの導入は毎回必要なため、install-depsは常に実行する。
+      - name: Restore Playwright browser cache
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install Playwright OS dependencies
+        run: pnpm exec playwright install-deps chromium
+      - name: Install Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium
       - run: pnpm playwright test --project=e2e
       - uses: actions/upload-artifact@v4
         if: always()

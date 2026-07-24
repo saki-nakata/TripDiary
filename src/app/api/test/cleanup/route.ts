@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { deleteTestUserByEmailService } from "@/lib/services/user.service";
 import { logger } from "@/lib/logger";
 import { withRequestLogging } from "@/lib/request-logging";
 
@@ -14,7 +14,7 @@ async function handleDELETE(req: NextRequest) {
   const email = req.nextUrl.searchParams.get("email");
   if (!email) return NextResponse.json({ error: "email required" }, { status: 400 });
   try {
-    await prisma.user.deleteMany({ where: { email } });
+    await deleteTestUserByEmailService(email);
     return NextResponse.json({ ok: true });
   } catch (e) {
     logger.error({ err: e }, "test cleanup failed");
