@@ -110,15 +110,20 @@ jobs:
       - run: pnpm prisma migrate deploy
       # Playwrightのブラウザ本体は大きく、毎回の再取得を避ける。
       # pnpm-lock.yamlをキーにすることで、Playwright更新時は新しいChromiumを取得する。
+      # OS依存ライブラリ(--with-depsが入れるlibnss3等)は~/.cache/ms-playwrightに含まれず、
+      # actions/cacheでは復元できない（ランナーは毎回新規VMのため）。ブラウザ本体のキャッシュが
+      # ヒットしてもOS依存ライブラリの導入は毎回必要なため、install-depsは常に実行する。
       - name: Restore Playwright browser cache
         id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install Playwright OS dependencies
+        run: pnpm exec playwright install-deps chromium
       - name: Install Playwright browser
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install chromium
       - run: pnpm playwright test --project=e2e
       - uses: actions/upload-artifact@v4
         if: always()
