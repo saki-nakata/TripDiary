@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { pickDate } from "./utils/dateField";
 
 const USER_A = {

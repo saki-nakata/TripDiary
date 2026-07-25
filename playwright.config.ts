@@ -16,6 +16,10 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:3000",
     headless: !!process.env.CI,
+    // CIで再現するDOM重複の原因調査用。失敗時だけ証跡を残す。
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
     // クリック等のアクションと画面遷移の既定タイムアウトも、CI高負荷を見込んで延長する
     actionTimeout: 15_000,
     navigationTimeout: 30_000,

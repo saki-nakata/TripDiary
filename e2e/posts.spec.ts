@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { createSolidColorPng } from "./utils/testImage";
 import { pickDate } from "./utils/dateField";
 
