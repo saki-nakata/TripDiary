@@ -80,7 +80,11 @@ test.describe.serial("投稿の主要フロー（作成 → 詳細表示 → い
     await page.goto(`/posts/${postId}`);
 
     const commentBody = `E2Eコメント_${Date.now()}`;
-    await page.getByTestId("comment-textarea").fill(commentBody);
+    const commentTextarea = page.getByTestId("comment-textarea");
+    // 遷移直後のクライアント側ハイドレーション中に一時的に同じDOMが二重化することがある。
+    // 1要素へ収束することを確認してから操作し、恒常的な重複はテスト失敗として検知する。
+    await expect(commentTextarea).toHaveCount(1);
+    await commentTextarea.fill(commentBody);
 
     const [response] = await Promise.all([
       page.waitForResponse(
