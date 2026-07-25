@@ -20,6 +20,12 @@
 
 ---
 
+## セキュリティ確認メモ
+
+`pnpm audit` の残存警告（high 5 / low 1）は `swagger-ui-react` の内部依存由来。TripDiary本体機能への直接影響は限定的と判断し、critical 0 の状態で Phase 5 は完了とする。`swagger-ui-react` 側の修正版が公開され次第、依存更新で追従する。
+
+---
+
 ## 主な機能
 
 | カテゴリ | 機能 |
