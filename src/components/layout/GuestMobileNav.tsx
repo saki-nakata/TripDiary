@@ -17,10 +17,10 @@ export function GuestMobileNav() {
       <nav className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#e2e8f0] z-30 flex items-center justify-between px-4">
         <Link
           href="/"
-          className="flex items-center gap-1.5 text-[#1a6b3a] font-bold rounded-lg px-2 py-1 -ml-1"
+          className="flex items-center gap-1.5 font-bold rounded-lg px-2 py-1 -ml-1"
         >
           <TwemojiIcon codepoint="2708" alt="✈️" className="h-5 w-5" />
-          <span className="text-[1.05rem]">TripDiary</span>
+          <span className="text-[1.05rem] bg-gradient-to-r from-[#1a6b3a] to-[#0f766e] bg-clip-text text-transparent">TripDiary</span>
         </Link>
         <Link
           href="/"

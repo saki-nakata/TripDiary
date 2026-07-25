@@ -10,7 +10,8 @@ export const errorResponseSchema = z
 
 export const validationErrorResponseSchema = z
   .object({
-    error: z.record(z.string(), z.array(z.string())),
+    error: z.string(),
+    details: z.record(z.string(), z.array(z.string())).optional(),
   })
   .openapi("ValidationErrorResponse");
 

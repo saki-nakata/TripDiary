@@ -36,10 +36,10 @@ export default async function PublicLayout({ children }: { children: React.React
         <aside className="hidden md:flex flex-col fixed top-0 left-0 h-full bg-white border-r border-[#e2e8f0] z-30 w-60">
           <Link
             href="/"
-            className="flex items-center gap-2 px-4 pt-6 mb-5 text-[#1a6b3a] font-bold hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 px-4 pt-6 mb-5 font-bold hover:opacity-80 transition-opacity"
           >
             <TwemojiIcon codepoint="2708" alt="✈️" className="h-6 w-6" />
-            <span className="text-[1.35rem]">TripDiary</span>
+            <span className="text-[1.35rem] bg-gradient-to-r from-[#1a6b3a] to-[#0f766e] bg-clip-text text-transparent">TripDiary</span>
           </Link>
           <GuestSidebarNav />
           <div className="mt-auto px-4 pb-8 flex flex-col gap-3">

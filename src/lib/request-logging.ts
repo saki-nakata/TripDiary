@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { runWithRequestContext } from "@/lib/request-context";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 動的ルートのctx型はファイル毎に異なるため、汎用ラッパーの型はanyで受けてHにそのまま透過させる
 export type AnyRouteHandler = (req: NextRequest, ...args: any[]) => Promise<NextResponse> | NextResponse;
@@ -17,7 +18,11 @@ export function withRequestLogging<H extends AnyRouteHandler>(handler: H): H {
   return (async (req: NextRequest, ...args: any[]) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     const start = Date.now();
     const requestId = randomUUID();
-    const res = await handler(req, ...args);
+    // Controllerテストの一部は引数無しでハンドラを直接呼び出すため（本番のNext.jsは常にreqを渡す）、
+    // reqが無いケースでもクラッシュしないようoptional chainingで守る
+    const method = req?.method;
+    const path = req ? new URL(req.url).pathname : undefined;
+    const res = await runWithRequestContext({ requestId, method, path }, () => handler(req, ...args));
 
     let userId: string | undefined;
     try {
@@ -30,10 +35,8 @@ export function withRequestLogging<H extends AnyRouteHandler>(handler: H): H {
     logger.info(
       {
         requestId,
-        // Controllerテストの一部は引数無しでハンドラを直接呼び出すため（本番のNext.jsは常にreqを渡す）、
-        // reqが無いケースでもクラッシュしないようoptional chainingで守る
-        method: req?.method,
-        path: req ? new URL(req.url).pathname : undefined,
+        method,
+        path,
         status: res.status,
         duration_ms: Date.now() - start,
         userId,

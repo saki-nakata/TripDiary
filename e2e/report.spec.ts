@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { pickDate } from "./utils/dateField";
 
 const TEST_EMAIL = "test_playwright_report@example.com";

@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { test } from "../fixtures";
 import fs from "node:fs";
 import path from "node:path";
 import { collectWebVitals, assertWebVitals } from "../helpers/web-vitals";
