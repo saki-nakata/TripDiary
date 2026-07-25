@@ -8,11 +8,11 @@
 
 | 役割 | 技術・バージョン |
 |------|----------------|
-| フロントエンド | Next.js 16.2.10 + TypeScript |
+| フロントエンド | Next.js 16.2.11 + TypeScript |
 | スタイリング | Tailwind CSS 4.3.2 |
 | バックエンド | Next.js Route Handlers |
 | ORM | Prisma 6.19.3 |
-| 認証 | Auth.js（next-auth v5 beta.31） |
+| 認証 | Auth.js（next-auth v5 beta.32） |
 | データベース | MySQL（開発: Docker / 本番: AWS RDS 予定） |
 | 画像ストレージ | ローカル保存（開発時点）→ AWS S3 移行予定（実装計画書 Phase 6） |
 | 地図 | Leaflet + OpenStreetMap |
@@ -74,7 +74,6 @@ TripDiary/
 ├── docs/                          # ドキュメント類
 │   ├── 要件定義書.md
 │   ├── DB設計書.md
-│   ├── API仕様書.md
 │   ├── テスト設計書.md
 │   ├── ログ運用設計書.md
 │   ├── 画面設計書.md
@@ -173,10 +172,27 @@ pnpm playwright test         # E2Eテスト（認証フロー・投稿の主要�
 
 ### API仕様書（Swagger）
 
-実装済みAPIの最新仕様は、開発サーバー起動中に以下で確認できる（Phase 2.5-Aで自動生成を導入）。
+実装済みAPIの最新仕様は、開発サーバー起動中に以下で確認できる（Phase 2.5-Aで自動生成を導入。手書きの`docs/API仕様書.md`は廃止しこちらに一本化した）。
 
 - Swagger UI: http://localhost:3000/api-docs
 - OpenAPI JSON: http://localhost:3000/api/openapi.json
+
+現時点（本番デプロイ＝Phase 6未実施）は上記の通りローカルで `pnpm dev` を起動して確認する必要がある。Phase 6でのデプロイ後は本番URLでも常時公開する方針のため、そちらでも閲覧可能になる。
+
+---
+
+## CI（GitHub Actions）
+
+`.github/workflows/ci.yml` で以下4ジョブを実行する（プッシュ・PR時に自動起動）。
+
+| ジョブ | 内容 |
+|--------|------|
+| `lint` | ESLint |
+| `typecheck` | `tsc --noEmit` |
+| `test` | Vitest（`mysql-test` コンテナで実DB検証、カバレッジ閾値 Statements 85% / Branches 75% / Functions 78% / Lines 86% を下回るとジョブが失敗する） |
+| `e2e` | Playwright E2E（`continue-on-error` は設定していないため失敗時はCI上に赤く表示されるが、ブランチ保護の必須ステータスチェックには含めていない。運用実績を見て今後必須化を判断する方針） |
+
+ブランチ保護の必須ステータスチェックは `lint` / `typecheck` / `test` の3つ。
 
 ---
 
@@ -209,7 +225,7 @@ pnpm playwright test         # E2Eテスト（認証フロー・投稿の主要�
 |------------|------|
 | [要件定義書](docs/要件定義書.md) | 機能要件・非機能要件・技術スタック |
 | [DB 設計書](docs/DB設計書.md) | ER 図・テーブル定義 |
-| [API 仕様書](docs/API仕様書.md) | エンドポイント一覧・リクエスト/レスポンス仕様 |
+| [API 仕様書（Swagger UI）](http://localhost:3000/api-docs) | エンドポイント一覧・リクエスト/レスポンス仕様（開発サーバー起動中に閲覧。手書きの`docs/API仕様書.md`は廃止しSwagger自動生成に一本化済み。Phase 6デプロイ後は本番URLでも常時閲覧可能になる予定） |
 | [画面設計書](docs/画面設計書.md) | ワイヤーフレーム（全画面） |
 | [画面遷移図](docs/画面遷移図.md) | 画面間の遷移フロー |
 | [シーケンス図](docs/シーケンス図.md) | 認証・投稿・ソーシャル機能のシーケンス |

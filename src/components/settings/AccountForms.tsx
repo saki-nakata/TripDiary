@@ -109,8 +109,8 @@ export function AccountForms({ userId, initialEmail }: Props) {
 
       if (!res.ok) {
         const err = await res.json();
-        if (res.status === 400 && err.error?.currentPassword) {
-          setEmailErrors({ currentPassword: err.error.currentPassword[0] });
+        if (res.status === 400 && err.details?.currentPassword) {
+          setEmailErrors({ currentPassword: err.details.currentPassword[0] });
           return;
         }
         if (res.status === 409) {
@@ -154,8 +154,8 @@ export function AccountForms({ userId, initialEmail }: Props) {
 
       if (!res.ok) {
         const err = await res.json();
-        if (res.status === 400 && err.error?.currentPassword) {
-          setPasswordErrors({ currentPassword: err.error.currentPassword[0] });
+        if (res.status === 400 && err.details?.currentPassword) {
+          setPasswordErrors({ currentPassword: err.details.currentPassword[0] });
           return;
         }
         throw new Error();

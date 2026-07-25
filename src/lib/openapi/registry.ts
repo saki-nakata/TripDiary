@@ -564,6 +564,18 @@ registry.registerPath({
 
 registry.register("Login", loginSchema);
 
+// ─── health ───
+registry.registerPath({
+  method: "get",
+  path: "/api/health",
+  summary: "ヘルスチェック（認証不要。k6の疎通確認・Phase 6のNginx/PM2ヘルスチェックから使用）",
+  tags: ["Health"],
+  responses: {
+    200: { description: "正常", content: { "application/json": { schema: z.object({ status: z.literal("ok") }) } } },
+    503: { description: "DB接続不可", content: { "application/json": { schema: z.object({ status: z.literal("error") }) } } },
+  },
+});
+
   cachedRegistry = registry;
   return registry;
 }

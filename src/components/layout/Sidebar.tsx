@@ -176,10 +176,12 @@ export function Sidebar({ user }: { user: User }) {
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 px-3 sidebar:px-5 pt-6 mb-5 text-[#1e8449] font-bold hover:opacity-80 transition-opacity shrink-0 justify-start"
+          className="flex items-center gap-2 px-3 sidebar:px-5 pt-6 mb-5 font-bold hover:opacity-80 transition-opacity shrink-0 justify-start"
         >
           <TwemojiIcon codepoint="2708" className="h-6 w-6 shrink-0" />
-          <span className="hidden md:inline text-[0.95rem] sidebar:text-[1.35rem]">TripDiary</span>
+          <span className="hidden md:inline text-[0.95rem] sidebar:text-[1.35rem] bg-gradient-to-r from-[#1e8449] to-[#0d9488] bg-clip-text text-transparent">
+            TripDiary
+          </span>
         </Link>
 
         {/* Nav */}
@@ -302,9 +304,9 @@ export function Sidebar({ user }: { user: User }) {
           プロフィールはアバター自体が「自分」への入口を兼ねるため、別アイコンにはせず
           ドロップダウンメニューの先頭に含める（アイコンの二重化を避ける） */}
       <nav className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#e2e8f0] z-30 flex items-center justify-between px-3">
-        <Link href="/" title="ホーム" className="flex items-center gap-1.5 text-[#1e8449] font-bold shrink-0 rounded-lg px-2 py-1 -ml-1">
+        <Link href="/" title="ホーム" className="flex items-center gap-1.5 font-bold shrink-0 rounded-lg px-2 py-1 -ml-1">
           <TwemojiIcon codepoint="2708" className="h-5 w-5 shrink-0" />
-          <span className="text-[1.05rem]">TripDiary</span>
+          <span className="text-[1.05rem] bg-gradient-to-r from-[#1e8449] to-[#0d9488] bg-clip-text text-transparent">TripDiary</span>
         </Link>
         <div className="flex items-center gap-1">
         <Link href="/" title="ホーム" aria-label="ホーム" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname === "/" ? "bg-lime-100" : "text-[#64748b]"}`}>

@@ -10,6 +10,8 @@ vi.mock("@/lib/logger", () => ({
 
 import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-error";
+import { UnauthorizedError } from "@/lib/errors";
 import { withRequestLogging, type AnyRouteHandler } from "@/lib/request-logging";
 
 const authMock = auth as unknown as Mock;
@@ -77,5 +79,26 @@ describe("withRequestLogging", () => {
 
     expect(res.status).toBe(200);
     expect(handler).toHaveBeenCalledWith(req);
+  });
+
+  it("handleApiErrorのエラーログにも同じrequestIdを付与する", async () => {
+    authMock.mockResolvedValue(null);
+    const handler: AnyRouteHandler = vi.fn(async () => handleApiError(new UnauthorizedError()));
+    const wrapped = withRequestLogging(handler);
+
+    const req = new NextRequest(new Request("http://localhost/api/posts", { method: "GET" }));
+    const res = await wrapped(req);
+
+    expect(res.status).toBe(401);
+    const errorLog = vi.mocked(logger.warn).mock.calls[0]?.[0] as Record<string, unknown>;
+    const accessLog = vi.mocked(logger.info).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(errorLog).toEqual(
+      expect.objectContaining({
+        requestId: accessLog.requestId,
+        method: "GET",
+        path: "/api/posts",
+        errorType: "UnauthorizedError",
+      })
+    );
   });
 });

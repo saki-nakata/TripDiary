@@ -53,8 +53,9 @@ export default function SignupPage() {
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-[#16a34a] opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
-              <span className="flex items-center gap-1.5 text-2xl font-bold text-[#16a34a] group-hover:opacity-70 transition-opacity">
-                <TwemojiIcon codepoint="2708" alt="✈️" className="h-6 w-6" /> TripDiary
+              <span className="flex items-center gap-1.5 text-2xl font-bold group-hover:opacity-70 transition-opacity">
+                <TwemojiIcon codepoint="2708" alt="✈️" className="h-6 w-6" />
+                <span className="bg-gradient-to-r from-[#16a34a] to-[#0d9488] bg-clip-text text-transparent">TripDiary</span>
               </span>
             </Link>
             <p className="text-sm text-[#64748b]">アカウントを作成して旅を記録しよう</p>

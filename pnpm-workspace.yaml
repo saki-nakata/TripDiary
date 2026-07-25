@@ -1,7 +1,12 @@
 overrides:
-  # next@16.2.10がpostcss@8.4.31を推移的依存として引っ張っており、
+  # Next.js系の推移的依存として解決されるpostcssに、
   # </style>未エスケープによるXSS脆弱性（GHSA-qx2v-qp2m-jg93）がある。8.5.10以上に強制する
-  postcss: '>=8.5.10'
+  # 2026-07-25: PostCSSのソースマップパストラバーサル（GHSA-r28c-9q8g-f849、8.5.17以下が対象）
+  # も踏まえ8.5.18以上に引き上げ
+  postcss: '>=8.5.18'
+  # 2026-07-25: next@16.2.11が同梱するsharp@0.34.5にlibvips由来の脆弱性
+  # （CVE-2026-33327/33328/35590/35591、GHSA-f88m-g3jw-g9cj）がある。0.35.0以上に強制する
+  sharp: '>=0.35.0'
 
 allowBuilds:
   '@prisma/client': true
