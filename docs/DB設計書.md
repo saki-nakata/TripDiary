@@ -9,7 +9,7 @@
 >
 > ✅ **2026-07-13 更新：** 一覧表示のたびに `_count` を都度集計していたのを解消するため、`posts.likeCount`/`posts.commentCount`・`users.followerCount`/`users.followingCount`（非正規化カウンタ、`Int @default(0)`）を追加（マイグレーション`20260712131822_add_denormalized_counters`）。
 >
-> ✅ **2026-07-27 更新（Phase 6-A3）：** `users.isProtected`（`BOOLEAN NOT NULL DEFAULT false`）を追加。確認用アカウント（採点者向けにREADME等で認証情報を公開するアカウント）のパスワード・メールアドレス変更を禁止するためのフラグ（マイグレーション`20260726203038_add_user_is_protected`）。
+> ✅ **2026-07-27 更新（Phase 6-A3）：** `users.isProtected`（`BOOLEAN NOT NULL DEFAULT false`）を追加。確認用アカウント（確認者向けにREADME等で認証情報を公開するアカウント）のパスワード・メールアドレス変更を禁止するためのフラグ（マイグレーション`20260726203038_add_user_is_protected`）。
 
 ---
 

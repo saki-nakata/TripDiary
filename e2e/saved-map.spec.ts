@@ -41,27 +41,30 @@ test.describe.serial("行きたい/訪問済みの地図管理フロー（4-G）
 
     await page.goto("/mypage?tab=wishlist");
 
-    await expect(page.getByText(POST_TITLE)).toBeVisible();
+    // タイトルは地図/一覧の補助表示と重複しうるため、実際に検証対象である保存カードへ限定する。
+    const card = page.locator(".group\\/saved").filter({ hasText: POST_TITLE });
+    await expect(card).toHaveCount(1);
+    await expect(card).toBeVisible();
     await expect(page.getByText("東京都（1件）")).toBeVisible();
   });
 
   test("「外す」ボタン → 確認ダイアログ → カードと件数見出しが消え、リロード後も解除が反映される", async ({ page }) => {
     await page.goto("/mypage?tab=wishlist");
-    await expect(page.getByText(POST_TITLE)).toBeVisible();
-
-    const card = page.getByText(POST_TITLE).locator("xpath=ancestor::div[contains(@class, 'group/saved')]");
+    const card = page.locator(".group\\/saved").filter({ hasText: POST_TITLE });
+    await expect(card).toHaveCount(1);
+    await expect(card).toBeVisible();
     await card.getByRole("button", { name: "行きたいから外す" }).click();
 
     await page.getByRole("button", { name: "外す", exact: true }).click();
 
     // 楽観的UI: カードと県グループの件数見出しが即座に消える
-    await expect(page.getByText(POST_TITLE)).not.toBeVisible();
+    await expect(card).toHaveCount(0);
     await expect(page.getByText("東京都（1件）")).not.toBeVisible();
     await expect(page.getByText("「行きたい」から外しました")).toBeVisible();
 
     // サーバー側にも解除が反映されていることをリロードで確認
     await page.reload();
-    await expect(page.getByText(POST_TITLE)).not.toBeVisible();
+    await expect(page.locator(".group\\/saved").filter({ hasText: POST_TITLE })).toHaveCount(0);
     await expect(page.getByText("行きたいリストがまだありません")).toBeVisible();
   });
 });
