@@ -191,16 +191,17 @@ pnpm playwright test         # E2Eテスト（認証フロー・投稿の主要�
 
 ## CI（GitHub Actions）
 
-`.github/workflows/ci.yml` で以下4ジョブを実行する（プッシュ・PR時に自動起動）。
+`.github/workflows/ci.yml` で以下5ジョブを実行する（プッシュ・PR時に自動起動）。
 
 | ジョブ | 内容 |
 |--------|------|
 | `lint` | ESLint |
 | `typecheck` | `tsc --noEmit` |
+| `build` | `pnpm install --frozen-lockfile` → `pnpm build`（Next.jsのビルド可否を検証。6-A2で`@node-rs/bcrypt`〔ネイティブアドオン〕を導入したため新設） |
 | `test` | Vitest（`mysql-test` コンテナで実DB検証、カバレッジ閾値 Statements 85% / Branches 75% / Functions 78% / Lines 86% を下回るとジョブが失敗する） |
 | `e2e` | Playwright E2E（`continue-on-error` は設定していないため失敗時はCI上に赤く表示されるが、ブランチ保護の必須ステータスチェックには含めていない。運用実績を見て今後必須化を判断する方針） |
 
-ブランチ保護の必須ステータスチェックは `lint` / `typecheck` / `test` の3つ。
+ブランチ保護の必須ステータスチェックは `lint` / `typecheck` / `build` / `test` の4つ。
 
 ---
 
