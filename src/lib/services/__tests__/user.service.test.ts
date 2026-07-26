@@ -20,12 +20,12 @@ vi.mock("@/lib/repositories/follow.repository", () => ({
   isFollowing: vi.fn(),
   findFollowingIdsAmong: vi.fn(),
 }));
-vi.mock("bcryptjs", () => ({
+vi.mock("@node-rs/bcrypt", () => ({
   compare: vi.fn(),
   hash: vi.fn().mockResolvedValue("new-hashed-password"),
 }));
 
-import { compare } from "bcryptjs";
+import { compare } from "@node-rs/bcrypt";
 import {
   findUserById,
   updateUser,

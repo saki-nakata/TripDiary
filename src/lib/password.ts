@@ -1,10 +1,10 @@
-import { hash } from "bcryptjs";
+import { hash } from "@node-rs/bcrypt";
 
 const DEFAULT_BCRYPT_COST = 12;
 
-// テスト/CI環境でのみ BCRYPT_COST を下げ、bcryptjs（純JS実装でメインスレッドを
-// ブロックする）のCPU負荷を減らす。compare() 側はハッシュに埋め込まれたコストを
-// そのまま使うため呼び出し不要（hash()側だけ変えれば整合する）。
+// テスト/CI環境でのみ BCRYPT_COST を下げ、ハッシュ生成のCPU負荷を減らす。
+// compare() 側はハッシュに埋め込まれたコストをそのまま使うため呼び出し不要
+// （hash()側だけ変えれば整合する）。
 // 本番環境変数には BCRYPT_COST を設定しないこと（コストを下げるとパスワードの
 // 総当たり耐性が下がるため）。
 function getBcryptCost(): number {

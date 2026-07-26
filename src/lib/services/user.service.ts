@@ -1,4 +1,4 @@
-import { compare } from "bcryptjs";
+import { compare } from "@node-rs/bcrypt";
 import { ForbiddenError, NotFoundError, ValidationError, ConflictError } from "@/lib/errors";
 import { hashPassword } from "@/lib/password";
 import {

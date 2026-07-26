@@ -5,7 +5,7 @@ vi.mock("@/lib/repositories/user.repository", () => ({
   findUserByEmail: vi.fn(),
   createUser: vi.fn(),
 }));
-vi.mock("bcryptjs", () => ({
+vi.mock("@node-rs/bcrypt", () => ({
   hash: vi.fn().mockResolvedValue("hashed-password"),
 }));
 
