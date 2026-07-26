@@ -12,6 +12,8 @@ import {
   findCommentsByAuthor,
   findCommentsReceivedByAuthor,
   computeTabiScoreInputsForUsers,
+  findUserPasswordHash,
+  findUserPasswordHashAndEmail,
 } from "@/lib/repositories/user.repository";
 import { createPost } from "@/lib/repositories/post.repository";
 
@@ -115,6 +117,37 @@ describe("user.repository", () => {
 
   it("findUserById_存在しないID_nullを返す", async () => {
     expect(await findUserById("nonexistent-id")).toBeNull();
+  });
+
+  // ─── findUserPasswordHash / findUserPasswordHashAndEmail ───
+  it("findUserPasswordHash_通常ユーザー_passwordとisProtectedを返す", async () => {
+    const user = await prisma.user.create({
+      data: { email: "protected-flag@example.com", nickname: "対象者", password: "hashed-pw", isProtected: true },
+    });
+
+    expect(await findUserPasswordHash(user.id)).toEqual({ password: "hashed-pw", isProtected: true });
+  });
+
+  it("findUserPasswordHash_passwordがnullのユーザー(OAuth連携等)_nullを返す", async () => {
+    const user = await prisma.user.create({
+      data: { email: "oauth-user@example.com", nickname: "OAuth利用者", password: null },
+    });
+
+    expect(await findUserPasswordHash(user.id)).toBeNull();
+  });
+
+  it("findUserPasswordHash_存在しないID_nullを返す", async () => {
+    expect(await findUserPasswordHash("nonexistent-id")).toBeNull();
+  });
+
+  it("findUserPasswordHashAndEmail_通常ユーザー_password_email_isProtectedを返す", async () => {
+    const user = await createTestUser("password-and-email@example.com", "対象者2");
+
+    expect(await findUserPasswordHashAndEmail(user.id)).toEqual({
+      password: "hashed",
+      email: "password-and-email@example.com",
+      isProtected: false,
+    });
   });
 
   it("updateUser_nickname_bio_imageが更新される", async () => {
