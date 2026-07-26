@@ -19,6 +19,8 @@ model User {
   // 必ずこの列を参照し、`_count: { select: { followers/following: true } }` によるライブ集計を書かないこと
   followerCount   Int      @default(0)
   followingCount  Int      @default(0)
+  // 確認用アカウント等、パスワード・メール変更を禁止するフラグ（対象はchangePasswordService/changeEmailServiceのみ）
+  isProtected     Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

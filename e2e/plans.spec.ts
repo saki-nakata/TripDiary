@@ -64,11 +64,11 @@ test.describe.serial("旅行プランの主要フロー（作成 → 詳細表�
   test("旅行を完了済みにする → 完了バッジが表示される", async ({ page }) => {
     await page.goto(`/plans/${planId}`);
 
-    // 未完了時のチェックボックスは sr-only（画面上は非表示）でラベルクリックのみで
-    // トグルする設計のため、Playwrightの可視性チェックを回避して force クリックする
+    // チェックボックス自体はsr-onlyで、画面上で操作するのは親label。非可視inputを
+    // forceクリックせず、利用者と同じ可視labelをクリックする。
     const [response] = await Promise.all([
       page.waitForResponse((res) => res.url().includes(`/api/plans/${planId}/complete`)),
-      page.getByTestId("plan-completed-checkbox").click({ force: true }),
+      page.getByTestId("plan-completed-checkbox").locator("xpath=..").click(),
     ]);
     expect(response.status()).toBe(200);
 

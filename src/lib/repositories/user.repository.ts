@@ -30,9 +30,10 @@ export async function updateUser(id: string, data: { nickname: string; bio?: str
   });
 }
 
-export async function findUserPasswordHash(id: string): Promise<string | null> {
-  const user = await prisma.user.findUnique({ where: { id }, select: { password: true } });
-  return user?.password ?? null;
+export async function findUserPasswordHash(id: string) {
+  const user = await prisma.user.findUnique({ where: { id }, select: { password: true, isProtected: true } });
+  if (!user?.password) return null;
+  return { password: user.password, isProtected: user.isProtected };
 }
 
 export async function updateUserPassword(id: string, hashedPassword: string) {
@@ -40,7 +41,7 @@ export async function updateUserPassword(id: string, hashedPassword: string) {
 }
 
 export async function findUserPasswordHashAndEmail(id: string) {
-  return prisma.user.findUnique({ where: { id }, select: { password: true, email: true } });
+  return prisma.user.findUnique({ where: { id }, select: { password: true, email: true, isProtected: true } });
 }
 
 export async function updateUserEmail(id: string, email: string) {

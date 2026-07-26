@@ -160,10 +160,13 @@ export async function changePasswordService(
     throw new ForbiddenError("他のユーザーのパスワードは変更できません");
   }
 
-  const passwordHash = await findUserPasswordHash(targetUserId);
-  if (!passwordHash) throw new NotFoundError();
+  const user = await findUserPasswordHash(targetUserId);
+  if (!user) throw new NotFoundError();
+  if (user.isProtected) {
+    throw new ForbiddenError("確認用アカウントのため変更できません");
+  }
 
-  const isValid = await compare(currentPassword, passwordHash);
+  const isValid = await compare(currentPassword, user.password);
   if (!isValid) {
     throw new ValidationError("入力内容を確認してください", {
       currentPassword: ["現在のパスワードが正しくありません"],
@@ -186,6 +189,9 @@ export async function changeEmailService(
 
   const current = await findUserPasswordHashAndEmail(targetUserId);
   if (!current?.password) throw new NotFoundError();
+  if (current.isProtected) {
+    throw new ForbiddenError("確認用アカウントのため変更できません");
+  }
 
   const isValid = await compare(currentPassword, current.password);
   if (!isValid) {

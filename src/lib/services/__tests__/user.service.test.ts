@@ -295,7 +295,7 @@ describe("changePasswordService", () => {
   });
 
   it("changePassword_現在のパスワードが誤り_ValidationErrorかつrepository更新は呼ばれない", async () => {
-    vi.mocked(findUserPasswordHash).mockResolvedValue("hashed-current");
+    vi.mocked(findUserPasswordHash).mockResolvedValue({ password: "hashed-current", isProtected: false });
     vi.mocked(compare).mockResolvedValue(false as never);
 
     await expect(
@@ -305,12 +305,22 @@ describe("changePasswordService", () => {
   });
 
   it("changePassword_現在のパスワードが正しい_ハッシュ化した新パスワードで更新される", async () => {
-    vi.mocked(findUserPasswordHash).mockResolvedValue("hashed-current");
+    vi.mocked(findUserPasswordHash).mockResolvedValue({ password: "hashed-current", isProtected: false });
     vi.mocked(compare).mockResolvedValue(true as never);
 
     await changePasswordService(USER_ID, USER_ID, "current-pw", "new-password");
 
     expect(updateUserPassword).toHaveBeenCalledWith(USER_ID, "new-hashed-password");
+  });
+
+  it("changePassword_確認用アカウント_ForbiddenErrorかつパスワード照合・更新は呼ばれない", async () => {
+    vi.mocked(findUserPasswordHash).mockResolvedValue({ password: "hashed-current", isProtected: true });
+
+    const promise = changePasswordService(USER_ID, USER_ID, "current-pw", "new-password");
+    await expect(promise).rejects.toThrow(ForbiddenError);
+    await expect(promise).rejects.toThrow("確認用アカウントのため変更できません");
+    expect(compare).not.toHaveBeenCalled();
+    expect(updateUserPassword).not.toHaveBeenCalled();
   });
 });
 
@@ -335,7 +345,7 @@ describe("changeEmailService", () => {
   });
 
   it("changeEmail_現在のパスワードが誤り_ValidationErrorかつrepository更新は呼ばれない", async () => {
-    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({ password: "hashed-current", email: "old@example.com" });
+    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({ password: "hashed-current", email: "old@example.com", isProtected: false });
     vi.mocked(compare).mockResolvedValue(false as never);
 
     await expect(
@@ -345,7 +355,7 @@ describe("changeEmailService", () => {
   });
 
   it("changeEmail_新しいメールアドレスが既存ユーザーと重複_ConflictError", async () => {
-    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({ password: "hashed-current", email: "old@example.com" });
+    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({ password: "hashed-current", email: "old@example.com", isProtected: false });
     vi.mocked(compare).mockResolvedValue(true as never);
     vi.mocked(findUserByEmail).mockResolvedValue({ id: "other-user" } as never);
 
@@ -356,7 +366,7 @@ describe("changeEmailService", () => {
   });
 
   it("changeEmail_現在と同じメールアドレスを指定_重複チェックをスキップし何もしない(境界値)", async () => {
-    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({ password: "hashed-current", email: "same@example.com" });
+    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({ password: "hashed-current", email: "same@example.com", isProtected: false });
     vi.mocked(compare).mockResolvedValue(true as never);
 
     await changeEmailService(USER_ID, USER_ID, "same@example.com", "current-pw");
@@ -366,12 +376,27 @@ describe("changeEmailService", () => {
   });
 
   it("changeEmail_正常なリクエスト_新しいメールアドレスで更新される", async () => {
-    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({ password: "hashed-current", email: "old@example.com" });
+    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({ password: "hashed-current", email: "old@example.com", isProtected: false });
     vi.mocked(compare).mockResolvedValue(true as never);
     vi.mocked(findUserByEmail).mockResolvedValue(null);
 
     await changeEmailService(USER_ID, USER_ID, "new@example.com", "current-pw");
 
     expect(updateUserEmail).toHaveBeenCalledWith(USER_ID, "new@example.com");
+  });
+
+  it("changeEmail_確認用アカウント_ForbiddenErrorかつパスワード照合・更新は呼ばれない", async () => {
+    vi.mocked(findUserPasswordHashAndEmail).mockResolvedValue({
+      password: "hashed-current",
+      email: "old@example.com",
+      isProtected: true,
+    });
+
+    const promise = changeEmailService(USER_ID, USER_ID, "new@example.com", "current-pw");
+    await expect(promise).rejects.toThrow(ForbiddenError);
+    await expect(promise).rejects.toThrow("確認用アカウントのため変更できません");
+    expect(compare).not.toHaveBeenCalled();
+    expect(findUserByEmail).not.toHaveBeenCalled();
+    expect(updateUserEmail).not.toHaveBeenCalled();
   });
 });

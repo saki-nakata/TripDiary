@@ -117,6 +117,10 @@ export function AccountForms({ userId, initialEmail }: Props) {
           setEmailErrors({ email: "このメールアドレスはすでに使用されています" });
           return;
         }
+        if (res.status === 403) {
+          showToast(err.error ?? "この操作は許可されていません", "error");
+          return;
+        }
         throw new Error();
       }
 
@@ -156,6 +160,10 @@ export function AccountForms({ userId, initialEmail }: Props) {
         const err = await res.json();
         if (res.status === 400 && err.details?.currentPassword) {
           setPasswordErrors({ currentPassword: err.details.currentPassword[0] });
+          return;
+        }
+        if (res.status === 403) {
+          showToast(err.error ?? "この操作は許可されていません", "error");
           return;
         }
         throw new Error();

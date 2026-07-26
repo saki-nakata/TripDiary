@@ -1,13 +1,15 @@
 # TripDiary DB設計書
 
-**バージョン:** 1.6
+**バージョン:** 1.7
 **作成日:** 2026-06-27
-**更新日:** 2026-07-13
+**更新日:** 2026-07-27
 **作成者:** Nakata Saki
 
 > ✅ **2026-07-11 更新：** `plan_spots`テーブルが実装と乖離していたため修正（複合主キー`(planId, postId)`→単一`id`主キー、`postId`をNULL許容化、自由入力スポット用の`freeTitle`/`freeLocation`/`freeCategory`を追加）。
 >
 > ✅ **2026-07-13 更新：** 一覧表示のたびに `_count` を都度集計していたのを解消するため、`posts.likeCount`/`posts.commentCount`・`users.followerCount`/`users.followingCount`（非正規化カウンタ、`Int @default(0)`）を追加（マイグレーション`20260712131822_add_denormalized_counters`）。
+>
+> ✅ **2026-07-27 更新（Phase 6-A3）：** `users.isProtected`（`BOOLEAN NOT NULL DEFAULT false`）を追加。確認用アカウント（確認者向けにREADME等で認証情報を公開するアカウント）のパスワード・メールアドレス変更を禁止するためのフラグ（マイグレーション`20260726203038_add_user_is_protected`）。
 
 ---
 
@@ -187,6 +189,7 @@ erDiagram
 | password | VARCHAR(255) | NULL | - | ハッシュ化済みパスワード（OAuth利用時はNULL） |
 | followerCount | INT | NOT NULL | 0 | フォロワー数（非正規化カウンタ。`follows`テーブルの`increment`/`decrement`と同一トランザクションで更新） |
 | followingCount | INT | NOT NULL | 0 | フォロー中数（非正規化カウンタ。同上） |
+| isProtected | BOOLEAN | NOT NULL | false | 確認用アカウント等、パスワード・メールアドレス変更を禁止するフラグ（対象はパスワード変更API・メールアドレス変更APIのみ。プロフィール編集等は許可） |
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
 | updatedAt | DATETIME(3) | NOT NULL | - | 更新日時 |
 
