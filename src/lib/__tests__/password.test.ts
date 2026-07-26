@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("bcryptjs", () => ({
+vi.mock("@node-rs/bcrypt", () => ({
   hash: vi.fn().mockResolvedValue("hashed"),
 }));
 
-import { hash } from "bcryptjs";
+import { hash } from "@node-rs/bcrypt";
 import { hashPassword } from "@/lib/password";
 
 describe("hashPassword", () => {

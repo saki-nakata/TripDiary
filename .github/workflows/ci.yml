@@ -41,6 +41,22 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
 
+  build:
+    runs-on: ubuntu-latest
+    # 6-A2で@node-rs/bcrypt（napi-rsのネイティブアドオン）を導入したため、
+    # Next.jsのバンドル・サーバーコンポーネントと問題なく組み合わさることを
+    # CIで保証する目的で新設。typecheckとは依存関係が重複するが、独立ジョブに
+    # することで並列実行でき、失敗時に型エラーかビルドエラーかを切り分けやすい。
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
   test:
     runs-on: ubuntu-latest
     services:
@@ -79,10 +95,12 @@ jobs:
     #   直近のCI安定性実績をGitHub UI上で追いにくくなるため採用しない）
     env:
       ENABLE_TEST_ENDPOINTS: "true"
-      # bcryptjs（純JS実装）はコストに応じてメインスレッドをブロックする。
-      # 多くのspecがUIログインをbeforeEachで行うため、本番同様のコスト12のままでは
-      # 並列ワーカー下でCPU競合しフレークの一因になっていた（Phase 5-D2、詳細は実装計画書）。
-      # 本番環境変数には絶対に設定しないこと。
+      # 多くのspecがUIログインをbeforeEachで行うため、コストを下げてハッシュ計算量を
+      # 減らし実行時間を短縮する（Phase 5-D2、詳細は実装計画書）。6-A2で@node-rs/bcrypt
+      # へ置き換え済みのためメインスレッドはブロックしないが、コストに応じたCPU時間
+      # そのものは変わらないため、テスト高速化の目的でコストは引き続き下げておく。
+      # 本番環境変数には絶対に設定しないこと（コストを下げるとパスワードの総当たり
+      # 耐性が下がるため）。
       BCRYPT_COST: "4"
     services:
       mysql-test:

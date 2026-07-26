@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { compare } from "bcryptjs";
+import { compare } from "@node-rs/bcrypt";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validations/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
