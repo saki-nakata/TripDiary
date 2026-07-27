@@ -2,6 +2,7 @@
 node_modules/
 .pnp
 .pnp.js
+.pnpm-store/
 
 # Claudeがrm/mv権限の都合で削除できず退避したファイル（ユーザーが手動削除する）
 .pending-deletion/
@@ -25,7 +26,7 @@ build/
 prisma/migrations/dev.db
 
 # local docs
-実装計画書.md
+実装計画書/
 
 # uploaded images (local dev only, replaced by S3 in production)
 public/uploads/*
