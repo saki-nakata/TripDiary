@@ -1,7 +1,7 @@
 import "./zod-setup";
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
-import { postSchema } from "@/lib/validations/post";
+import { postSchema, postUpdateSchema } from "@/lib/validations/post";
 import { signupApiSchema, loginSchema } from "@/lib/validations/auth";
 import { userUpdateSchema, passwordChangeApiSchema, emailChangeSchema } from "@/lib/validations/user";
 import { planSchema } from "@/lib/validations/plan";
@@ -108,7 +108,7 @@ registry.registerPath({
   security: [{ [bearerAuth.name]: [] }],
   request: {
     params: z.object({ id: z.string() }),
-    body: { content: { "application/json": { schema: postSchema } } },
+    body: { content: { "application/json": { schema: postUpdateSchema } } },
   },
   responses: {
     200: { description: "更新後の投稿", content: { "application/json": { schema: postResponseSchema } } },
@@ -116,6 +116,7 @@ registry.registerPath({
     401: commonErrors[401],
     403: commonErrors[403],
     404: commonErrors[404],
+    409: { description: "他のリクエストによる更新と競合（updatedAt不一致）", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 
@@ -312,6 +313,8 @@ registry.registerPath({
     400: commonErrors[400],
     401: commonErrors[401],
     403: commonErrors[403],
+    404: commonErrors[404],
+    409: { description: "他のリクエストによる更新と競合（updatedAt不一致）", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 

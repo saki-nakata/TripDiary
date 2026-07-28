@@ -11,6 +11,7 @@ export type PlanSpotPost = {
   rating: number | null;
   lat: number | null;
   lng: number | null;
+  authorId: string;
   images: { url: string }[];
 };
 

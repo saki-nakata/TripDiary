@@ -14,7 +14,7 @@
 | ORM | Prisma 6.19.3 |
 | 認証 | Auth.js（next-auth v5 beta.32） |
 | データベース | MySQL（開発: Docker / 本番: AWS RDS 予定） |
-| 画像ストレージ | ローカル保存（開発時点）→ AWS S3 移行予定（実装計画書 Phase 6） |
+| 画像ストレージ | AWS S3（実装計画書 Phase 6-A 対応済み。アップロードには`AWS_REGION`/`AWS_S3_BUCKET_NAME`の設定と実際のバケットが必要） |
 | 地図 | Leaflet + OpenStreetMap |
 | ホスティング | 未デプロイ（想定構成: AWS EC2 + RDS + S3。詳細は [インフラ構成書](docs/インフラ構成書.md)） |
 
@@ -129,7 +129,7 @@ TripDiary/
 - Node.js 20 以上 / pnpm
 - Docker（開発用MySQLコンテナの起動に使用）
 - Leaflet + OpenStreetMap（APIキー不要）
-- ※ AWS（S3等）は現時点では不要（画像はローカル保存。S3移行は実装計画書 Phase 6 で対応予定）
+- ※ 画像アップロード機能（投稿画像・アバター）を使うには `AWS_REGION` / `AWS_S3_BUCKET_NAME` の設定と実際のS3バケットが必要（バケット自体の構築は実装計画書 Phase 6-B）。それ以外の画面・機能はS3設定なしでも動作する
 
 ### 手順
 
@@ -214,17 +214,17 @@ pnpm playwright test         # E2Eテスト（認証フロー・投稿の主要�
 | `DATABASE_URL` | MySQL 接続 URL（開発時は `docker compose up -d db` のコンテナ、本番は AWS RDS 予定） |
 | `AUTH_SECRET` | Auth.js のシークレットキー |
 | `AUTH_URL` | アプリの URL（開発時は http://localhost:3000） |
-| `AWS_REGION` | S3 バケットのリージョン（例: ap-northeast-1）※現時点では未使用（S3移行＝実装計画書 Phase 6 まで画像はローカル保存） |
-| `AWS_S3_BUCKET_NAME` | S3 バケット名 ※現時点では未使用 |
-| `AWS_ACCESS_KEY_ID` | IAM ユーザーのアクセスキー ※現時点では未使用 |
-| `AWS_SECRET_ACCESS_KEY` | IAM ユーザーのシークレットキー ※現時点では未使用 |
+| `AWS_REGION` | S3 バケットのリージョン（例: ap-northeast-1）。画像アップロード機能に必須 |
+| `AWS_S3_BUCKET_NAME` | S3 バケット名。画像アップロード機能に必須 |
+| `AWS_ACCESS_KEY_ID` | IAM ユーザーのアクセスキー（任意。ローカル開発で一時的な認証情報を使う場合のみ設定。本番は EC2 の IAM ロールを使うため設定不要） |
+| `AWS_SECRET_ACCESS_KEY` | IAM ユーザーのシークレットキー（任意。用途は上記と同じ） |
 | ~~`NEXT_PUBLIC_MAPBOX_TOKEN`~~ | 不要（Leaflet + OpenStreetMap に変更） |
 
 ---
 
 ## 本番環境へのデプロイ
 
-現時点で本番デプロイは未実施（ローカル開発環境のみ）。本番環境は AWS EC2（アプリ）+ AWS RDS（MySQL）+ AWS S3（画像ストレージ）で構成予定。デプロイ手順・画像ストレージのS3移行は実装計画書 Phase 6 で実施する。インフラの詳細は [docs/インフラ構成書.md](docs/インフラ構成書.md) を参照。
+現時点で本番デプロイは未実施（ローカル開発環境のみ）。本番環境は AWS EC2（アプリ）+ AWS RDS（MySQL）+ AWS S3（画像ストレージ）で構成予定。画像ストレージのS3移行（実装計画書 Phase 6-A）は実装済み。EC2/RDSへのデプロイ（Phase 6-B）は今後実施する。インフラの詳細は [docs/インフラ構成書.md](docs/インフラ構成書.md) を参照。
 
 ---
 

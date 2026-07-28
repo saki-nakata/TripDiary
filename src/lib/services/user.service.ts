@@ -1,6 +1,9 @@
+import { Prisma } from "@prisma/client";
 import { compare } from "@node-rs/bcrypt";
 import { ForbiddenError, NotFoundError, ValidationError, ConflictError } from "@/lib/errors";
 import { hashPassword } from "@/lib/password";
+import { deleteOwnedObjectsByUrl, isOwnedS3Url } from "@/lib/s3";
+import { findStillReferencedUrls } from "@/lib/repositories/post.repository";
 import {
   findUserById,
   updateUser as updateUserRepo,
@@ -147,7 +150,37 @@ export async function updateUserService(targetUserId: string, actingUserId: stri
   if (targetUserId !== actingUserId) {
     throw new ForbiddenError("他のユーザーのプロフィールは編集できません");
   }
-  return updateUserRepo(targetUserId, data);
+
+  const before = await findUserById(targetUserId);
+  if (!before) throw new NotFoundError();
+
+  if (data.image !== undefined && data.image !== null && data.image !== before.image) {
+    if (!isOwnedS3Url(data.image, targetUserId)) {
+      throw new ValidationError("Validation failed", {
+        image: ["自分でアップロードした画像のみ設定できます"],
+      });
+    }
+  }
+
+  const { updatedAt, ...profileData } = data;
+  let result;
+  try {
+    result = await updateUserRepo(targetUserId, profileData, new Date(updatedAt));
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
+    }
+    throw e;
+  }
+
+  if (data.image !== undefined && before.image && before.image !== data.image) {
+    const stillReferenced = await findStillReferencedUrls([before.image]);
+    if (!stillReferenced.has(before.image)) {
+      await deleteOwnedObjectsByUrl([before.image], targetUserId);
+    }
+  }
+
+  return result;
 }
 
 export async function changePasswordService(

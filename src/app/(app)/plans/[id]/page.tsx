@@ -11,6 +11,7 @@ import { BackButton } from "@/components/posts/BackButton";
 import { PlanMapViewWrapper } from "@/components/map/PlanMapViewWrapper";
 import type { PlanMapSpot } from "@/components/map/PlanMapView";
 import { formatDateSlash } from "@/lib/date";
+import { buildSpotRecordHref } from "@/lib/plan-spot-link";
 import type { PlanDetail } from "@/types/plan";
 
 type Props = {
@@ -141,6 +142,7 @@ export default async function PlanDetailPage({ params }: Props) {
                 const category =
                   spot.post?.category ?? spot.freeCategory ?? null;
                 const image = spot.post?.images[0];
+                const recordHref = buildSpotRecordHref(plan.id, spot, session.user.id);
                 return (
                   <li
                     key={spot.post?.id ?? `free-${i}`}
@@ -187,7 +189,7 @@ export default async function PlanDetailPage({ params }: Props) {
                       </p>
                     </div>
                     <Link
-                      href={`/posts/new?planId=${plan.id}&presetTitle=${encodeURIComponent(title)}&presetLocation=${encodeURIComponent(location)}&presetCategory=${encodeURIComponent(category ?? "")}${image ? `&presetImageUrl=${encodeURIComponent(image.url)}` : ""}`}
+                      href={recordHref}
                       className="-mr-1 sm:mr-0 flex shrink-0 items-center gap-1 rounded-lg bg-green-50 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-semibold text-green-700 hover:bg-green-100 transition-colors"
                     >
                       <span className="sm:hidden flex flex-col items-center leading-tight">

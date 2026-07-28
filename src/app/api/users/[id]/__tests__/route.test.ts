@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { NextRequest } from "next/server";
-import { NotFoundError, ForbiddenError } from "@/lib/errors";
+import { NotFoundError, ForbiddenError, ConflictError } from "@/lib/errors";
+
+const UPDATED_AT = "2026-01-01T00:00:00.000Z";
 
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
@@ -88,7 +90,22 @@ describe("PUT /api/users/[id]", () => {
     const res = await PUT(
       makeRequest(`http://localhost/api/users/${USER_ID}`, {
         method: "PUT",
-        body: JSON.stringify({ nickname: "あ".repeat(21) }),
+        body: JSON.stringify({ nickname: "あ".repeat(21), updatedAt: UPDATED_AT }),
+      }),
+      makeParams(USER_ID)
+    );
+
+    expect(res.status).toBe(400);
+    expect(updateUserService).not.toHaveBeenCalled();
+  });
+
+  it("PUT_updatedAt未指定_400", async () => {
+    authMock.mockResolvedValue({ user: { id: USER_ID } } as never);
+
+    const res = await PUT(
+      makeRequest(`http://localhost/api/users/${USER_ID}`, {
+        method: "PUT",
+        body: JSON.stringify({ nickname: "たろう" }),
       }),
       makeParams(USER_ID)
     );
@@ -104,12 +121,27 @@ describe("PUT /api/users/[id]", () => {
     const res = await PUT(
       makeRequest(`http://localhost/api/users/${USER_ID}`, {
         method: "PUT",
-        body: JSON.stringify({ nickname: "たろう" }),
+        body: JSON.stringify({ nickname: "たろう", updatedAt: UPDATED_AT }),
       }),
       makeParams(USER_ID)
     );
 
     expect(res.status).toBe(403);
+  });
+
+  it("PUT_他リクエストとの更新競合_409", async () => {
+    authMock.mockResolvedValue({ user: { id: USER_ID } } as never);
+    vi.mocked(updateUserService).mockRejectedValue(new ConflictError("他の画面で更新されています。再読み込みしてください。"));
+
+    const res = await PUT(
+      makeRequest(`http://localhost/api/users/${USER_ID}`, {
+        method: "PUT",
+        body: JSON.stringify({ nickname: "たろう", updatedAt: UPDATED_AT }),
+      }),
+      makeParams(USER_ID)
+    );
+
+    expect(res.status).toBe(409);
   });
 
   it("PUT_本人が正しい入力で更新_200", async () => {
@@ -119,7 +151,7 @@ describe("PUT /api/users/[id]", () => {
     const res = await PUT(
       makeRequest(`http://localhost/api/users/${USER_ID}`, {
         method: "PUT",
-        body: JSON.stringify({ nickname: "たろう2" }),
+        body: JSON.stringify({ nickname: "たろう2", updatedAt: UPDATED_AT }),
       }),
       makeParams(USER_ID)
     );

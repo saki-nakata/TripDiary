@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { findPostByIdService, updatePostService, deletePostService } from "@/lib/services/post.service";
-import { postSchema } from "@/lib/validations/post";
+import { postUpdateSchema } from "@/lib/validations/post";
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError, ValidationError } from "@/lib/errors";
 import { withRequestLogging } from "@/lib/request-logging";
@@ -28,7 +28,7 @@ async function handlePUT(req: NextRequest, { params }: Params) {
 
     const { id } = await params;
     const body = await req.json();
-    const parsed = postSchema.safeParse(body);
+    const parsed = postUpdateSchema.safeParse(body);
     if (!parsed.success) {
       throw new ValidationError("Validation failed", parsed.error.flatten().fieldErrors);
     }

@@ -18,13 +18,17 @@ export async function createUser(data: { nickname: string; email: string; passwo
 export async function findUserById(id: string) {
   return prisma.user.findUnique({
     where: { id },
-    select: { id: true, nickname: true, image: true, bio: true, followerCount: true, followingCount: true },
+    select: { id: true, nickname: true, image: true, bio: true, followerCount: true, followingCount: true, updatedAt: true },
   });
 }
 
-export async function updateUser(id: string, data: { nickname: string; bio?: string | null; image?: string | null }) {
+export async function updateUser(
+  id: string,
+  data: { nickname: string; bio?: string | null; image?: string | null },
+  expectedUpdatedAt: Date
+) {
   return prisma.user.update({
-    where: { id },
+    where: { id, updatedAt: expectedUpdatedAt },
     data,
     select: { id: true, nickname: true, bio: true, image: true },
   });

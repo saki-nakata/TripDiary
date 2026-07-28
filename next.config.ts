@@ -1,14 +1,17 @@
 import type { NextConfig } from "next";
+import { getBucketHostname } from "./src/lib/s3-url";
 
 // App RouterはhydrationでNext.js自身がinline scriptを埋め込むため、リクエスト毎のnonceを
 // 発行しない静的ヘッダーではscript-srcに'unsafe-inline'を許容せざるを得ずCSPの主目的（XSS対策）
 // が形骸化する。nonceの動的発行（proxy.tsでの生成）は工数対効果が見合わないため見送り、
 // まずはContent-Security-Policy-Report-Onlyで違反レポートを収集し、段階的にstrict化する方針とする。
+const s3Hostname = getBucketHostname();
+
 const CSP_REPORT_ONLY = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://images.unsplash.com https://*.amazonaws.com",
+  `img-src 'self' data: https://images.unsplash.com${s3Hostname ? ` https://${s3Hostname}` : ""}`,
   "font-src 'self'",
   "connect-src 'self'",
   "frame-ancestors 'none'",
@@ -18,7 +21,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "*.amazonaws.com" },
+      ...(s3Hostname ? [{ protocol: "https" as const, hostname: s3Hostname }] : []),
     ],
   },
   // 開発サーバーはデフォルトでlocalhost以外のオリジン（実機からのLAN IPアクセス等）からの

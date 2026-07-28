@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import type { PostInput } from "@/lib/validations/post";
+import type { PostInput, PostUpdateInput } from "@/lib/validations/post";
 
 const POST_SELECT = {
   id: true,
@@ -399,8 +399,9 @@ export async function createPost(authorId: string, data: PostInput) {
   return formatPost(post);
 }
 
-export async function updatePost(id: string, data: PostInput) {
-  const { costBreakdown, imageUrls, ...rest } = data;
+export async function updatePost(id: string, data: PostUpdateInput, expectedUpdatedAt: Date) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { costBreakdown, imageUrls, updatedAt, ...rest } = data;
   const cost = costBreakdown?.reduce((sum, item) => sum + item.amount, 0) ?? null;
 
   return prisma.$transaction(async (tx) => {
@@ -409,7 +410,7 @@ export async function updatePost(id: string, data: PostInput) {
     }
 
     return tx.post.update({
-      where: { id },
+      where: { id, updatedAt: expectedUpdatedAt },
       data: {
         ...rest,
         cost,
@@ -428,6 +429,18 @@ export async function updatePost(id: string, data: PostInput) {
 
 export async function deletePost(id: string) {
   return prisma.post.delete({ where: { id } });
+}
+
+// S3オブジェクト削除前の安全確認用。同一URLが複数の投稿・アバターから参照され得るため
+// （旅行プランからの画像引き継ぎ presetImageUrl 等）、DB確定後に他から参照されていないかを
+// 一括判定する（IN句でのバッチ照会。N+1にしない）。
+export async function findStillReferencedUrls(urls: string[]): Promise<Set<string>> {
+  if (urls.length === 0) return new Set();
+  const [images, users] = await Promise.all([
+    prisma.postImage.findMany({ where: { url: { in: urls } }, select: { url: true } }),
+    prisma.user.findMany({ where: { image: { in: urls } }, select: { image: true } }),
+  ]);
+  return new Set([...images.map((i) => i.url), ...users.flatMap((u) => (u.image ? [u.image] : []))]);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -106,7 +106,12 @@ test.describe.serial("投稿の主要フロー（作成 → 詳細表示 → い
     await expect(page).toHaveURL("/", { timeout: 5000 });
   });
 
-  test("複数枚の写真をアップロードし、ドラッグ&ドロップで並び替えて保存できる", async ({ page }) => {
+  // Phase 6-Aで画像保存先がS3必須になったが、CI（.github/workflows/ci.yml のe2eジョブ）には
+  // AWS認証情報を設定していないため、実際にアップロードするこのテストはCI上で必ず失敗する。
+  // 実バケット・IAMロールはPhase 6-B（Terraform）で構築予定のため、それまで一時的にスキップする。
+  // ローカルで`.env.local`にAWS認証情報を設定していれば手動実行では引き続き検証可能。
+  // 6-B着手時にこのskipを解除すること。
+  test.skip("複数枚の写真をアップロードし、ドラッグ&ドロップで並び替えて保存できる", async ({ page }) => {
     await page.goto("/posts/new");
 
     await page.fill('input[name="title"]', `E2E画像並び替えテスト_${Date.now()}`);

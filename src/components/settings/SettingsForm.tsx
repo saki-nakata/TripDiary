@@ -14,9 +14,10 @@ type Props = {
   initialNickname: string;
   initialBio: string | null;
   initialImage: string | null;
+  initialUpdatedAt: string;
 };
 
-export function SettingsForm({ userId, initialNickname, initialBio, initialImage }: Props) {
+export function SettingsForm({ userId, initialNickname, initialBio, initialImage, initialUpdatedAt }: Props) {
   const router = useRouter();
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -30,7 +31,7 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
     formState: { errors, isSubmitting },
   } = useForm<UserUpdateInput>({
     resolver: zodResolver(userUpdateSchema),
-    defaultValues: { nickname: initialNickname, bio: initialBio ?? "" },
+    defaultValues: { nickname: initialNickname, bio: initialBio ?? "", updatedAt: initialUpdatedAt },
   });
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -67,12 +68,15 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, image }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "エラーが発生しました");
+      }
 
       showToast("プロフィールを更新しました", "success");
       router.push(`/users/${userId}`);
-    } catch {
-      showToast("エラーが発生しました", "error");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "エラーが発生しました", "error");
     }
   }
 

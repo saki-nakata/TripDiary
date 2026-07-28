@@ -68,6 +68,7 @@ describe("POST /api/upload/avatar", () => {
     expect(body).toEqual({ url: "/uploads/avatar.jpg" });
     expect(saveUploadedFile).toHaveBeenCalledWith(
       expect.any(File),
+      USER_ID,
       { maxSize: 5 * 1024 * 1024, allowedTypes: ["image/jpeg", "image/png", "image/webp"] }
     );
   });

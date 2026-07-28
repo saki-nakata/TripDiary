@@ -34,6 +34,7 @@ export default async function EditPlanPage({ params }: Props) {
     rating: p.rating,
     lat: p.lat,
     lng: p.lng,
+    authorId: p.authorId,
     images: p.images.map((img: { url: string }) => ({ url: img.url })),
   }));
 

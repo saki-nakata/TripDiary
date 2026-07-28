@@ -26,6 +26,8 @@ import {
 import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+const MAX_IMAGES = 20;
+
 function SortableImageThumb({
   url,
   index,
@@ -161,11 +163,21 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
   async function uploadFiles(files: File[]) {
     if (files.length === 0) return;
 
-    setUploadingCount((c) => c + files.length);
+    const remaining = MAX_IMAGES - imageUrls.length - uploadingCount;
+    if (remaining <= 0) {
+      showToast(`画像は${MAX_IMAGES}枚まで設定できます`, "error");
+      return;
+    }
+    const targetFiles = files.slice(0, remaining);
+    if (targetFiles.length < files.length) {
+      showToast(`画像は${MAX_IMAGES}枚まで設定できます`, "error");
+    }
+
+    setUploadingCount((c) => c + targetFiles.length);
     const uploaded: string[] = [];
 
     await Promise.all(
-      files.map(async (file) => {
+      targetFiles.map(async (file) => {
         const form = new FormData();
         form.append("file", file);
         const res = await fetch("/api/upload/post", { method: "POST", body: form });
@@ -211,6 +223,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
       ...data,
       imageUrls,
       costBreakdown: costBreakdown.filter((i) => i.amount > 0),
+      ...(isEdit && { updatedAt: initialData!.updatedAt }),
     };
 
     try {

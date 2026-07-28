@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { Prisma } from "@prisma/client";
 import { ForbiddenError, NotFoundError, ValidationError, ConflictError } from "@/lib/errors";
 
+vi.mock("@/lib/repositories/post.repository", () => ({
+  findStillReferencedUrls: vi.fn(),
+}));
 vi.mock("@/lib/repositories/user.repository", () => ({
   findUserById: vi.fn(),
   updateUser: vi.fn(),
@@ -24,8 +28,14 @@ vi.mock("@node-rs/bcrypt", () => ({
   compare: vi.fn(),
   hash: vi.fn().mockResolvedValue("new-hashed-password"),
 }));
+vi.mock("@/lib/s3", () => ({
+  deleteOwnedObjectsByUrl: vi.fn(),
+  isOwnedS3Url: vi.fn(),
+}));
 
 import { compare } from "@node-rs/bcrypt";
+import { deleteOwnedObjectsByUrl, isOwnedS3Url } from "@/lib/s3";
+import { findStillReferencedUrls } from "@/lib/repositories/post.repository";
 import {
   findUserById,
   updateUser,
@@ -75,7 +85,7 @@ describe("getUserProfileService", () => {
 
   // ─── email非公開 ───
   it("getUserProfile_レスポンスにemailを含まない", async () => {
-    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0 });
+    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0, updatedAt: new Date("2026-01-01T00:00:00.000Z") });
 
     const profile = await getUserProfileService(USER_ID);
 
@@ -84,7 +94,7 @@ describe("getUserProfileService", () => {
 
   // ─── フォロー状態 ───
   it("getUserProfile_閲覧者IDなし_followedByCurrentUserはfalse", async () => {
-    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0 });
+    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0, updatedAt: new Date("2026-01-01T00:00:00.000Z") });
 
     const profile = await getUserProfileService(USER_ID);
 
@@ -93,7 +103,7 @@ describe("getUserProfileService", () => {
   });
 
   it("getUserProfile_閲覧者がフォロー中_followedByCurrentUserはtrue", async () => {
-    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0 });
+    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0, updatedAt: new Date("2026-01-01T00:00:00.000Z") });
     vi.mocked(isFollowing).mockResolvedValue(true);
 
     const profile = await getUserProfileService(USER_ID, VIEWER_ID);
@@ -104,23 +114,194 @@ describe("getUserProfileService", () => {
 });
 
 describe("updateUserService", () => {
-  beforeEach(() => vi.clearAllMocks());
+  const UPDATED_AT = "2026-01-01T00:00:00.000Z";
+  const baseUser = { id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0, updatedAt: new Date(UPDATED_AT) };
+
+  function p2025Error() {
+    return new Prisma.PrismaClientKnownRequestError("No record found", { code: "P2025", clientVersion: "6.19.3" });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(findStillReferencedUrls).mockResolvedValue(new Set());
+  });
 
   // ─── 権限 ───
-  it("updateUser_本人以外が編集_ForbiddenErrorかつ更新は呼ばれない", async () => {
+  it("updateUser_本人以外が編集_ForbiddenErrorかつfindUserById_更新いずれも呼ばれない", async () => {
     await expect(
-      updateUserService(USER_ID, VIEWER_ID, { nickname: "たろう" })
+      updateUserService(USER_ID, VIEWER_ID, { nickname: "たろう", updatedAt: UPDATED_AT })
     ).rejects.toThrow(ForbiddenError);
+    expect(findUserById).not.toHaveBeenCalled();
+    expect(updateUser).not.toHaveBeenCalled();
+    expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();
+  });
+
+  // ─── 存在確認 ───
+  it("updateUser_findUserByIdがnull_NotFoundErrorかつ更新は呼ばれない", async () => {
+    vi.mocked(findUserById).mockResolvedValue(null);
+
+    await expect(
+      updateUserService(USER_ID, USER_ID, { nickname: "たろう", updatedAt: UPDATED_AT })
+    ).rejects.toThrow(NotFoundError);
     expect(updateUser).not.toHaveBeenCalled();
   });
 
   it("updateUser_本人が編集_更新される", async () => {
+    vi.mocked(findUserById).mockResolvedValue(baseUser);
     vi.mocked(updateUser).mockResolvedValue({ id: USER_ID, nickname: "たろう2", bio: null, image: null });
 
-    const result = await updateUserService(USER_ID, USER_ID, { nickname: "たろう2" });
+    const result = await updateUserService(USER_ID, USER_ID, { nickname: "たろう2", updatedAt: UPDATED_AT });
 
     expect(result.nickname).toBe("たろう2");
-    expect(updateUser).toHaveBeenCalledWith(USER_ID, { nickname: "たろう2" });
+    expect(updateUser).toHaveBeenCalledWith(USER_ID, { nickname: "たろう2" }, new Date(UPDATED_AT));
+  });
+
+  // ─── 楽観ロック ───
+  it("updateUser_他の変更と競合(P2025)_ConflictError", async () => {
+    vi.mocked(findUserById).mockResolvedValue(baseUser);
+    vi.mocked(updateUser).mockRejectedValue(p2025Error());
+
+    await expect(
+      updateUserService(USER_ID, USER_ID, { nickname: "たろう2", updatedAt: UPDATED_AT })
+    ).rejects.toThrow(ConflictError);
+  });
+
+  it("updateUser_他の変更と競合(P2025)_S3削除は呼ばれない", async () => {
+    vi.mocked(findUserById).mockResolvedValue({ ...baseUser, image: "https://bucket/uploads/user-1/old.jpg" });
+    vi.mocked(isOwnedS3Url).mockReturnValue(true);
+    vi.mocked(updateUser).mockRejectedValue(p2025Error());
+
+    await expect(
+      updateUserService(USER_ID, USER_ID, {
+        nickname: "たろう",
+        image: "https://bucket/uploads/user-1/new.jpg",
+        updatedAt: UPDATED_AT,
+      })
+    ).rejects.toThrow(ConflictError);
+    expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();
+  });
+
+  // ─── 書き込み時URL所有権検証 ───
+  it("updateUser_own-prefix外かつbefore.imageとも異なるURL_ValidationErrorかつ更新は呼ばれない", async () => {
+    vi.mocked(findUserById).mockResolvedValue(baseUser);
+    vi.mocked(isOwnedS3Url).mockReturnValue(false);
+
+    await expect(
+      updateUserService(USER_ID, USER_ID, {
+        nickname: "たろう",
+        image: "https://bucket/uploads/other-user/a.jpg",
+        updatedAt: UPDATED_AT,
+      })
+    ).rejects.toThrow(ValidationError);
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it("updateUser_own-prefixのURL_許可される", async () => {
+    vi.mocked(findUserById).mockResolvedValue(baseUser);
+    vi.mocked(isOwnedS3Url).mockReturnValue(true);
+    vi.mocked(updateUser).mockResolvedValue({ id: USER_ID, nickname: "たろう", bio: null, image: "https://bucket/uploads/user-1/a.jpg" });
+
+    await updateUserService(USER_ID, USER_ID, {
+      nickname: "たろう",
+      image: "https://bucket/uploads/user-1/a.jpg",
+      updatedAt: UPDATED_AT,
+    });
+
+    expect(updateUser).toHaveBeenCalled();
+  });
+
+  // ─── アバターのS3クリーンアップ（undefined/null/差分の区別・DB操作優先） ───
+  it("updateUser_imageがundefined_書き込み検証もS3削除も実行されない", async () => {
+    vi.mocked(findUserById).mockResolvedValue({ ...baseUser, image: "https://bucket/uploads/user-1/old.jpg" });
+    vi.mocked(updateUser).mockResolvedValue({ id: USER_ID, nickname: "たろう2", bio: null, image: "https://bucket/uploads/user-1/old.jpg" });
+
+    await updateUserService(USER_ID, USER_ID, { nickname: "たろう2", updatedAt: UPDATED_AT });
+
+    expect(isOwnedS3Url).not.toHaveBeenCalled();
+    expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();
+  });
+
+  it("updateUser_旧imageと新imageが同一(未変更)_S3削除は呼ばれない", async () => {
+    const sameUrl = "https://bucket/uploads/user-1/a.jpg";
+    vi.mocked(findUserById).mockResolvedValue({ ...baseUser, image: sameUrl });
+    vi.mocked(isOwnedS3Url).mockReturnValue(true);
+    vi.mocked(updateUser).mockResolvedValue({ id: USER_ID, nickname: "たろう", bio: null, image: sameUrl });
+
+    await updateUserService(USER_ID, USER_ID, { nickname: "たろう", image: sameUrl, updatedAt: UPDATED_AT });
+
+    expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();
+  });
+
+  it("updateUser_旧imageがnull(元々未設定)_S3削除は呼ばれない", async () => {
+    vi.mocked(findUserById).mockResolvedValue(baseUser);
+    vi.mocked(isOwnedS3Url).mockReturnValue(true);
+    vi.mocked(updateUser).mockResolvedValue({ id: USER_ID, nickname: "たろう", bio: null, image: "https://bucket/uploads/user-1/a.jpg" });
+
+    await updateUserService(USER_ID, USER_ID, {
+      nickname: "たろう",
+      image: "https://bucket/uploads/user-1/a.jpg",
+      updatedAt: UPDATED_AT,
+    });
+
+    expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();
+  });
+
+  it("updateUser_旧image≠新image_deleteOwnedObjectsByUrlが所有者ID付きで呼ばれる", async () => {
+    const oldUrl = "https://bucket/uploads/user-1/old.jpg";
+    vi.mocked(findUserById).mockResolvedValue({ ...baseUser, image: oldUrl });
+    vi.mocked(isOwnedS3Url).mockReturnValue(true);
+    vi.mocked(updateUser).mockResolvedValue({ id: USER_ID, nickname: "たろう", bio: null, image: "https://bucket/uploads/user-1/new.jpg" });
+
+    await updateUserService(USER_ID, USER_ID, {
+      nickname: "たろう",
+      image: "https://bucket/uploads/user-1/new.jpg",
+      updatedAt: UPDATED_AT,
+    });
+
+    expect(findStillReferencedUrls).toHaveBeenCalledWith([oldUrl]);
+    expect(deleteOwnedObjectsByUrl).toHaveBeenCalledWith([oldUrl], USER_ID);
+  });
+
+  it("updateUser_imageをnullに変更(アバター削除)_旧imageがS3削除される", async () => {
+    const oldUrl = "https://bucket/uploads/user-1/old.jpg";
+    vi.mocked(findUserById).mockResolvedValue({ ...baseUser, image: oldUrl });
+    vi.mocked(updateUser).mockResolvedValue({ id: USER_ID, nickname: "たろう", bio: null, image: null });
+
+    await updateUserService(USER_ID, USER_ID, { nickname: "たろう", image: null, updatedAt: UPDATED_AT });
+
+    expect(deleteOwnedObjectsByUrl).toHaveBeenCalledWith([oldUrl], USER_ID);
+  });
+
+  it("updateUserRepoが失敗_deleteOwnedObjectsByUrlは呼ばれない", async () => {
+    vi.mocked(findUserById).mockResolvedValue({ ...baseUser, image: "https://bucket/uploads/user-1/old.jpg" });
+    vi.mocked(isOwnedS3Url).mockReturnValue(true);
+    vi.mocked(updateUser).mockRejectedValue(new Error("db error"));
+
+    await expect(
+      updateUserService(USER_ID, USER_ID, {
+        nickname: "たろう",
+        image: "https://bucket/uploads/user-1/new.jpg",
+        updatedAt: UPDATED_AT,
+      })
+    ).rejects.toThrow("db error");
+    expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();
+  });
+
+  // ─── 共有URL（他の投稿・別ユーザーからまだ参照されている場合は削除しない） ───
+  it("updateUser_旧imageが他の投稿からまだ参照されている_deleteOwnedObjectsByUrlは呼ばれない", async () => {
+    const sharedUrl = "https://bucket/uploads/user-1/shared.jpg";
+    vi.mocked(findUserById).mockResolvedValue({ ...baseUser, image: sharedUrl });
+    vi.mocked(isOwnedS3Url).mockReturnValue(true);
+    vi.mocked(updateUser).mockResolvedValue({ id: USER_ID, nickname: "たろう", bio: null, image: "https://bucket/uploads/user-1/new.jpg" });
+    vi.mocked(findStillReferencedUrls).mockResolvedValue(new Set([sharedUrl]));
+
+    await updateUserService(USER_ID, USER_ID, {
+      nickname: "たろう",
+      image: "https://bucket/uploads/user-1/new.jpg",
+      updatedAt: UPDATED_AT,
+    });
+
+    expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();
   });
 });
 

@@ -60,6 +60,20 @@ describe("plan.repository", () => {
     expect(detail?.spots[1].post?.id).toBe(post2.id);
   });
 
+  it("findPlanById_スポットのpostに他ユーザー作成分も含めauthorIdが返る", async () => {
+    const me = await createTestUser("plan-me1c@example.com", "自分1c");
+    const other = await createTestUser("plan-other1c@example.com", "他ユーザー1c");
+    const otherPost = await createPost(other.id, { title: "他人のスポット", body: "本文", location: "京都府", category: "観光", visitedAt: "2026-01-03" });
+
+    const plan = await createPlan(me.id, {
+      ...basePlanInput,
+      spots: [{ type: "post", postId: otherPost.id }],
+    });
+    const detail = await findPlanById(plan.id);
+
+    expect(detail?.spots[0].post?.authorId).toBe(other.id);
+  });
+
   it("createPlan_spots(free)指定_freeTitle等がplanSpotsに保存される", async () => {
     const me = await createTestUser("plan-me1b@example.com", "自分1b");
 
