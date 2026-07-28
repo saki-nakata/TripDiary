@@ -55,7 +55,7 @@ describe("POST /api/upload/post", () => {
 
     expect(res.status).toBe(200);
     expect(body).toEqual({ url: "/uploads/post.jpg" });
-    expect(saveUploadedFile).toHaveBeenCalledWith(expect.any(File));
+    expect(saveUploadedFile).toHaveBeenCalledWith(expect.any(File), USER_ID);
   });
 
   it("POST_同一ユーザーから上限を超えて送信_429", async () => {

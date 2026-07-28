@@ -18,6 +18,7 @@ export default async function NewPlanPage() {
     rating: p.rating,
     lat: p.lat,
     lng: p.lng,
+    authorId: p.authorId,
     images: p.images.map((img: { url: string }) => ({ url: img.url })),
   }));
 

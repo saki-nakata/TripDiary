@@ -153,9 +153,18 @@ describe("user.repository", () => {
   it("updateUser_nickname_bio_imageが更新される", async () => {
     const user = await createTestUser("update@example.com", "更新前");
 
-    const updated = await updateUser(user.id, { nickname: "更新後", bio: "自己紹介", image: "/uploads/a.jpg" });
+    const updated = await updateUser(user.id, { nickname: "更新後", bio: "自己紹介", image: "/uploads/a.jpg" }, user.updatedAt);
 
     expect(updated).toEqual({ id: user.id, nickname: "更新後", bio: "自己紹介", image: "/uploads/a.jpg" });
+  });
+
+  it("updateUser_updatedAtが実際と異なる_失敗する(楽観ロック)", async () => {
+    const user = await createTestUser("update-stale@example.com", "更新前2");
+    const staleUpdatedAt = new Date(user.updatedAt.getTime() - 1000 * 60);
+
+    await expect(
+      updateUser(user.id, { nickname: "更新後2", bio: null, image: null }, staleUpdatedAt)
+    ).rejects.toThrow();
   });
 
   // ─── カウント系 ───

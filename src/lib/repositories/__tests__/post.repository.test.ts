@@ -4,6 +4,8 @@ import {
   findFollowingPosts,
   findLocationCounts,
   createPost,
+  updatePost,
+  findStillReferencedUrls,
   findPostsByAuthorId,
   findWishlistedPosts,
   findVisitedPosts,
@@ -247,5 +249,105 @@ describe("post.repository", () => {
     const result = await findExplorePosts({ q: "存在しないキーワード" });
 
     expect(result.posts).toHaveLength(0);
+  });
+
+  // ─── updatePost（楽観ロック） ───
+  it("updatePost_updatedAtが実際と異なる_失敗しPostImage行はロールバックされ残る", async () => {
+    const me = await createTestUser("me12@example.com", "自分12");
+    const post = await createPost(me.id, {
+      title: "投稿F",
+      body: "本文",
+      location: "東京都",
+      category: "観光",
+      visitedAt: "2026-01-01",
+      imageUrls: ["https://example.com/before.jpg"],
+    });
+
+    const staleUpdatedAt = new Date(new Date(post.updatedAt).getTime() - 1000 * 60);
+
+    await expect(
+      updatePost(
+        post.id,
+        {
+          title: "投稿F（更新後）",
+          body: "本文",
+          location: "東京都",
+          category: "観光",
+          visitedAt: "2026-01-01",
+          imageUrls: ["https://example.com/after.jpg"],
+          updatedAt: staleUpdatedAt.toISOString(),
+        },
+        staleUpdatedAt
+      )
+    ).rejects.toThrow();
+
+    const images = await prisma.postImage.findMany({ where: { postId: post.id } });
+    expect(images).toHaveLength(1);
+    expect(images[0].url).toBe("https://example.com/before.jpg");
+  });
+
+  it("updatePost_updatedAtが実際と一致_更新が成功する", async () => {
+    const me = await createTestUser("me13@example.com", "自分13");
+    const post = await createPost(me.id, {
+      title: "投稿G",
+      body: "本文",
+      location: "東京都",
+      category: "観光",
+      visitedAt: "2026-01-01",
+      imageUrls: ["https://example.com/before.jpg"],
+    });
+
+    await updatePost(
+      post.id,
+      {
+        title: "投稿G（更新後）",
+        body: "本文",
+        location: "東京都",
+        category: "観光",
+        visitedAt: "2026-01-01",
+        imageUrls: ["https://example.com/after.jpg"],
+        updatedAt: post.updatedAt,
+      },
+      new Date(post.updatedAt)
+    );
+
+    const updated = await prisma.post.findUnique({ where: { id: post.id } });
+    expect(updated?.title).toBe("投稿G（更新後）");
+    const images = await prisma.postImage.findMany({ where: { postId: post.id } });
+    expect(images).toHaveLength(1);
+    expect(images[0].url).toBe("https://example.com/after.jpg");
+  });
+
+  // ─── findStillReferencedUrls（共有URLの安全な削除判定） ───
+  it("findStillReferencedUrls_他の投稿のPostImageに一致するURL_参照ありとして返す", async () => {
+    const me = await createTestUser("me14@example.com", "自分14");
+    await createPost(me.id, {
+      title: "投稿H",
+      body: "本文",
+      location: "東京都",
+      category: "観光",
+      visitedAt: "2026-01-01",
+      imageUrls: ["https://example.com/shared.jpg"],
+    });
+
+    const result = await findStillReferencedUrls(["https://example.com/shared.jpg", "https://example.com/unused.jpg"]);
+
+    expect(result.has("https://example.com/shared.jpg")).toBe(true);
+    expect(result.has("https://example.com/unused.jpg")).toBe(false);
+  });
+
+  it("findStillReferencedUrls_User.imageに一致するURL_参照ありとして返す", async () => {
+    const me = await createTestUser("me15@example.com", "自分15");
+    await prisma.user.update({ where: { id: me.id }, data: { image: "https://example.com/avatar.jpg" } });
+
+    const result = await findStillReferencedUrls(["https://example.com/avatar.jpg"]);
+
+    expect(result.has("https://example.com/avatar.jpg")).toBe(true);
+  });
+
+  it("findStillReferencedUrls_空配列_DBに問い合わせず空集合を返す", async () => {
+    const result = await findStillReferencedUrls([]);
+
+    expect(result.size).toBe(0);
   });
 });

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { NextRequest } from "next/server";
-import { NotFoundError, ForbiddenError } from "@/lib/errors";
+import { NotFoundError, ForbiddenError, ConflictError } from "@/lib/errors";
 
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
@@ -26,6 +26,8 @@ const VALID_BODY = {
   category: "観光",
   visitedAt: "2026-07-01",
 };
+
+const VALID_PUT_BODY = { ...VALID_BODY, updatedAt: "2026-07-01T00:00:00.000Z" };
 
 function makeRequest(url: string, init?: RequestInit) {
   return new NextRequest(new Request(url, init));
@@ -75,7 +77,7 @@ describe("PUT /api/posts/[id]", () => {
     authMock.mockResolvedValue(null);
 
     const res = await PUT(
-      makeRequest(`http://localhost/api/posts/${POST_ID}`, { method: "PUT", body: JSON.stringify(VALID_BODY) }),
+      makeRequest(`http://localhost/api/posts/${POST_ID}`, { method: "PUT", body: JSON.stringify(VALID_PUT_BODY) }),
       makeParams()
     );
 
@@ -88,7 +90,7 @@ describe("PUT /api/posts/[id]", () => {
     vi.mocked(updatePostService).mockRejectedValue(new NotFoundError());
 
     const res = await PUT(
-      makeRequest(`http://localhost/api/posts/${POST_ID}`, { method: "PUT", body: JSON.stringify(VALID_BODY) }),
+      makeRequest(`http://localhost/api/posts/${POST_ID}`, { method: "PUT", body: JSON.stringify(VALID_PUT_BODY) }),
       makeParams()
     );
 
@@ -100,7 +102,7 @@ describe("PUT /api/posts/[id]", () => {
     vi.mocked(updatePostService).mockRejectedValue(new ForbiddenError());
 
     const res = await PUT(
-      makeRequest(`http://localhost/api/posts/${POST_ID}`, { method: "PUT", body: JSON.stringify(VALID_BODY) }),
+      makeRequest(`http://localhost/api/posts/${POST_ID}`, { method: "PUT", body: JSON.stringify(VALID_PUT_BODY) }),
       makeParams()
     );
 
@@ -112,11 +114,35 @@ describe("PUT /api/posts/[id]", () => {
     vi.mocked(updatePostService).mockResolvedValue({ id: POST_ID, ...VALID_BODY } as never);
 
     const res = await PUT(
-      makeRequest(`http://localhost/api/posts/${POST_ID}`, { method: "PUT", body: JSON.stringify(VALID_BODY) }),
+      makeRequest(`http://localhost/api/posts/${POST_ID}`, { method: "PUT", body: JSON.stringify(VALID_PUT_BODY) }),
       makeParams()
     );
 
     expect(res.status).toBe(200);
+  });
+
+  it("PUT_updatedAt未指定_400", async () => {
+    authMock.mockResolvedValue({ user: { id: USER_ID } } as never);
+
+    const res = await PUT(
+      makeRequest(`http://localhost/api/posts/${POST_ID}`, { method: "PUT", body: JSON.stringify(VALID_BODY) }),
+      makeParams()
+    );
+
+    expect(res.status).toBe(400);
+    expect(updatePostService).not.toHaveBeenCalled();
+  });
+
+  it("PUT_他リクエストとの更新競合_409", async () => {
+    authMock.mockResolvedValue({ user: { id: USER_ID } } as never);
+    vi.mocked(updatePostService).mockRejectedValue(new ConflictError("他の画面で更新されています。再読み込みしてください。"));
+
+    const res = await PUT(
+      makeRequest(`http://localhost/api/posts/${POST_ID}`, { method: "PUT", body: JSON.stringify(VALID_PUT_BODY) }),
+      makeParams()
+    );
+
+    expect(res.status).toBe(409);
   });
 });
 

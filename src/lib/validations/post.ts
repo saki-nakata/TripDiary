@@ -18,7 +18,13 @@ export const postSchema = z.object({
   lat: z.number().min(-90, "緯度は-90〜90の範囲で入力してください").max(90, "緯度は-90〜90の範囲で入力してください").optional().nullable(),
   lng: z.number().min(-180, "経度は-180〜180の範囲で入力してください").max(180, "経度は-180〜180の範囲で入力してください").optional().nullable(),
   planId: z.string().optional().nullable(),
-  imageUrls: z.array(z.string()).optional(),
+  imageUrls: z.array(z.string().max(500, "画像URLが長すぎます")).max(20, "画像は20枚まで設定できます").optional(),
 });
 
 export type PostInput = z.infer<typeof postSchema>;
+
+export const postUpdateSchema = postSchema.extend({
+  updatedAt: z.iso.datetime(),
+});
+
+export type PostUpdateInput = z.infer<typeof postUpdateSchema>;

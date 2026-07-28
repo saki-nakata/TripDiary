@@ -1,8 +1,10 @@
+import { Prisma } from "@prisma/client";
 import {
   findPostById,
   createPost,
   updatePost,
   deletePost,
+  findStillReferencedUrls,
   findExplorePosts,
   findFollowingPosts,
   findPostsByAuthorId,
@@ -17,14 +19,27 @@ import {
   findRelatedPosts,
 } from "@/lib/repositories/post.repository";
 import { findPlanAuthorId } from "@/lib/repositories/plan.repository";
-import type { PostInput } from "@/lib/validations/post";
-import { NotFoundError, ForbiddenError } from "@/lib/errors";
+import type { PostInput, PostUpdateInput } from "@/lib/validations/post";
+import { NotFoundError, ForbiddenError, ConflictError, ValidationError } from "@/lib/errors";
+import { deleteOwnedObjectsByUrl, isOwnedS3Url } from "@/lib/s3";
+
+function assertOwnedImageUrls(imageUrls: string[], userId: string, existingUrls: string[]) {
+  const invalid = imageUrls.filter((url) => !isOwnedS3Url(url, userId) && !existingUrls.includes(url));
+  if (invalid.length > 0) {
+    throw new ValidationError("Validation failed", {
+      imageUrls: ["自分でアップロードした画像のみ設定できます"],
+    });
+  }
+}
 
 export async function createPostService(userId: string, data: PostInput) {
   if (data.planId) {
     const planAuthorId = await findPlanAuthorId(data.planId);
     if (!planAuthorId) throw new NotFoundError();
     if (planAuthorId !== userId) throw new ForbiddenError();
+  }
+  if (data.imageUrls !== undefined) {
+    assertOwnedImageUrls(data.imageUrls, userId, []);
   }
   return createPost(userId, data);
 }
@@ -86,7 +101,7 @@ export async function getPortalDataService() {
   return { popular, latest, locations, categories, topRated };
 }
 
-export async function updatePostService(userId: string, id: string, data: PostInput) {
+export async function updatePostService(userId: string, id: string, data: PostUpdateInput) {
   const post = await findPostById(id);
   if (!post) throw new NotFoundError();
   if (post.authorId !== userId) throw new ForbiddenError();
@@ -95,12 +110,52 @@ export async function updatePostService(userId: string, id: string, data: PostIn
     if (!planAuthorId) throw new NotFoundError();
     if (planAuthorId !== userId) throw new ForbiddenError();
   }
-  return updatePost(id, data);
+
+  const existingUrls = post.images.map((img: { url: string }) => img.url);
+  const newImageUrls = data.imageUrls;
+  if (newImageUrls !== undefined) {
+    assertOwnedImageUrls(newImageUrls, userId, existingUrls);
+  }
+
+  let result;
+  try {
+    result = await updatePost(id, data, new Date(data.updatedAt));
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
+    }
+    throw e;
+  }
+
+  if (newImageUrls !== undefined) {
+    const orphaned = existingUrls.filter((url: string) => !newImageUrls.includes(url));
+    if (orphaned.length > 0) {
+      const stillReferenced = await findStillReferencedUrls(orphaned);
+      const toDelete = orphaned.filter((url: string) => !stillReferenced.has(url));
+      if (toDelete.length > 0) {
+        await deleteOwnedObjectsByUrl(toDelete, post.authorId);
+      }
+    }
+  }
+
+  return result;
 }
 
 export async function deletePostService(userId: string, id: string) {
   const post = await findPostById(id);
   if (!post) throw new NotFoundError();
   if (post.authorId !== userId) throw new ForbiddenError();
-  return deletePost(id);
+
+  const result = await deletePost(id);
+
+  const urls = post.images.map((img: { url: string }) => img.url);
+  if (urls.length > 0) {
+    const stillReferenced = await findStillReferencedUrls(urls);
+    const toDelete = urls.filter((url: string) => !stillReferenced.has(url));
+    if (toDelete.length > 0) {
+      await deleteOwnedObjectsByUrl(toDelete, post.authorId);
+    }
+  }
+
+  return result;
 }

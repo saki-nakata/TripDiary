@@ -21,7 +21,7 @@ async function handlePOST(req: NextRequest) {
       throw new ValidationError("ファイルが見つかりません");
     }
 
-    const result = await saveUploadedFile(file);
+    const result = await saveUploadedFile(file, session.user.id);
     return NextResponse.json(result);
   } catch (e) {
     return handleApiError(e);

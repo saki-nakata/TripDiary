@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { postSchema } from "@/lib/validations/post";
+import { postSchema, postUpdateSchema } from "@/lib/validations/post";
 
 const validPost = {
   title: "テストスポット",
@@ -146,6 +146,64 @@ describe("postSchema", () => {
       ...validPost,
       costBreakdown: [{ label: "あ".repeat(51), amount: 100 }],
     });
+    expect(result.success).toBe(false);
+  });
+
+  // ─── imageUrls（件数・長さ上限） ───
+  it("imageUrls_20件_成功（境界値）", () => {
+    const result = postSchema.safeParse({
+      ...validPost,
+      imageUrls: Array.from({ length: 20 }, (_, i) => `https://example.com/${i}.jpg`),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("imageUrls_21件_失敗", () => {
+    const result = postSchema.safeParse({
+      ...validPost,
+      imageUrls: Array.from({ length: 21 }, (_, i) => `https://example.com/${i}.jpg`),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("imageUrls_500文字のURL_成功（境界値）", () => {
+    const result = postSchema.safeParse({
+      ...validPost,
+      imageUrls: ["a".repeat(500)],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("imageUrls_501文字のURL_失敗", () => {
+    const result = postSchema.safeParse({
+      ...validPost,
+      imageUrls: ["a".repeat(501)],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  // ─── updatedAt（postSchema自体には存在しないこと） ───
+  it("postSchema_updatedAtを含めても無視される（作成用スキーマにフィールドが存在しない）", () => {
+    const result = postSchema.safeParse({ ...validPost, updatedAt: "not-a-date" });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("postUpdateSchema", () => {
+  const validUpdate = { ...validPost, updatedAt: "2026-01-01T00:00:00.000Z" };
+
+  it("updatedAt_正しいISO日時文字列（Z終端）_成功", () => {
+    const result = postUpdateSchema.safeParse(validUpdate);
+    expect(result.success).toBe(true);
+  });
+
+  it("updatedAt_不正な日時形式_失敗", () => {
+    const result = postUpdateSchema.safeParse({ ...validUpdate, updatedAt: "not-a-date" });
+    expect(result.success).toBe(false);
+  });
+
+  it("updatedAt_未指定_失敗（更新時は必須）", () => {
+    const result = postUpdateSchema.safeParse(validPost);
     expect(result.success).toBe(false);
   });
 });

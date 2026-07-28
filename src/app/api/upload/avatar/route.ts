@@ -24,7 +24,7 @@ async function handlePOST(req: NextRequest) {
       throw new ValidationError("ファイルが見つかりません");
     }
 
-    const result = await saveUploadedFile(file, {
+    const result = await saveUploadedFile(file, session.user.id, {
       maxSize: AVATAR_MAX_SIZE,
       allowedTypes: AVATAR_ALLOWED_TYPES,
     });
