@@ -76,7 +76,11 @@ export function AccountForms({ userId, initialEmail }: Props) {
   const { showToast } = useToast();
 
   const [newEmail, setNewEmail] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
+  // メール変更フォーム・パスワード変更フォームは別フォームのため、現在のパスワード欄も
+  // それぞれ独立したstateに分離する（GATE-41。以前は1つのstateを共有しており、メール変更
+  // フォーム自体には入力欄が無く、画面下部のパスワード変更フォームの入力欄に入力する必要があった）
+  const [emailCurrentPassword, setEmailCurrentPassword] = useState("");
+  const [passwordCurrentPassword, setPasswordCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
@@ -89,7 +93,7 @@ export function AccountForms({ userId, initialEmail }: Props) {
     e.preventDefault();
     setEmailErrors({});
 
-    const parsed = emailChangeSchema.safeParse({ email: newEmail, currentPassword });
+    const parsed = emailChangeSchema.safeParse({ email: newEmail, currentPassword: emailCurrentPassword });
     if (!parsed.success) {
       const fieldErrors = parsed.error.flatten().fieldErrors;
       setEmailErrors({
@@ -125,6 +129,7 @@ export function AccountForms({ userId, initialEmail }: Props) {
       }
 
       showToast("メールアドレスを変更しました。再度ログインしてください。", "success");
+      setEmailCurrentPassword("");
       await signOut({ callbackUrl: "/login" });
     } catch {
       showToast("エラーが発生しました", "error");
@@ -137,7 +142,7 @@ export function AccountForms({ userId, initialEmail }: Props) {
     e.preventDefault();
     setPasswordErrors({});
 
-    const parsed = passwordChangeSchema.safeParse({ currentPassword, newPassword, confirmNewPassword });
+    const parsed = passwordChangeSchema.safeParse({ currentPassword: passwordCurrentPassword, newPassword, confirmNewPassword });
     if (!parsed.success) {
       const fieldErrors = parsed.error.flatten().fieldErrors;
       setPasswordErrors({
@@ -153,7 +158,7 @@ export function AccountForms({ userId, initialEmail }: Props) {
       const res = await fetch(`/api/users/${userId}/password`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword, newPassword }),
+        body: JSON.stringify({ currentPassword: passwordCurrentPassword, newPassword }),
       });
 
       if (!res.ok) {
@@ -170,7 +175,7 @@ export function AccountForms({ userId, initialEmail }: Props) {
       }
 
       showToast("パスワードを変更しました", "success");
-      setCurrentPassword("");
+      setPasswordCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
     } catch {
@@ -213,6 +218,21 @@ export function AccountForms({ userId, initialEmail }: Props) {
           {emailErrors.email && <p className="text-xs text-red-500 mt-1">{emailErrors.email}</p>}
         </div>
 
+        <div>
+          <label className="block text-sm font-semibold text-zinc-700 mb-1">
+            現在のパスワード <span className="text-red-500">*</span>
+          </label>
+          <PasswordInput
+            name="emailCurrentPassword"
+            value={emailCurrentPassword}
+            onChange={setEmailCurrentPassword}
+            autoComplete="current-password"
+            placeholder="パスワードを入力してください"
+            error={emailErrors.currentPassword}
+          />
+          {emailErrors.currentPassword && <p className="text-xs text-red-500 mt-1">{emailErrors.currentPassword}</p>}
+        </div>
+
         <div className="flex justify-center">
           <button
             type="submit"
@@ -235,16 +255,14 @@ export function AccountForms({ userId, initialEmail }: Props) {
             現在のパスワード <span className="text-red-500">*</span>
           </label>
           <PasswordInput
-            name="currentPassword"
-            value={currentPassword}
-            onChange={setCurrentPassword}
+            name="passwordCurrentPassword"
+            value={passwordCurrentPassword}
+            onChange={setPasswordCurrentPassword}
             autoComplete="current-password"
             placeholder="パスワードを入力してください"
-            error={emailErrors.currentPassword || passwordErrors.currentPassword}
+            error={passwordErrors.currentPassword}
           />
-          {(emailErrors.currentPassword || passwordErrors.currentPassword) && (
-            <p className="text-xs text-red-500 mt-1">{emailErrors.currentPassword || passwordErrors.currentPassword}</p>
-          )}
+          {passwordErrors.currentPassword && <p className="text-xs text-red-500 mt-1">{passwordErrors.currentPassword}</p>}
         </div>
 
         <div>
