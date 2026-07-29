@@ -18,18 +18,29 @@ export async function createUser(data: { nickname: string; email: string; passwo
 export async function findUserById(id: string) {
   return prisma.user.findUnique({
     where: { id },
-    select: { id: true, nickname: true, image: true, bio: true, followerCount: true, followingCount: true, updatedAt: true },
+    select: {
+      id: true,
+      nickname: true,
+      image: true,
+      bio: true,
+      followerCount: true,
+      followingCount: true,
+      updatedAt: true,
+      version: true,
+    },
   });
 }
 
 export async function updateUser(
   id: string,
   data: { nickname: string; bio?: string | null; image?: string | null },
-  expectedUpdatedAt: Date
+  expectedVersion: number
 ) {
+  // version不一致（他の更新が先に成功済み）の場合は0件更新となりPrismaがP2025を投げる。
+  // updatedAtはfollow等の非正規化カウンタ更新でも進むため競合検知に使えない（GATE-04）
   return prisma.user.update({
-    where: { id, updatedAt: expectedUpdatedAt },
-    data,
+    where: { id, version: expectedVersion },
+    data: { ...data, version: { increment: 1 } },
     select: { id: true, nickname: true, bio: true, image: true },
   });
 }

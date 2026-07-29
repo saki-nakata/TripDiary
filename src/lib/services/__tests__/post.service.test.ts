@@ -53,7 +53,7 @@ import {
 const AUTHOR_ID = "author-1";
 const OTHER_USER_ID = "other-user-2";
 const POST_ID = "post-1";
-const UPDATED_AT = "2026-01-01T00:00:00.000Z";
+const VERSION = 0;
 
 const basePostInput = {
   title: "テストスポット",
@@ -63,7 +63,7 @@ const basePostInput = {
   visitedAt: "2026-01-01",
 };
 
-const basePostUpdateInput = { ...basePostInput, updatedAt: UPDATED_AT };
+const basePostUpdateInput = { ...basePostInput, version: VERSION };
 
 function p2025Error() {
   return new Prisma.PrismaClientKnownRequestError("No record found", { code: "P2025", clientVersion: "6.19.3" });
@@ -166,7 +166,7 @@ describe("updatePostService", () => {
 
     await updatePostService(AUTHOR_ID, POST_ID, basePostUpdateInput);
 
-    expect(updatePost).toHaveBeenCalledWith(POST_ID, basePostUpdateInput, new Date(UPDATED_AT));
+    expect(updatePost).toHaveBeenCalledWith(POST_ID, basePostUpdateInput, VERSION);
   });
 
   // ─── planId所有権チェック（4-Bの積み残し・5-Dで対応） ───
@@ -187,7 +187,7 @@ describe("updatePostService", () => {
 
     await updatePostService(AUTHOR_ID, POST_ID, { ...basePostUpdateInput, planId: "plan-1" });
 
-    expect(updatePost).toHaveBeenCalledWith(POST_ID, { ...basePostUpdateInput, planId: "plan-1" }, new Date(UPDATED_AT));
+    expect(updatePost).toHaveBeenCalledWith(POST_ID, { ...basePostUpdateInput, planId: "plan-1" }, VERSION);
   });
 
   // ─── 楽観ロック ───

@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE `users` ADD COLUMN `version` INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE `posts` ADD COLUMN `version` INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE `plans` ADD COLUMN `version` INTEGER NOT NULL DEFAULT 0;

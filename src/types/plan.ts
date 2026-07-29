@@ -36,6 +36,8 @@ export type Plan = {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  // 楽観ロック用の競合トークン（GATE-05）。更新時はこの値をそのまま送り返す
+  version: number;
   spotCount?: number;
 };
 

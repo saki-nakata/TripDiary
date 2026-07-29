@@ -18,6 +18,7 @@ const POST_SELECT = {
   authorId: true,
   createdAt: true,
   updatedAt: true,
+  version: true,
   author: {
     select: { id: true, nickname: true, image: true },
   },
@@ -399,9 +400,9 @@ export async function createPost(authorId: string, data: PostInput) {
   return formatPost(post);
 }
 
-export async function updatePost(id: string, data: PostUpdateInput, expectedUpdatedAt: Date) {
+export async function updatePost(id: string, data: PostUpdateInput, expectedVersion: number) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { costBreakdown, imageUrls, updatedAt, ...rest } = data;
+  const { costBreakdown, imageUrls, version, ...rest } = data;
   const cost = costBreakdown?.reduce((sum, item) => sum + item.amount, 0) ?? null;
 
   return prisma.$transaction(async (tx) => {
@@ -410,12 +411,15 @@ export async function updatePost(id: string, data: PostUpdateInput, expectedUpda
     }
 
     return tx.post.update({
-      where: { id, updatedAt: expectedUpdatedAt },
+      // version不一致（他の更新が先に成功済み）の場合は0件更新となりPrismaがP2025を投げる。
+      // updatedAtは非正規化カウンタ更新（いいね等）でも進むため競合検知に使えない（GATE-04）
+      where: { id, version: expectedVersion },
       data: {
         ...rest,
         cost,
         costBreakdown: costBreakdown ?? undefined,
         visitedAt: new Date(rest.visitedAt),
+        version: { increment: 1 },
         ...(imageUrls && imageUrls.length > 0 && {
           images: {
             create: imageUrls.map((url, displayOrder) => ({ url, displayOrder })),

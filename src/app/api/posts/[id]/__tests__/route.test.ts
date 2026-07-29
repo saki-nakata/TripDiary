@@ -27,7 +27,7 @@ const VALID_BODY = {
   visitedAt: "2026-07-01",
 };
 
-const VALID_PUT_BODY = { ...VALID_BODY, updatedAt: "2026-07-01T00:00:00.000Z" };
+const VALID_PUT_BODY = { ...VALID_BODY, version: 0 };
 
 function makeRequest(url: string, init?: RequestInit) {
   return new NextRequest(new Request(url, init));
@@ -121,7 +121,7 @@ describe("PUT /api/posts/[id]", () => {
     expect(res.status).toBe(200);
   });
 
-  it("PUT_updatedAt未指定_400", async () => {
+  it("PUT_version未指定_400", async () => {
     authMock.mockResolvedValue({ user: { id: USER_ID } } as never);
 
     const res = await PUT(

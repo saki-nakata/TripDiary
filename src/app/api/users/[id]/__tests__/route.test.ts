@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { NextRequest } from "next/server";
 import { NotFoundError, ForbiddenError, ConflictError } from "@/lib/errors";
 
-const UPDATED_AT = "2026-01-01T00:00:00.000Z";
+const VERSION = 0;
 
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
@@ -90,7 +90,7 @@ describe("PUT /api/users/[id]", () => {
     const res = await PUT(
       makeRequest(`http://localhost/api/users/${USER_ID}`, {
         method: "PUT",
-        body: JSON.stringify({ nickname: "あ".repeat(21), updatedAt: UPDATED_AT }),
+        body: JSON.stringify({ nickname: "あ".repeat(21), version: VERSION }),
       }),
       makeParams(USER_ID)
     );
@@ -99,7 +99,7 @@ describe("PUT /api/users/[id]", () => {
     expect(updateUserService).not.toHaveBeenCalled();
   });
 
-  it("PUT_updatedAt未指定_400", async () => {
+  it("PUT_version未指定_400", async () => {
     authMock.mockResolvedValue({ user: { id: USER_ID } } as never);
 
     const res = await PUT(
@@ -121,7 +121,7 @@ describe("PUT /api/users/[id]", () => {
     const res = await PUT(
       makeRequest(`http://localhost/api/users/${USER_ID}`, {
         method: "PUT",
-        body: JSON.stringify({ nickname: "たろう", updatedAt: UPDATED_AT }),
+        body: JSON.stringify({ nickname: "たろう", version: VERSION }),
       }),
       makeParams(USER_ID)
     );
@@ -136,7 +136,7 @@ describe("PUT /api/users/[id]", () => {
     const res = await PUT(
       makeRequest(`http://localhost/api/users/${USER_ID}`, {
         method: "PUT",
-        body: JSON.stringify({ nickname: "たろう", updatedAt: UPDATED_AT }),
+        body: JSON.stringify({ nickname: "たろう", version: VERSION }),
       }),
       makeParams(USER_ID)
     );
@@ -151,7 +151,7 @@ describe("PUT /api/users/[id]", () => {
     const res = await PUT(
       makeRequest(`http://localhost/api/users/${USER_ID}`, {
         method: "PUT",
-        body: JSON.stringify({ nickname: "たろう2", updatedAt: UPDATED_AT }),
+        body: JSON.stringify({ nickname: "たろう2", version: VERSION }),
       }),
       makeParams(USER_ID)
     );
