@@ -318,6 +318,117 @@ describe("post.repository", () => {
     expect(images[0].url).toBe("https://example.com/after.jpg");
   });
 
+  // ─── cursorページングのidタイブレーカー（GATE-22、同一createdAtの境界値） ───
+  it("findPostsByAuthorId_createdAtが同一の投稿群_idタイブレーカーで重複も欠落もなく全件取得できる", async () => {
+    const me = await createTestUser("me-tie1@example.com", "自分tie1");
+    const p1 = await createPost(me.id, { title: "同時刻A", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const p2 = await createPost(me.id, { title: "同時刻B", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const p3 = await createPost(me.id, { title: "同時刻C", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const sameCreatedAt = new Date("2026-01-01T00:00:00.000Z");
+    await prisma.post.updateMany({ where: { id: { in: [p1.id, p2.id, p3.id] } }, data: { createdAt: sameCreatedAt } });
+
+    const page1 = await findPostsByAuthorId({ authorId: me.id, limit: 2 });
+    expect(page1.posts).toHaveLength(2);
+    expect(page1.hasMore).toBe(true);
+    expect(page1.nextCursor).not.toBeNull();
+
+    const page2 = await findPostsByAuthorId({ authorId: me.id, limit: 2, cursor: page1.nextCursor! });
+    expect(page2.posts).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = [...page1.posts, ...page2.posts].map((p) => p.id).sort();
+    expect(allIds).toEqual([p1.id, p2.id, p3.id].sort());
+  });
+
+  it("findExplorePosts_createdAtが同一の投稿群_idタイブレーカーで重複も欠落もなく全件取得できる", async () => {
+    const me = await createTestUser("me-tie2@example.com", "自分tie2");
+    const p1 = await createPost(me.id, { title: "同時刻D", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const p2 = await createPost(me.id, { title: "同時刻E", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const p3 = await createPost(me.id, { title: "同時刻F", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const sameCreatedAt = new Date("2026-01-01T00:00:00.000Z");
+    await prisma.post.updateMany({ where: { id: { in: [p1.id, p2.id, p3.id] } }, data: { createdAt: sameCreatedAt } });
+
+    const page1 = await findExplorePosts({ limit: 2 });
+    expect(page1.posts).toHaveLength(2);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findExplorePosts({ limit: 2, cursor: page1.nextCursor! });
+    expect(page2.posts).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = [...page1.posts, ...page2.posts].map((p) => p.id).sort();
+    expect(allIds).toEqual([p1.id, p2.id, p3.id].sort());
+  });
+
+  it("findFollowingPosts_createdAtが同一の投稿群_idタイブレーカーで重複も欠落もなく全件取得できる", async () => {
+    const me = await createTestUser("me-tie3@example.com", "自分tie3");
+    const following = await createTestUser("following-tie3@example.com", "フォロー中tie3");
+    await prisma.follow.create({ data: { followerId: me.id, followingId: following.id } });
+    const p1 = await createPost(following.id, { title: "同時刻G", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const p2 = await createPost(following.id, { title: "同時刻H", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const p3 = await createPost(following.id, { title: "同時刻I", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const sameCreatedAt = new Date("2026-01-01T00:00:00.000Z");
+    await prisma.post.updateMany({ where: { id: { in: [p1.id, p2.id, p3.id] } }, data: { createdAt: sameCreatedAt } });
+
+    const page1 = await findFollowingPosts({ userId: me.id, limit: 2 });
+    expect(page1.posts).toHaveLength(2);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findFollowingPosts({ userId: me.id, limit: 2, cursor: page1.nextCursor! });
+    expect(page2.posts).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = [...page1.posts, ...page2.posts].map((p) => p.id).sort();
+    expect(allIds).toEqual([p1.id, p2.id, p3.id].sort());
+  });
+
+  it("findWishlistedPosts_登録日時が同一の投稿群_postIdタイブレーカーで重複も欠落もなく全件取得できる", async () => {
+    const me = await createTestUser("me-tie4@example.com", "自分tie4");
+    const p1 = await createPost(me.id, { title: "行きたいJ", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const p2 = await createPost(me.id, { title: "行きたいK", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const p3 = await createPost(me.id, { title: "行きたいL", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    await prisma.wishlist.create({ data: { userId: me.id, postId: p1.id } });
+    await prisma.wishlist.create({ data: { userId: me.id, postId: p2.id } });
+    await prisma.wishlist.create({ data: { userId: me.id, postId: p3.id } });
+    const sameCreatedAt = new Date("2026-01-01T00:00:00.000Z");
+    await prisma.wishlist.updateMany({ where: { postId: { in: [p1.id, p2.id, p3.id] } }, data: { createdAt: sameCreatedAt } });
+
+    const page1 = await findWishlistedPosts({ userId: me.id, limit: 2 });
+    expect(page1.posts).toHaveLength(2);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findWishlistedPosts({ userId: me.id, limit: 2, cursor: page1.nextCursor! });
+    expect(page2.posts).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = [...page1.posts, ...page2.posts].map((p) => p.id).sort();
+    expect(allIds).toEqual([p1.id, p2.id, p3.id].sort());
+  });
+
+  it("findVisitedPosts_登録日時が同一の投稿群_postIdタイブレーカーで重複も欠落もなく全件取得できる", async () => {
+    const me = await createTestUser("me-tie5@example.com", "自分tie5");
+    const other = await createTestUser("other-tie5@example.com", "他人tie5");
+    const p1 = await createPost(other.id, { title: "訪問済みM", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const p2 = await createPost(other.id, { title: "訪問済みN", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const p3 = await createPost(other.id, { title: "訪問済みO", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    await prisma.visited.create({ data: { userId: me.id, postId: p1.id } });
+    await prisma.visited.create({ data: { userId: me.id, postId: p2.id } });
+    await prisma.visited.create({ data: { userId: me.id, postId: p3.id } });
+    const sameCreatedAt = new Date("2026-01-01T00:00:00.000Z");
+    await prisma.visited.updateMany({ where: { postId: { in: [p1.id, p2.id, p3.id] }, userId: me.id }, data: { createdAt: sameCreatedAt } });
+
+    const page1 = await findVisitedPosts({ userId: me.id, limit: 2 });
+    expect(page1.posts).toHaveLength(2);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findVisitedPosts({ userId: me.id, limit: 2, cursor: page1.nextCursor! });
+    expect(page2.posts).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = [...page1.posts, ...page2.posts].map((p) => p.id).sort();
+    expect(allIds).toEqual([p1.id, p2.id, p3.id].sort());
+  });
+
   // ─── findStillReferencedUrls（共有URLの安全な削除判定） ───
   it("findStillReferencedUrls_他の投稿のPostImageに一致するURL_参照ありとして返す", async () => {
     const me = await createTestUser("me14@example.com", "自分14");
