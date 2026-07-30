@@ -55,6 +55,91 @@ export async function findPlansByUserId(userId: string) {
   return plans.map(formatPlan);
 }
 
+// マイページ「旅行プラン」タブの継続取得API（GATE-22種類B）。進行中プランのみを対象に、
+// idを末尾のタイブレーカーとして安定した順序でページングする
+export async function findActivePlansByUserId({
+  userId,
+  cursor,
+  limit = 20,
+}: {
+  userId: string;
+  cursor?: string;
+  limit?: number;
+}) {
+  const plans = await prisma.plan.findMany({
+    where: { userId, completed: false },
+    take: limit + 1,
+    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+    orderBy: [{ startDate: "asc" }, { id: "asc" }],
+    select: { ...PLAN_SELECT, _count: { select: { planSpots: true } } },
+  });
+
+  const hasMore = plans.length > limit;
+  const items = hasMore ? plans.slice(0, limit) : plans;
+  return {
+    plans: items.map(formatPlan),
+    nextCursor: hasMore ? items[items.length - 1].id : null,
+    hasMore,
+  };
+}
+
+// マイページ「旅行プラン」タブの完了済みプラン継続取得API（GATE-22種類B）。yearを指定すると
+// startDateがその年のものだけに絞り込む。未指定（全期間）の場合はstartDate未設定の完了済み
+// プランも含める（従来の「全期間」表示と同じ範囲を維持する）
+export async function findCompletedPlansByUserId({
+  userId,
+  year,
+  cursor,
+  limit = 20,
+}: {
+  userId: string;
+  year?: number;
+  cursor?: string;
+  limit?: number;
+}) {
+  const dateFilter =
+    year != null
+      ? { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) }
+      : undefined;
+  const plans = await prisma.plan.findMany({
+    where: { userId, completed: true, ...(dateFilter ? { startDate: dateFilter } : {}) },
+    take: limit + 1,
+    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+    orderBy: [{ startDate: "desc" }, { id: "desc" }],
+    select: { ...PLAN_SELECT, _count: { select: { planSpots: true } } },
+  });
+
+  const hasMore = plans.length > limit;
+  const items = hasMore ? plans.slice(0, limit) : plans;
+  return {
+    plans: items.map(formatPlan),
+    nextCursor: hasMore ? items[items.length - 1].id : null,
+    hasMore,
+  };
+}
+
+// 完了済みプランが存在する年の一覧（startDate未設定分は対象外）。ページングされた取得結果とは
+// 独立に、全期間を対象とした軽量なDISTINCT集計で取得する（年フィルタの選択肢を常に完全な状態に保つため）
+export async function findCompletedPlanYears(userId: string) {
+  const rows = await prisma.$queryRaw<Array<{ year: number }>>`
+    SELECT DISTINCT YEAR(startDate) AS year
+    FROM plans
+    WHERE userId = ${userId} AND completed = true AND startDate IS NOT NULL
+    ORDER BY year DESC
+  `;
+  return rows.map((r) => Number(r.year));
+}
+
+export async function countCompletedPlansByUserId(userId: string, year?: number) {
+  const dateFilter =
+    year != null
+      ? { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) }
+      : undefined;
+  return prisma.plan.count({
+    where: { userId, completed: true, ...(dateFilter ? { startDate: dateFilter } : {}) },
+  });
+}
+
 export async function findPlanById(id: string) {
   const plan = await prisma.plan.findUnique({
     where: { id },

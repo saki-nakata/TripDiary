@@ -94,11 +94,56 @@ describe("follow.repository", () => {
     await prisma.follow.create({ data: { followerId: follower.id, followingId: me.id } });
     await prisma.follow.create({ data: { followerId: me.id, followingId: following.id } });
 
-    const followers = await findFollowers(me.id);
-    const followingList = await findFollowing(me.id);
+    const followers = await findFollowers({ userId: me.id });
+    const followingList = await findFollowing({ userId: me.id });
 
-    expect(followers.map((u) => u.id)).toEqual([follower.id]);
-    expect(followingList.map((u) => u.id)).toEqual([following.id]);
+    expect(followers.users.map((u) => u.id)).toEqual([follower.id]);
+    expect(followers.hasMore).toBe(false);
+    expect(followingList.users.map((u) => u.id)).toEqual([following.id]);
+    expect(followingList.hasMore).toBe(false);
+  });
+
+  // ─── findFollowers / findFollowing（GATE-22種類B: cursorページング） ───
+  it("findFollowers_51件目以降もcursorで継続取得できる", async () => {
+    const me = await createTestUser("follow-cursor1@example.com", "自分cursor1");
+    const followers = await Promise.all(
+      Array.from({ length: 51 }, (_, i) => createTestUser(`follow-cursor-follower${i}@example.com`, `フォロワーcursor${i}`))
+    );
+    await Promise.all(followers.map((f) => prisma.follow.create({ data: { followerId: f.id, followingId: me.id } })));
+
+    const page1 = await findFollowers({ userId: me.id, limit: 50 });
+    expect(page1.users).toHaveLength(50);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findFollowers({ userId: me.id, limit: 50, cursor: page1.nextCursor! });
+    expect(page2.users).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = new Set([...page1.users, ...page2.users].map((u) => u.id));
+    expect(allIds.size).toBe(51);
+  });
+
+  it("findFollowers_createdAtが同一のフォロー関係群_followerIdタイブレーカーで重複も欠落もなく全件取得できる", async () => {
+    const me = await createTestUser("follow-tie1@example.com", "自分tie1");
+    const f1 = await createTestUser("follow-tie-f1@example.com", "フォロワーtie1");
+    const f2 = await createTestUser("follow-tie-f2@example.com", "フォロワーtie2");
+    const f3 = await createTestUser("follow-tie-f3@example.com", "フォロワーtie3");
+    await prisma.follow.create({ data: { followerId: f1.id, followingId: me.id } });
+    await prisma.follow.create({ data: { followerId: f2.id, followingId: me.id } });
+    await prisma.follow.create({ data: { followerId: f3.id, followingId: me.id } });
+    const sameCreatedAt = new Date("2026-01-01T00:00:00.000Z");
+    await prisma.follow.updateMany({ where: { followerId: { in: [f1.id, f2.id, f3.id] }, followingId: me.id }, data: { createdAt: sameCreatedAt } });
+
+    const page1 = await findFollowers({ userId: me.id, limit: 2 });
+    expect(page1.users).toHaveLength(2);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findFollowers({ userId: me.id, limit: 2, cursor: page1.nextCursor! });
+    expect(page2.users).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = [...page1.users, ...page2.users].map((u) => u.id).sort();
+    expect(allIds).toEqual([f1.id, f2.id, f3.id].sort());
   });
 
   // ─── findFollowingIdsAmong ───

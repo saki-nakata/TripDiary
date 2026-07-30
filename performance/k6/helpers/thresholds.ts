@@ -18,6 +18,10 @@ export const ENDPOINT_NAMES = [
   "auth_csrf",
   "users_follow_toggle",
   "user_profile_ssr",
+  "users_comments_written",
+  "users_comments_received",
+  "users_followers",
+  "users_following",
 ] as const;
 
 // k6は「metric×タグの組み合わせ」に閾値を1つでも定義すると、そのsubmetricが

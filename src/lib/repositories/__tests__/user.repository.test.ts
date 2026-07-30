@@ -239,16 +239,61 @@ describe("user.repository", () => {
     });
     await prisma.comment.create({ data: { authorId: commenter.id, postId: post.id, body: "投稿者への感想" } });
 
-    const written = await findCommentsByAuthor(commenter.id);
-    const received = await findCommentsReceivedByAuthor(author.id);
+    const written = await findCommentsByAuthor({ authorId: commenter.id });
+    const received = await findCommentsReceivedByAuthor({ authorId: author.id });
 
-    expect(written).toHaveLength(1);
-    expect(written[0].body).toBe("投稿者への感想");
-    expect(written[0].post.images).toEqual([{ url: "/uploads/post3.jpg" }]);
-    expect(written[0].post.author.id).toBe(author.id);
-    expect(received).toHaveLength(1);
-    expect(received[0].author.id).toBe(commenter.id);
-    expect(received[0].post.images).toEqual([{ url: "/uploads/post3.jpg" }]);
+    expect(written.comments).toHaveLength(1);
+    expect(written.comments[0].body).toBe("投稿者への感想");
+    expect(written.comments[0].post.images).toEqual([{ url: "/uploads/post3.jpg" }]);
+    expect(written.comments[0].post.author.id).toBe(author.id);
+    expect(written.hasMore).toBe(false);
+    expect(received.comments).toHaveLength(1);
+    expect(received.comments[0].author.id).toBe(commenter.id);
+    expect(received.comments[0].post.images).toEqual([{ url: "/uploads/post3.jpg" }]);
+    expect(received.hasMore).toBe(false);
+  });
+
+  // ─── findCommentsByAuthor / findCommentsReceivedByAuthor（GATE-22種類B: cursorページング） ───
+  it("findCommentsByAuthor_51件目以降もcursorで継続取得できる", async () => {
+    const commenter = await createTestUser("comment-cursor1@example.com", "コメント投稿者cursor1");
+    const author = await createTestUser("comment-cursor2@example.com", "投稿者cursor2");
+    const post = await createPost(author.id, { title: "投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    for (let i = 0; i < 51; i++) {
+      await prisma.comment.create({ data: { authorId: commenter.id, postId: post.id, body: `コメント${i}` } });
+    }
+
+    const page1 = await findCommentsByAuthor({ authorId: commenter.id, limit: 50 });
+    expect(page1.comments).toHaveLength(50);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findCommentsByAuthor({ authorId: commenter.id, limit: 50, cursor: page1.nextCursor! });
+    expect(page2.comments).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = new Set([...page1.comments, ...page2.comments].map((c) => c.id));
+    expect(allIds.size).toBe(51);
+  });
+
+  it("findCommentsByAuthor_createdAtが同一のコメント群_idタイブレーカーで重複も欠落もなく全件取得できる", async () => {
+    const commenter = await createTestUser("comment-tie1@example.com", "コメント投稿者tie1");
+    const author = await createTestUser("comment-tie2@example.com", "投稿者tie2");
+    const post = await createPost(author.id, { title: "投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const c1 = await prisma.comment.create({ data: { authorId: commenter.id, postId: post.id, body: "コメントA" } });
+    const c2 = await prisma.comment.create({ data: { authorId: commenter.id, postId: post.id, body: "コメントB" } });
+    const c3 = await prisma.comment.create({ data: { authorId: commenter.id, postId: post.id, body: "コメントC" } });
+    const sameCreatedAt = new Date("2026-01-01T00:00:00.000Z");
+    await prisma.comment.updateMany({ where: { id: { in: [c1.id, c2.id, c3.id] } }, data: { createdAt: sameCreatedAt } });
+
+    const page1 = await findCommentsByAuthor({ authorId: commenter.id, limit: 2 });
+    expect(page1.comments).toHaveLength(2);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findCommentsByAuthor({ authorId: commenter.id, limit: 2, cursor: page1.nextCursor! });
+    expect(page2.comments).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = [...page1.comments, ...page2.comments].map((c) => c.id).sort();
+    expect(allIds).toEqual([c1.id, c2.id, c3.id].sort());
   });
 
   // ─── countCommentsByAuthor ───

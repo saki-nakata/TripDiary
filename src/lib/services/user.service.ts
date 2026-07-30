@@ -98,12 +98,12 @@ export async function countCommentsReceivedService(authorId: string) {
   return countCommentsReceived(authorId);
 }
 
-export async function findCommentsByAuthorService(authorId: string) {
-  return findCommentsByAuthor(authorId);
+export async function findCommentsByAuthorService(params: { authorId: string; cursor?: string; limit?: number }) {
+  return findCommentsByAuthor(params);
 }
 
-export async function findCommentsReceivedByAuthorService(authorId: string) {
-  return findCommentsReceivedByAuthor(authorId);
+export async function findCommentsReceivedByAuthorService(params: { authorId: string; cursor?: string; limit?: number }) {
+  return findCommentsReceivedByAuthor(params);
 }
 
 export async function countVisitedByUserService(userId: string) {

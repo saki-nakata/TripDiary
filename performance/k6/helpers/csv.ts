@@ -42,4 +42,16 @@ export const samplePostIds: {
   mostLikedPostId: string;
   mostLikedPostAuthorId: string | null;
   samplePostId: string;
+  paginationTargetUserId: string;
 } = JSON.parse(open("../data/sample-post-ids.json"));
+
+// GATE-22種類B（コメント・フォロワー/フォロー中のcursorページング）の負荷試験対象ユーザー。
+// performance/seed.tsが51件以上を決定的に保証しているユーザー（idで照合。並び順の暗黙の一致に
+// 依存しない）。usersに見つからない場合はシード未実行またはデータ不整合のため即座に失敗させる。
+export function paginationTargetUser(): PerfUser {
+  const found = users.find((u) => u.id === samplePostIds.paginationTargetUserId);
+  if (!found) {
+    throw new Error("paginationTargetUserId に一致するユーザーがusers.csvに見つかりません（perf:seedを再実行してください）");
+  }
+  return found;
+}

@@ -10,12 +10,13 @@ import {
   countCommentsReceivedService,
 } from "@/lib/services/user.service";
 import { findPostsByAuthorIdService } from "@/lib/services/post.service";
-import { findFollowersService, findFollowingService, findFollowingIdsAmongService } from "@/lib/services/follow.service";
+import { findFollowersService, findFollowingService } from "@/lib/services/follow.service";
 import { LoadMoreList } from "@/components/posts/LoadMoreList";
 import { FollowButton } from "@/components/users/FollowButton";
 import { BackButton } from "@/components/posts/BackButton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { formatDateSlash } from "@/lib/date";
+import { CommentLoadMoreList } from "@/components/users/CommentLoadMoreList";
+import { UserLoadMoreList } from "@/components/users/UserLoadMoreList";
 import type { Post } from "@/types/post";
 
 type Props = {
@@ -247,107 +248,53 @@ async function renderPosts(authorId: string, viewerId?: string) {
 }
 
 async function renderCommentsWritten(authorId: string) {
-  const comments = await findCommentsByAuthorService(authorId);
+  const { comments, nextCursor, hasMore } = await findCommentsByAuthorService({ authorId });
   if (comments.length === 0) {
     return <EmptyState codepoint="1f4ac" message="まだコメントがありません" />;
   }
   return (
-    <div className="space-y-3">
-      {comments.map((c) => (
-        <Link
-          key={c.id}
-          href={`/posts/${c.postId}`}
-          className="flex gap-3 p-4 rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors"
-        >
-          <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-zinc-200 shrink-0">
-            {c.post.images[0] && (
-              <Image src={c.post.images[0].url} alt={c.post.title} fill sizes="56px" className="object-cover" />
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-zinc-400 mb-1">
-              『{c.post.title}』（{c.post.author.nickname}）
-            </p>
-            <p className="text-sm text-zinc-700">{c.body}</p>
-            <p className="text-xs text-zinc-400 mt-1">{formatDateSlash(c.createdAt)}</p>
-          </div>
-        </Link>
-      ))}
-    </div>
+    <CommentLoadMoreList
+      initialComments={comments}
+      initialNextCursor={nextCursor}
+      initialHasMore={hasMore}
+      baseUrl={`/api/users/${authorId}/comments`}
+      variant="written"
+    />
   );
 }
 
 async function renderCommentsReceived(authorId: string) {
-  const comments = await findCommentsReceivedByAuthorService(authorId);
+  const { comments, nextCursor, hasMore } = await findCommentsReceivedByAuthorService({ authorId });
   if (comments.length === 0) {
     return <EmptyState codepoint="1f4ac" message="まだコメントを受け取っていません" />;
   }
   return (
-    <div className="space-y-3">
-      {comments.map((c) => (
-        <Link
-          key={c.id}
-          href={`/posts/${c.postId}`}
-          className="flex gap-3 p-4 rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors"
-        >
-          <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-200 shrink-0">
-            {c.author.image ? (
-              <Image src={c.author.image} alt={c.author.nickname} fill sizes="40px" className="object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-sm text-zinc-500 font-medium">
-                {c.author.nickname[0]}
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-zinc-400 mb-1">
-              <span className="font-bold text-zinc-600">{c.author.nickname}</span> さんから『{c.post.title}』へ
-            </p>
-            <p className="text-sm text-zinc-700">{c.body}</p>
-            <p className="text-xs text-zinc-400 mt-1">{formatDateSlash(c.createdAt)}</p>
-          </div>
-        </Link>
-      ))}
-    </div>
+    <CommentLoadMoreList
+      initialComments={comments}
+      initialNextCursor={nextCursor}
+      initialHasMore={hasMore}
+      baseUrl={`/api/users/${authorId}/comments-received`}
+      variant="received"
+    />
   );
 }
 
 async function renderUserList(userId: string, type: "followers" | "following", viewerId?: string) {
-  const users = type === "followers" ? await findFollowersService(userId) : await findFollowingService(userId);
+  const { users, nextCursor, hasMore } =
+    type === "followers"
+      ? await findFollowersService({ userId, viewerId })
+      : await findFollowingService({ userId, viewerId });
   if (users.length === 0) {
     return <EmptyState codepoint="1f465" message={type === "followers" ? "フォロワーはまだいません" : "フォロー中のユーザーはいません"} />;
   }
 
-  const followingIds = viewerId ? await findFollowingIdsAmongService(viewerId, users.map((u) => u.id)) : [];
-  const followingSet = new Set(followingIds);
-
   return (
-    <div className="space-y-2">
-      {users.map((u) => (
-        <div
-          key={u.id}
-          className="flex items-center gap-3 p-3 rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors"
-        >
-          <Link href={`/users/${u.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-200 shrink-0">
-              {u.image ? (
-                <Image src={u.image} alt={u.nickname} fill sizes="40px" className="object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-sm text-zinc-500 font-medium">
-                  {u.nickname[0]}
-                </div>
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-zinc-900 truncate">{u.nickname}</p>
-              {u.bio && <p className="text-xs text-zinc-500 truncate">{u.bio}</p>}
-            </div>
-          </Link>
-          {viewerId && viewerId !== u.id && (
-            <FollowButton userId={u.id} initialFollowing={followingSet.has(u.id)} isLoggedIn={!!viewerId} size="sm" />
-          )}
-        </div>
-      ))}
-    </div>
+    <UserLoadMoreList
+      initialUsers={users}
+      initialNextCursor={nextCursor}
+      initialHasMore={hasMore}
+      baseUrl={`/api/users/${userId}/${type}`}
+      viewerId={viewerId}
+    />
   );
 }
