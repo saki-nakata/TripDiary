@@ -178,6 +178,37 @@ registry.registerPath({
   },
 });
 
+// ─── mypage（継続取得API、GATE-22） ───
+registry.registerPath({
+  method: "get",
+  path: "/api/mypage/wishlist",
+  summary: "自分の行きたいリスト一覧（継続取得、本人のみ）",
+  tags: ["Posts"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "投稿一覧", content: { "application/json": { schema: postListResponseSchema } } },
+    401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/mypage/visited",
+  summary: "自分の訪問済みリスト一覧（継続取得、本人のみ）",
+  tags: ["Posts"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "投稿一覧", content: { "application/json": { schema: postListResponseSchema } } },
+    401: commonErrors[401],
+  },
+});
+
 // ─── likes / wishlist / visited ───
 for (const [key, summary] of [
   ["like", "投稿へのいいねトグル"],
@@ -295,6 +326,24 @@ registry.registerPath({
   responses: {
     200: { description: "ユーザープロフィール", content: { "application/json": { schema: userProfileResponseSchema } } },
     404: commonErrors[404],
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/users/{id}/posts",
+  summary: "指定ユーザーの投稿一覧（継続取得、認証不要）。マイページ「自分の投稿」タブ・公開プロフィールの投稿タブの両方で使用（GATE-22）",
+  tags: ["Posts"],
+  request: {
+    params: z.object({ id: z.string() }),
+    query: z.object({
+      cursor: z.string().optional(),
+      limit: z.string().optional(),
+      year: z.string().optional(),
+    }),
+  },
+  responses: {
+    200: { description: "投稿一覧", content: { "application/json": { schema: postListResponseSchema } } },
   },
 });
 

@@ -85,7 +85,9 @@ export async function findExplorePosts({
     where,
     take: limit + 1,
     ...(cursor && { cursor: { id: cursor }, skip: 1 }),
-    orderBy: sort === "popular" ? [{ likeCount: "desc" }, { createdAt: "desc" }] : { createdAt: "desc" },
+    // idを末尾に追加し全順序を保証する（GATE-22）。createdAt/likeCountだけでは同値が複数存在し得るため、
+    // Prismaのcursorページングは一意なタイブレーカーが無いと重複・欠落を起こし得る
+    orderBy: sort === "popular" ? [{ likeCount: "desc" }, { createdAt: "desc" }, { id: "desc" }] : [{ createdAt: "desc" }, { id: "desc" }],
     select: {
       ...POST_SELECT,
       likes: userId ? { where: { userId }, select: { userId: true } } : false,
@@ -116,7 +118,7 @@ export async function findFollowingPosts({
     where: { authorId: { in: followingIds } },
     take: limit + 1,
     ...(cursor && { cursor: { id: cursor }, skip: 1 }),
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }], // idタイブレーカーで全順序を保証（GATE-22）
     select: {
       ...POST_SELECT,
       likes: { where: { userId }, select: { userId: true } },
@@ -150,7 +152,7 @@ export async function findPostsByAuthorId({
     where: { authorId, ...(dateFilter ? { visitedAt: dateFilter } : {}) },
     take: limit + 1,
     ...(cursor && { cursor: { id: cursor }, skip: 1 }),
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }], // idタイブレーカーで全順序を保証（GATE-22）
     select: {
       ...POST_SELECT,
       likes: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
@@ -175,7 +177,7 @@ export async function findWishlistedPosts({
     where: { userId },
     take: limit + 1,
     ...(cursor && { cursor: { userId_postId: { userId, postId: cursor } }, skip: 1 }),
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { postId: "desc" }], // postIdタイブレーカーで全順序を保証（GATE-22）
     select: {
       postId: true,
       post: {
@@ -211,7 +213,7 @@ export async function findVisitedPosts({
     where: { userId },
     take: limit + 1,
     ...(cursor && { cursor: { userId_postId: { userId, postId: cursor } }, skip: 1 }),
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { postId: "desc" }], // postIdタイブレーカーで全順序を保証（GATE-22）
     select: {
       postId: true,
       post: {
