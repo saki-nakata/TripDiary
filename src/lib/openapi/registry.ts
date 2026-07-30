@@ -250,9 +250,12 @@ registry.registerPath({
 registry.registerPath({
   method: "get",
   path: "/api/notifications",
-  summary: "通知一覧取得",
+  summary: "通知一覧取得（継続取得、既定limit=20・最大50）",
   tags: ["Notifications"],
   security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
   responses: {
     200: { description: "通知一覧", content: { "application/json": { schema: notificationListResponseSchema } } },
     401: commonErrors[401],
