@@ -19,7 +19,9 @@ pnpm perf:up
 pnpm perf:migrate
 
 # 2. シードデータを投入（何度でも再実行可能。既存データを削除してから再投入する）
-pnpm perf:seed
+# CONFIRM_PERF_TRUNCATE=true は、接続先DBの全テーブルTRUNCATEを意図していることの明示確認用（GATE-01対策）。
+# .env.perfには含めていないため、実行のたびに明示的に指定する
+CONFIRM_PERF_TRUNCATE=true pnpm perf:seed
 
 # 3. 別ターミナルでperf専用ビルド・起動（.env.perfを使用）
 pnpm perf:build
