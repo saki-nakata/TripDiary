@@ -5,6 +5,10 @@ import { ToastProvider } from "@/contexts/toast-context";
 import { LoadMoreList } from "@/components/posts/LoadMoreList";
 import type { Post } from "@/types/post";
 
+vi.mock("@/components/posts/PostCard", () => ({
+  PostCard: ({ post }: { post: Post }) => <div>{post.title}</div>,
+}));
+
 function renderWithToast(component: React.ReactNode) {
   render(<ToastProvider>{component}</ToastProvider>);
 }
