@@ -23,6 +23,9 @@ export default defineConfig({
     // クリック等のアクションと画面遷移の既定タイムアウトも、CI高負荷を見込んで延長する
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
+    // /api/test/cleanup の追加認証用シークレット（GATE-03）。各specから個別に付与せず
+    // ここで全リクエストに共通付与する。未設定時は空文字を送るため、サーバー側は403で拒否する
+    extraHTTPHeaders: { "x-test-cleanup-secret": process.env.TEST_CLEANUP_SECRET ?? "" },
   },
   // PERF=1（.env.perf）のときはwebServerを無効化する。有効のままだと`pnpm build && pnpm start`が
   // .env.localの開発DBを対象に起動してしまい、perf:build/perf:start済みのサーバーに接続する
