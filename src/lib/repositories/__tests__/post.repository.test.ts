@@ -6,6 +6,7 @@ import {
   createPost,
   updatePost,
   findStillReferencedUrls,
+  findPostById,
   findPostsByAuthorId,
   findWishlistedPosts,
   findVisitedPosts,
@@ -349,5 +350,59 @@ describe("post.repository", () => {
     const result = await findStillReferencedUrls([]);
 
     expect(result.size).toBe(0);
+  });
+
+  // ─── findPostById: cost/costBreakdownの公開範囲（GATE-02） ───
+  describe("findPostById_cost/costBreakdownは本人にのみ含まれる", () => {
+    async function createPostWithCost(authorId: string) {
+      return createPost(authorId, {
+        title: "費用ありの投稿",
+        body: "本文",
+        location: "東京都",
+        category: "観光",
+        visitedAt: "2026-01-01",
+        costBreakdown: [{ label: "交通費", amount: 1000 }],
+      });
+    }
+
+    it("本人が閲覧_costとcostBreakdownが含まれる", async () => {
+      const author = await createTestUser("cost-author@example.com", "投稿者");
+      const created = await createPostWithCost(author.id);
+
+      const result = await findPostById(created.id, author.id);
+
+      expect(result?.cost).toBe(1000);
+      expect(result?.costBreakdown).toEqual([{ label: "交通費", amount: 1000 }]);
+    });
+
+    it("他人が閲覧_costとcostBreakdownがレスポンスに含まれない", async () => {
+      const author = await createTestUser("cost-author2@example.com", "投稿者2");
+      const other = await createTestUser("cost-other@example.com", "他人");
+      const created = await createPostWithCost(author.id);
+
+      const result = await findPostById(created.id, other.id);
+
+      expect(result).not.toHaveProperty("cost");
+      expect(result).not.toHaveProperty("costBreakdown");
+    });
+
+    it("未認証で閲覧_costとcostBreakdownがレスポンスに含まれない", async () => {
+      const author = await createTestUser("cost-author3@example.com", "投稿者3");
+      const created = await createPostWithCost(author.id);
+
+      const result = await findPostById(created.id, undefined);
+
+      expect(result).not.toHaveProperty("cost");
+      expect(result).not.toHaveProperty("costBreakdown");
+    });
+
+    it("createPostの戻り値_作成者本人にはcostとcostBreakdownが含まれる", async () => {
+      const author = await createTestUser("cost-author4@example.com", "投稿者4");
+
+      const created = await createPostWithCost(author.id);
+
+      expect(created.cost).toBe(1000);
+      expect(created.costBreakdown).toEqual([{ label: "交通費", amount: 1000 }]);
+    });
   });
 });
