@@ -4,7 +4,6 @@ import {
   findPlansByUserId,
   findPlanById,
   findPlanAuthorId,
-  findPlanAuthorAndCompleted,
   createPlan,
   updatePlan,
   deletePlan,
@@ -112,14 +111,18 @@ describe("plan.repository", () => {
     expect(plans[0].userId).toBe(me.id);
   });
 
-  // ─── updatePlan ───
+  // ─── updatePlan（楽観ロック・completed統合） ───
   it("updatePlan_spotsを差し替え_古いplanSpotsは削除され新しいものだけ残る", async () => {
     const me = await createTestUser("plan-me4@example.com", "自分4");
     const post1 = await createPost(me.id, { title: "スポットA", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
     const post2 = await createPost(me.id, { title: "スポットB", body: "本文", location: "大阪府", category: "観光", visitedAt: "2026-01-02" });
     const plan = await createPlan(me.id, { ...basePlanInput, spots: [{ type: "post", postId: post1.id }] });
 
-    await updatePlan(plan.id, { ...basePlanInput, spots: [{ type: "post", postId: post2.id }] });
+    await updatePlan(
+      plan.id,
+      { ...basePlanInput, completed: false, version: plan.version, spots: [{ type: "post", postId: post2.id }] },
+      plan.version
+    );
     const detail = await findPlanById(plan.id);
 
     expect(detail?.spots).toHaveLength(1);
@@ -131,11 +134,65 @@ describe("plan.repository", () => {
     const post1 = await createPost(me.id, { title: "スポットA", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
     const plan = await createPlan(me.id, { ...basePlanInput, spots: [{ type: "post", postId: post1.id }] });
 
-    await updatePlan(plan.id, { ...basePlanInput, title: "更新後タイトル" });
+    await updatePlan(plan.id, { ...basePlanInput, completed: false, version: plan.version, title: "更新後タイトル" }, plan.version);
     const detail = await findPlanById(plan.id);
 
     expect(detail?.title).toBe("更新後タイトル");
     expect(detail?.spots).toHaveLength(1);
+  });
+
+  it("updatePlan_completedをtrueに統合更新_completedが反映されversionがincrementされる（GATE-21）", async () => {
+    const me = await createTestUser("plan-me4d@example.com", "自分4d");
+    const plan = await createPlan(me.id, basePlanInput);
+
+    const updated = await updatePlan(plan.id, { ...basePlanInput, completed: true, version: plan.version }, plan.version);
+
+    expect(updated.completed).toBe(true);
+    expect(updated.version).toBe(plan.version + 1);
+  });
+
+  it("updatePlan_versionが実際と異なる_失敗する（楽観ロック、GATE-05）", async () => {
+    const me = await createTestUser("plan-me4e@example.com", "自分4e");
+    const plan = await createPlan(me.id, basePlanInput);
+    const staleVersion = plan.version + 1;
+
+    await expect(
+      updatePlan(plan.id, { ...basePlanInput, completed: false, version: staleVersion, title: "更新後" }, staleVersion)
+    ).rejects.toThrow();
+
+    const detail = await findPlanById(plan.id);
+    expect(detail?.title).toBe(basePlanInput.title);
+  });
+
+  it("updatePlan_同一versionで2件を同時実行_片方のみ成功しもう片方は失敗する（GATE-05、実DB並行更新）", async () => {
+    const me = await createTestUser("plan-me4f@example.com", "自分4f");
+    const plan = await createPlan(me.id, basePlanInput);
+
+    const attempt = (title: string) =>
+      updatePlan(plan.id, { ...basePlanInput, completed: false, version: plan.version, title }, plan.version);
+
+    const results = await Promise.allSettled([attempt("並行更新A"), attempt("並行更新B")]);
+
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter((r) => r.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    const detail = await findPlanById(plan.id);
+    expect(detail?.version).toBe(plan.version + 1);
+  });
+
+  it("updatePlan_異なるプランへの同時更新は競合せずどちらも成功する（GATE-05、非競合時の正常系）", async () => {
+    const me = await createTestUser("plan-me4g@example.com", "自分4g");
+    const planA = await createPlan(me.id, { ...basePlanInput, title: "プランA並行" });
+    const planB = await createPlan(me.id, { ...basePlanInput, title: "プランB並行" });
+
+    const results = await Promise.allSettled([
+      updatePlan(planA.id, { ...basePlanInput, completed: false, version: planA.version, title: "プランA並行（更新後）" }, planA.version),
+      updatePlan(planB.id, { ...basePlanInput, completed: false, version: planB.version, title: "プランB並行（更新後）" }, planB.version),
+    ]);
+
+    expect(results.every((r) => r.status === "fulfilled")).toBe(true);
   });
 
   // ─── deletePlan ───
@@ -162,14 +219,26 @@ describe("plan.repository", () => {
     expect(remaining?.planId).toBeNull();
   });
 
-  // ─── setPlanCompleted ───
-  it("setPlanCompleted_true指定_completedがtrueになる", async () => {
+  // ─── setPlanCompleted（目標状態を受け取る冪等なset、DR-01選択肢1） ───
+  it("setPlanCompleted_true指定_completedがtrueになりversionがincrementされる", async () => {
     const me = await createTestUser("plan-me8@example.com", "自分8");
     const plan = await createPlan(me.id, basePlanInput);
 
-    const updated = await setPlanCompleted(plan.id, true);
+    const updated = await setPlanCompleted(plan.id, true, plan.version);
 
     expect(updated.completed).toBe(true);
+    expect(updated.version).toBe(plan.version + 1);
+  });
+
+  it("setPlanCompleted_versionが実際と異なる_失敗する（楽観ロック）", async () => {
+    const me = await createTestUser("plan-me8b@example.com", "自分8b");
+    const plan = await createPlan(me.id, basePlanInput);
+    const staleVersion = plan.version + 1;
+
+    await expect(setPlanCompleted(plan.id, true, staleVersion)).rejects.toThrow();
+
+    const detail = await findPlanById(plan.id);
+    expect(detail?.completed).toBe(false);
   });
 
   // ─── findPlanAuthorId ───
@@ -182,19 +251,6 @@ describe("plan.repository", () => {
 
   it("findPlanAuthorId_存在しないプラン_nullを返す", async () => {
     expect(await findPlanAuthorId("not-exist-id")).toBeNull();
-  });
-
-  // ─── findPlanAuthorAndCompleted ───
-  it("findPlanAuthorAndCompleted_存在するプラン_userIdとcompletedを1クエリで返す", async () => {
-    const me = await createTestUser("plan-me12@example.com", "自分12");
-    const plan = await createPlan(me.id, basePlanInput);
-    await setPlanCompleted(plan.id, true);
-
-    expect(await findPlanAuthorAndCompleted(plan.id)).toEqual({ userId: me.id, completed: true });
-  });
-
-  it("findPlanAuthorAndCompleted_存在しないプラン_nullを返す", async () => {
-    expect(await findPlanAuthorAndCompleted("not-exist-id")).toBeNull();
   });
 
   // ─── findExistingPostIds ───
@@ -216,7 +272,7 @@ describe("plan.repository", () => {
     const me = await createTestUser("plan-me10@example.com", "自分10");
     const activePlan = await createPlan(me.id, basePlanInput);
     const completedPlan = await createPlan(me.id, basePlanInput);
-    await setPlanCompleted(completedPlan.id, true);
+    await setPlanCompleted(completedPlan.id, true, completedPlan.version);
     void activePlan;
 
     expect(await countActivePlansByUser(me.id)).toBe(1);

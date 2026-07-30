@@ -6,6 +6,7 @@ import {
   createPost,
   updatePost,
   findStillReferencedUrls,
+  findPostById,
   findPostsByAuthorId,
   findWishlistedPosts,
   findVisitedPosts,
@@ -252,7 +253,7 @@ describe("post.repository", () => {
   });
 
   // ─── updatePost（楽観ロック） ───
-  it("updatePost_updatedAtが実際と異なる_失敗しPostImage行はロールバックされ残る", async () => {
+  it("updatePost_versionが実際と異なる_失敗しPostImage行はロールバックされ残る", async () => {
     const me = await createTestUser("me12@example.com", "自分12");
     const post = await createPost(me.id, {
       title: "投稿F",
@@ -263,7 +264,7 @@ describe("post.repository", () => {
       imageUrls: ["https://example.com/before.jpg"],
     });
 
-    const staleUpdatedAt = new Date(new Date(post.updatedAt).getTime() - 1000 * 60);
+    const staleVersion = post.version + 1;
 
     await expect(
       updatePost(
@@ -275,9 +276,9 @@ describe("post.repository", () => {
           category: "観光",
           visitedAt: "2026-01-01",
           imageUrls: ["https://example.com/after.jpg"],
-          updatedAt: staleUpdatedAt.toISOString(),
+          version: staleVersion,
         },
-        staleUpdatedAt
+        staleVersion
       )
     ).rejects.toThrow();
 
@@ -286,7 +287,7 @@ describe("post.repository", () => {
     expect(images[0].url).toBe("https://example.com/before.jpg");
   });
 
-  it("updatePost_updatedAtが実際と一致_更新が成功する", async () => {
+  it("updatePost_versionが実際と一致_更新が成功しversionがincrementされる", async () => {
     const me = await createTestUser("me13@example.com", "自分13");
     const post = await createPost(me.id, {
       title: "投稿G",
@@ -306,16 +307,58 @@ describe("post.repository", () => {
         category: "観光",
         visitedAt: "2026-01-01",
         imageUrls: ["https://example.com/after.jpg"],
-        updatedAt: post.updatedAt,
+        version: post.version,
       },
-      new Date(post.updatedAt)
+      post.version
     );
 
     const updated = await prisma.post.findUnique({ where: { id: post.id } });
     expect(updated?.title).toBe("投稿G（更新後）");
+    expect(updated?.version).toBe(post.version + 1);
     const images = await prisma.postImage.findMany({ where: { postId: post.id } });
     expect(images).toHaveLength(1);
     expect(images[0].url).toBe("https://example.com/after.jpg");
+  });
+
+  it("updatePost_同一versionで2件を同時実行_片方のみ成功しもう片方は409相当のP2025で失敗する（GATE-04、実DB並行更新）", async () => {
+    const me = await createTestUser("me-concurrent1@example.com", "自分並行1");
+    const post = await createPost(me.id, {
+      title: "並行更新前",
+      body: "本文",
+      location: "東京都",
+      category: "観光",
+      visitedAt: "2026-01-01",
+    });
+
+    const attempt = (title: string) =>
+      updatePost(
+        post.id,
+        { title, body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01", version: post.version },
+        post.version
+      );
+
+    const results = await Promise.allSettled([attempt("並行更新A"), attempt("並行更新B")]);
+
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter((r) => r.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    const updated = await prisma.post.findUnique({ where: { id: post.id } });
+    expect(updated?.version).toBe(post.version + 1);
+  });
+
+  it("updatePost_異なる投稿への同時更新は競合せずどちらも成功する（GATE-04、非競合時の正常系）", async () => {
+    const me = await createTestUser("me-concurrent2@example.com", "自分並行2");
+    const postA = await createPost(me.id, { title: "投稿A並行", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const postB = await createPost(me.id, { title: "投稿B並行", body: "本文", location: "大阪府", category: "観光", visitedAt: "2026-01-02" });
+
+    const results = await Promise.allSettled([
+      updatePost(postA.id, { title: "投稿A並行（更新後）", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01", version: postA.version }, postA.version),
+      updatePost(postB.id, { title: "投稿B並行（更新後）", body: "本文", location: "大阪府", category: "観光", visitedAt: "2026-01-02", version: postB.version }, postB.version),
+    ]);
+
+    expect(results.every((r) => r.status === "fulfilled")).toBe(true);
   });
 
   // ─── findStillReferencedUrls（共有URLの安全な削除判定） ───
@@ -349,5 +392,59 @@ describe("post.repository", () => {
     const result = await findStillReferencedUrls([]);
 
     expect(result.size).toBe(0);
+  });
+
+  // ─── findPostById: cost/costBreakdownの公開範囲（GATE-02） ───
+  describe("findPostById_cost/costBreakdownは本人にのみ含まれる", () => {
+    async function createPostWithCost(authorId: string) {
+      return createPost(authorId, {
+        title: "費用ありの投稿",
+        body: "本文",
+        location: "東京都",
+        category: "観光",
+        visitedAt: "2026-01-01",
+        costBreakdown: [{ label: "交通費", amount: 1000 }],
+      });
+    }
+
+    it("本人が閲覧_costとcostBreakdownが含まれる", async () => {
+      const author = await createTestUser("cost-author@example.com", "投稿者");
+      const created = await createPostWithCost(author.id);
+
+      const result = await findPostById(created.id, author.id);
+
+      expect(result?.cost).toBe(1000);
+      expect(result?.costBreakdown).toEqual([{ label: "交通費", amount: 1000 }]);
+    });
+
+    it("他人が閲覧_costとcostBreakdownがレスポンスに含まれない", async () => {
+      const author = await createTestUser("cost-author2@example.com", "投稿者2");
+      const other = await createTestUser("cost-other@example.com", "他人");
+      const created = await createPostWithCost(author.id);
+
+      const result = await findPostById(created.id, other.id);
+
+      expect(result).not.toHaveProperty("cost");
+      expect(result).not.toHaveProperty("costBreakdown");
+    });
+
+    it("未認証で閲覧_costとcostBreakdownがレスポンスに含まれない", async () => {
+      const author = await createTestUser("cost-author3@example.com", "投稿者3");
+      const created = await createPostWithCost(author.id);
+
+      const result = await findPostById(created.id, undefined);
+
+      expect(result).not.toHaveProperty("cost");
+      expect(result).not.toHaveProperty("costBreakdown");
+    });
+
+    it("createPostの戻り値_作成者本人にはcostとcostBreakdownが含まれる", async () => {
+      const author = await createTestUser("cost-author4@example.com", "投稿者4");
+
+      const created = await createPostWithCost(author.id);
+
+      expect(created.cost).toBe(1000);
+      expect(created.costBreakdown).toEqual([{ label: "交通費", amount: 1000 }]);
+    });
   });
 });

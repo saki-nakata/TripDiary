@@ -41,6 +41,8 @@ export type Post = {
   authorId: string;
   createdAt: string;
   updatedAt: string;
+  // 楽観ロック用の競合トークン（GATE-04）。本人以外が閲覧した場合も含め常に返る
+  version: number;
   author: PostAuthor;
   images: PostImage[];
   _count: {

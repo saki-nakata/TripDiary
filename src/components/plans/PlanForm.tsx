@@ -93,6 +93,9 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
       ...data,
       budgetBreakdown: budgetBreakdown.filter((i) => i.amount > 0 || i.label.trim() !== ""),
       spots,
+      // completed・versionは更新用のplanUpdateSchemaのみが要求するフィールドのため、
+      // 作成時（isEdit=false）はサーバー側で無視される想定だが送信しない
+      ...(isEdit && { completed, version: initialData!.version }),
     };
 
     try {
@@ -107,10 +110,6 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error ?? "エラーが発生しました");
-      }
-
-      if (isEdit && completed !== initialData!.completed) {
-        await fetch(`/api/plans/${initialData!.id}/complete`, { method: "PATCH" });
       }
 
       const saved = await res.json();

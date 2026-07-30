@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { NextRequest } from "next/server";
-import { NotFoundError, ForbiddenError } from "@/lib/errors";
+import { NotFoundError, ForbiddenError, ConflictError } from "@/lib/errors";
 
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
@@ -97,11 +97,62 @@ describe("PUT /api/plans/[id]", () => {
     vi.mocked(updatePlanService).mockRejectedValue(new ForbiddenError());
 
     const res = await PUT(
-      makeRequest(`http://localhost/api/plans/${PLAN_ID}`, { method: "PUT", body: JSON.stringify({ title: "更新" }) }),
+      makeRequest(`http://localhost/api/plans/${PLAN_ID}`, {
+        method: "PUT",
+        body: JSON.stringify({ title: "更新", completed: false, version: 0 }),
+      }),
       makeParams()
     );
 
     expect(res.status).toBe(403);
+  });
+
+  it("PUT_version未指定_400", async () => {
+    authMock.mockResolvedValue({ user: { id: USER_ID } } as never);
+
+    const res = await PUT(
+      makeRequest(`http://localhost/api/plans/${PLAN_ID}`, {
+        method: "PUT",
+        body: JSON.stringify({ title: "更新", completed: false }),
+      }),
+      makeParams()
+    );
+
+    expect(res.status).toBe(400);
+    expect(updatePlanService).not.toHaveBeenCalled();
+  });
+
+  it("PUT_他リクエストとの更新競合(version不一致)_409（GATE-05）", async () => {
+    authMock.mockResolvedValue({ user: { id: USER_ID } } as never);
+    vi.mocked(updatePlanService).mockRejectedValue(new ConflictError("他の画面で更新されています。再読み込みしてください。"));
+
+    const res = await PUT(
+      makeRequest(`http://localhost/api/plans/${PLAN_ID}`, {
+        method: "PUT",
+        body: JSON.stringify({ title: "更新", completed: false, version: 0 }),
+      }),
+      makeParams()
+    );
+
+    expect(res.status).toBe(409);
+  });
+
+  it("PUT_本人のプラン_200かつcompleted・versionがそのままserviceへ渡る（GATE-21統合）", async () => {
+    authMock.mockResolvedValue({ user: { id: USER_ID } } as never);
+    vi.mocked(updatePlanService).mockResolvedValue({ id: PLAN_ID, completed: true } as never);
+
+    const res = await PUT(
+      makeRequest(`http://localhost/api/plans/${PLAN_ID}`, {
+        method: "PUT",
+        body: JSON.stringify({ title: "更新", completed: true, version: 2 }),
+      }),
+      makeParams()
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.completed).toBe(true);
+    expect(updatePlanService).toHaveBeenCalledWith(USER_ID, PLAN_ID, expect.objectContaining({ completed: true, version: 2 }));
   });
 });
 

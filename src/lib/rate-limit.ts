@@ -18,8 +18,10 @@ export function checkRateLimit(key: string, limit: number, windowMs: number): vo
   // NODE_ENV では判定できない点に注意（test/cleanup と同じ理由）：`next build`/`next start`は
   // 常に NODE_ENV=production で動作するため、CIのe2eジョブ（本番相当ビルド）では
   // `NODE_ENV !== "production"` が常にfalseになりガードとして機能しない。
-  // ENABLE_TEST_ENDPOINTS は「本番環境変数には絶対設定しない」運用のフラグのため、これのみで判定する。
-  if (process.env.ENABLE_TEST_ENDPOINTS === "true") {
+  // DISABLE_RATE_LIMIT_FOR_TESTS は「本番環境変数には絶対設定しない」運用のフラグのため、これのみで判定する。
+  // ENABLE_TEST_ENDPOINTS（/api/test/cleanupの有効化）とは意図的に別フラグにしている。同一フラグだと
+  // 本番に誤って設定された場合、認証なしアカウント削除とレート制限の全解除が同時に成立してしまうため（GATE-03）。
+  if (process.env.DISABLE_RATE_LIMIT_FOR_TESTS === "true") {
     return;
   }
 
