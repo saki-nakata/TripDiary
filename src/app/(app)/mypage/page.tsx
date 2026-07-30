@@ -249,6 +249,7 @@ async function renderMyPosts(userId: string, year: number | "all") {
   const baseUrl = `/api/users/${userId}/posts${year === "all" ? "" : `?year=${year}`}`;
   return (
     <LoadMoreList
+      key={baseUrl}
       initialPosts={posts as unknown as Post[]}
       initialNextCursor={nextCursor}
       initialHasMore={hasMore}
