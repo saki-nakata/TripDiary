@@ -4,7 +4,7 @@ import { z } from "zod";
 import { postSchema, postUpdateSchema } from "@/lib/validations/post";
 import { signupApiSchema, loginSchema } from "@/lib/validations/auth";
 import { userUpdateSchema, passwordChangeApiSchema, emailChangeSchema } from "@/lib/validations/user";
-import { planSchema } from "@/lib/validations/plan";
+import { planSchema, planUpdateSchema } from "@/lib/validations/plan";
 import {
   errorResponseSchema,
   validationErrorResponseSchema,
@@ -116,7 +116,7 @@ registry.registerPath({
     401: commonErrors[401],
     403: commonErrors[403],
     404: commonErrors[404],
-    409: { description: "他のリクエストによる更新と競合（updatedAt不一致）", content: { "application/json": { schema: errorResponseSchema } } },
+    409: { description: "他のリクエストによる更新と競合（version不一致）", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 
@@ -314,7 +314,7 @@ registry.registerPath({
     401: commonErrors[401],
     403: commonErrors[403],
     404: commonErrors[404],
-    409: { description: "他のリクエストによる更新と競合（updatedAt不一致）", content: { "application/json": { schema: errorResponseSchema } } },
+    409: { description: "他のリクエストによる更新と競合（version不一致）", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 
@@ -478,12 +478,12 @@ registry.registerPath({
 registry.registerPath({
   method: "put",
   path: "/api/plans/{id}",
-  summary: "プラン更新（本人のみ）",
+  summary: "プラン更新（本人のみ）。完了状態（completed）もここに統合されており、PATCH /complete相当の呼び出しは不要（GATE-21）",
   tags: ["Plans"],
   security: [{ [bearerAuth.name]: [] }],
   request: {
     params: z.object({ id: z.string() }),
-    body: { content: { "application/json": { schema: planSchema } } },
+    body: { content: { "application/json": { schema: planUpdateSchema } } },
   },
   responses: {
     200: { description: "更新されたプラン", content: { "application/json": { schema: planResponseSchema } } },
@@ -491,6 +491,7 @@ registry.registerPath({
     401: commonErrors[401],
     403: commonErrors[403],
     404: commonErrors[404],
+    409: { description: "他のリクエストによる更新と競合（version不一致）", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 
@@ -512,15 +513,26 @@ registry.registerPath({
 registry.registerPath({
   method: "patch",
   path: "/api/plans/{id}/complete",
-  summary: "完了フラグ切り替え（本人のみ）",
+  summary: "完了フラグの設定（本人のみ）。目標状態completedとversionを受け取る冪等な更新（旧トグル仕様から変更）",
   tags: ["Plans"],
   security: [{ [bearerAuth.name]: [] }],
-  request: { params: z.object({ id: z.string() }) },
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({ completed: z.boolean(), version: z.number().int().nonnegative() }),
+        },
+      },
+    },
+  },
   responses: {
     200: { description: "更新されたプラン", content: { "application/json": { schema: planResponseSchema } } },
+    400: commonErrors[400],
     401: commonErrors[401],
     403: commonErrors[403],
     404: commonErrors[404],
+    409: { description: "他のリクエストによる更新と競合（version不一致）", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { findPlanByIdService, updatePlanService, deletePlanService } from "@/lib/services/plan.service";
-import { planSchema } from "@/lib/validations/plan";
+import { planUpdateSchema } from "@/lib/validations/plan";
 import { handleApiError } from "@/lib/api-error";
 import { UnauthorizedError, ValidationError } from "@/lib/errors";
 import { withRequestLogging } from "@/lib/request-logging";
@@ -32,7 +32,7 @@ async function handlePUT(req: NextRequest, { params }: Params) {
 
     const { id } = await params;
     const body = await req.json();
-    const parsed = planSchema.safeParse(body);
+    const parsed = planUpdateSchema.safeParse(body);
     if (!parsed.success) {
       throw new ValidationError("Validation failed", parsed.error.flatten().fieldErrors);
     }

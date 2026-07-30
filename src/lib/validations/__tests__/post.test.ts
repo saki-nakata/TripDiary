@@ -182,27 +182,27 @@ describe("postSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  // ─── updatedAt（postSchema自体には存在しないこと） ───
-  it("postSchema_updatedAtを含めても無視される（作成用スキーマにフィールドが存在しない）", () => {
-    const result = postSchema.safeParse({ ...validPost, updatedAt: "not-a-date" });
+  // ─── version（postSchema自体には存在しないこと） ───
+  it("postSchema_versionを含めても無視される（作成用スキーマにフィールドが存在しない）", () => {
+    const result = postSchema.safeParse({ ...validPost, version: -1 });
     expect(result.success).toBe(true);
   });
 });
 
 describe("postUpdateSchema", () => {
-  const validUpdate = { ...validPost, updatedAt: "2026-01-01T00:00:00.000Z" };
+  const validUpdate = { ...validPost, version: 0 };
 
-  it("updatedAt_正しいISO日時文字列（Z終端）_成功", () => {
+  it("version_0以上の整数_成功", () => {
     const result = postUpdateSchema.safeParse(validUpdate);
     expect(result.success).toBe(true);
   });
 
-  it("updatedAt_不正な日時形式_失敗", () => {
-    const result = postUpdateSchema.safeParse({ ...validUpdate, updatedAt: "not-a-date" });
+  it("version_負の整数_失敗", () => {
+    const result = postUpdateSchema.safeParse({ ...validUpdate, version: -1 });
     expect(result.success).toBe(false);
   });
 
-  it("updatedAt_未指定_失敗（更新時は必須）", () => {
+  it("version_未指定_失敗（更新時は必須）", () => {
     const result = postUpdateSchema.safeParse(validPost);
     expect(result.success).toBe(false);
   });

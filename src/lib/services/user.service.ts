@@ -162,10 +162,10 @@ export async function updateUserService(targetUserId: string, actingUserId: stri
     }
   }
 
-  const { updatedAt, ...profileData } = data;
+  const { version, ...profileData } = data;
   let result;
   try {
-    result = await updateUserRepo(targetUserId, profileData, new Date(updatedAt));
+    result = await updateUserRepo(targetUserId, profileData, version);
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
