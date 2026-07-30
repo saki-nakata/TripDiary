@@ -12,16 +12,19 @@ import {
   postListResponseSchema,
   commentResponseSchema,
   commentListResponseSchema,
+  authorCommentListResponseSchema,
   likeToggleResponseSchema,
   notificationListResponseSchema,
   uploadResponseSchema,
   userResponseSchema,
   userProfileResponseSchema,
   followToggleResponseSchema,
+  followUserListResponseSchema,
   userListResponseSchema,
   messageResponseSchema,
   planResponseSchema,
   planListResponseSchema,
+  paginatedPlanListResponseSchema,
   planDetailResponseSchema,
   statsYearsResponseSchema,
   statsResponseSchema,
@@ -371,6 +374,65 @@ registry.registerPath({
 
 registry.registerPath({
   method: "get",
+  path: "/api/users/{id}/comments",
+  summary: "投稿したコメント一覧を継続取得（cursor/limit対応、既定limit=20・最大50。GATE-22種類B、2026-07-30新設）",
+  tags: ["Users"],
+  request: {
+    params: z.object({ id: z.string() }),
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "コメント一覧", content: { "application/json": { schema: authorCommentListResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/users/{id}/comments-received",
+  summary: "自分の投稿に届いたコメント一覧を継続取得（本人限定、cursor/limit対応。GATE-22種類B、2026-07-30新設）",
+  tags: ["Users"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({ id: z.string() }),
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "コメント一覧", content: { "application/json": { schema: authorCommentListResponseSchema } } },
+    401: commonErrors[401],
+    403: commonErrors[403],
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/users/{id}/followers",
+  summary: "フォロワー一覧を継続取得（cursor/limit対応、既定limit=20・最大50。GATE-22種類B、2026-07-30新設）",
+  tags: ["Users"],
+  request: {
+    params: z.object({ id: z.string() }),
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "フォロワー一覧", content: { "application/json": { schema: followUserListResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/users/{id}/following",
+  summary: "フォロー中一覧を継続取得（cursor/limit対応、既定limit=20・最大50。GATE-22種類B、2026-07-30新設）",
+  tags: ["Users"],
+  request: {
+    params: z.object({ id: z.string() }),
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "フォロー中一覧", content: { "application/json": { schema: followUserListResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
   path: "/api/users/search",
   summary: "ユーザー検索（ニックネーム部分一致・qを省略した場合は全ユーザーが対象）。結果はTabiScoreの降順、ログイン中の場合は自分自身を除外",
   tags: ["Users"],
@@ -440,6 +502,36 @@ registry.registerPath({
   security: [{ [bearerAuth.name]: [] }],
   responses: {
     200: { description: "プラン一覧", content: { "application/json": { schema: planListResponseSchema } } },
+    401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/mypage/plans/active",
+  summary: "進行中プラン一覧を継続取得（本人限定、cursor/limit対応、既定limit=20・最大50。GATE-22種類B、2026-07-30新設）",
+  tags: ["Plans"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "進行中プラン一覧", content: { "application/json": { schema: paginatedPlanListResponseSchema } } },
+    401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/mypage/plans/completed",
+  summary: "完了済みプラン一覧を継続取得（本人限定、year/cursor/limit対応、既定limit=20・最大50。GATE-22種類B、2026-07-30新設）",
+  tags: ["Plans"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({ year: z.string().optional(), cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "完了済みプラン一覧", content: { "application/json": { schema: paginatedPlanListResponseSchema } } },
     401: commonErrors[401],
   },
 });

@@ -2,6 +2,10 @@ import {
   findPlanAuthorId,
   findPlanAuthorAndCompleted,
   findPlansByUserId,
+  findActivePlansByUserId,
+  findCompletedPlansByUserId,
+  findCompletedPlanYears,
+  countCompletedPlansByUserId,
   findPlanById,
   createPlan,
   updatePlan,
@@ -33,6 +37,27 @@ async function assertSpotsExist(spots?: PlanInput["spots"]) {
 
 export async function findPlansByUserIdService(userId: string) {
   return findPlansByUserId(userId);
+}
+
+export async function findActivePlansByUserIdService(params: { userId: string; cursor?: string; limit?: number }) {
+  return findActivePlansByUserId(params);
+}
+
+export async function findCompletedPlansByUserIdService(params: {
+  userId: string;
+  year?: number;
+  cursor?: string;
+  limit?: number;
+}) {
+  return findCompletedPlansByUserId(params);
+}
+
+export async function getCompletedPlanYearsService(userId: string) {
+  return findCompletedPlanYears(userId);
+}
+
+export async function countCompletedPlansByUserService(userId: string, year?: number) {
+  return countCompletedPlansByUserId(userId, year);
 }
 
 export async function countActivePlansByUserService(userId: string) {

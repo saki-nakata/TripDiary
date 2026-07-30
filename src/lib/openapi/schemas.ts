@@ -84,6 +84,34 @@ export const commentListResponseSchema = z
   })
   .openapi("CommentList");
 
+const authorCommentPostSchema = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    images: z.array(z.object({ url: z.string() })),
+    author: authorSchema,
+  })
+  .openapi("AuthorCommentPost");
+
+export const authorCommentResponseSchema = z
+  .object({
+    id: z.string(),
+    body: z.string(),
+    postId: z.string(),
+    createdAt: z.string(),
+    author: authorSchema,
+    post: authorCommentPostSchema,
+  })
+  .openapi("AuthorComment");
+
+export const authorCommentListResponseSchema = z
+  .object({
+    comments: z.array(authorCommentResponseSchema),
+    nextCursor: z.string().nullable(),
+    hasMore: z.boolean(),
+  })
+  .openapi("AuthorCommentList");
+
 export const likeToggleResponseSchema = z
   .object({
     liked: z.boolean(),
@@ -141,6 +169,22 @@ export const followToggleResponseSchema = z
     following: z.boolean(),
   })
   .openapi("FollowToggleResult");
+
+export const followUserListResponseSchema = z
+  .object({
+    users: z.array(
+      z.object({
+        id: z.string(),
+        nickname: z.string(),
+        image: z.string().nullable(),
+        bio: z.string().nullable(),
+        followedByCurrentUser: z.boolean(),
+      })
+    ),
+    nextCursor: z.string().nullable(),
+    hasMore: z.boolean(),
+  })
+  .openapi("FollowUserList");
 
 export const userListResponseSchema = z
   .object({
@@ -209,6 +253,14 @@ export const planResponseSchema = z
   .openapi("Plan");
 
 export const planListResponseSchema = z.array(planResponseSchema).openapi("PlanList");
+
+export const paginatedPlanListResponseSchema = z
+  .object({
+    plans: z.array(planResponseSchema),
+    nextCursor: z.string().nullable(),
+    hasMore: z.boolean(),
+  })
+  .openapi("PaginatedPlanList");
 
 export const planDetailResponseSchema = planResponseSchema
   .extend({

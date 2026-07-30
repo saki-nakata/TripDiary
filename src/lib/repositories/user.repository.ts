@@ -132,22 +132,56 @@ export async function countCommentsByAuthor(authorId: string) {
   return prisma.comment.count({ where: { authorId } });
 }
 
-export async function findCommentsByAuthor(authorId: string) {
+export async function findCommentsByAuthor({
+  authorId,
+  cursor,
+  limit = 20,
+}: {
+  authorId: string;
+  cursor?: string;
+  limit?: number;
+}) {
   const comments = await prisma.comment.findMany({
     where: { authorId },
-    orderBy: { createdAt: "desc" },
+    take: limit + 1,
+    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }], // idタイブレーカーで全順序を保証（GATE-22種類B）
     select: COMMENT_WITH_POST_SELECT,
   });
-  return comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() }));
+
+  const hasMore = comments.length > limit;
+  const items = hasMore ? comments.slice(0, limit) : comments;
+  return {
+    comments: items.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() })),
+    nextCursor: hasMore ? items[items.length - 1].id : null,
+    hasMore,
+  };
 }
 
-export async function findCommentsReceivedByAuthor(authorId: string) {
+export async function findCommentsReceivedByAuthor({
+  authorId,
+  cursor,
+  limit = 20,
+}: {
+  authorId: string;
+  cursor?: string;
+  limit?: number;
+}) {
   const comments = await prisma.comment.findMany({
     where: { post: { authorId } },
-    orderBy: { createdAt: "desc" },
+    take: limit + 1,
+    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }], // idタイブレーカーで全順序を保証（GATE-22種類B）
     select: COMMENT_WITH_POST_SELECT,
   });
-  return comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() }));
+
+  const hasMore = comments.length > limit;
+  const items = hasMore ? comments.slice(0, limit) : comments;
+  return {
+    comments: items.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() })),
+    nextCursor: hasMore ? items[items.length - 1].id : null,
+    hasMore,
+  };
 }
 
 export async function searchUsersByNickname({

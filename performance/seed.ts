@@ -16,6 +16,14 @@ const LIKE_COUNT = 10000;
 const COMMENT_COUNT = 10000;
 const FOLLOW_COUNT = 300;
 const NOTIFICATION_COUNT = 3000;
+// GATE-22種類B（コメント・フォロワー/フォロー中のcursorページング）の負荷試験対象ユーザーに、
+// 「投稿したコメント」「受け取ったコメント」「フォロワー」「フォロー中」をそれぞれ最低何件
+// 決定的に割り当てるか。既定limit=50を1件でも超えれば1ページ目でhasMore=trueになるが、
+// 通常のfollowScenario/interactionScenarioが対象ユーザーを「現在のVU」または「隣のユーザー」として
+// 巻き込んだ場合、フォロー関係はtoggle（1件の辺の有無を反転）されるため±1件だけ変動しうる
+// （実測：Smokeでfollowingが51→50に変動しhasMore判定が失敗した）。この変動を吸収できるよう、
+// 単なる境界値+1ではなく余裕を持った値を設定する（総件数の内数として割り当て、残りはランダム分配）
+const PAGINATION_MIN_COUNT = 56;
 const IMAGE_POST_RATIO = 0.8;
 const SHARED_PASSWORD = "perf-test-password-1234";
 const CONCURRENCY = 20;
@@ -163,7 +171,7 @@ const POST_BODY_SAMPLES = [
   "アクセスは少し不便でしたが、景色は最高でした。",
 ];
 
-async function seedPosts(users: { id: string }[]) {
+async function seedPosts(users: { id: string }[], paginationTargetUserId: string) {
   console.log("[seed] 投稿を作成中...");
   const imagePool = await loadPlaceholderImagePool();
   const heavyUsers = users.slice(0, HEAVY_USER_COUNT);
@@ -181,6 +189,7 @@ async function seedPosts(users: { id: string }[]) {
 
   const shuffledAuthors = shuffle(authorAssignments);
   const postIds: string[] = [];
+  const targetPostIds: string[] = [];
 
   await runWithConcurrency(shuffledAuthors, CONCURRENCY, async (authorId) => {
     const hasImages = imagePool.length > 0 && Math.random() < IMAGE_POST_RATIO;
@@ -208,10 +217,11 @@ async function seedPosts(users: { id: string }[]) {
       select: { id: true },
     });
     postIds.push(post.id);
+    if (authorId === paginationTargetUserId) targetPostIds.push(post.id);
   });
 
-  console.log(`[seed] 投稿${postIds.length}件を作成しました`);
-  return postIds;
+  console.log(`[seed] 投稿${postIds.length}件を作成しました（うちページング検証対象ユーザーの投稿${targetPostIds.length}件）`);
+  return { postIds, targetPostIds };
 }
 
 async function seedLikes(users: { id: string }[], postIds: string[]) {
@@ -255,11 +265,30 @@ const COMMENT_BODIES = [
   "詳しい情報をありがとうございます！",
 ];
 
-async function seedComments(users: { id: string }[], postIds: string[]) {
+async function seedComments(
+  users: { id: string }[],
+  postIds: string[],
+  paginationTargetUserId: string,
+  paginationTargetPostIds: string[]
+) {
   console.log(`[seed] コメント${COMMENT_COUNT}件を作成中...`);
   const tasks: { authorId: string; postId: string; body: string }[] = [];
 
-  for (let i = 0; i < COMMENT_COUNT; i++) {
+  // ページング検証対象ユーザーに、「投稿したコメント」「受け取ったコメント」をそれぞれ
+  // PAGINATION_MIN_COUNT件以上、決定的に割り当てる（COMMENT_COUNTの内数。残りだけランダム分配）
+  const targetPostIdSet = new Set(paginationTargetPostIds);
+  const otherPostIds = postIds.filter((id) => !targetPostIdSet.has(id));
+  const postIdsForOwnComments = otherPostIds.length > 0 ? otherPostIds : postIds;
+  for (let i = 0; i < PAGINATION_MIN_COUNT; i++) {
+    tasks.push({ authorId: paginationTargetUserId, postId: pick(postIdsForOwnComments), body: pick(COMMENT_BODIES) });
+  }
+  const otherUsers = users.filter((u) => u.id !== paginationTargetUserId);
+  const postIdsForReceivedComments = paginationTargetPostIds.length > 0 ? paginationTargetPostIds : postIds;
+  for (let i = 0; i < PAGINATION_MIN_COUNT; i++) {
+    tasks.push({ authorId: pick(otherUsers).id, postId: pick(postIdsForReceivedComments), body: pick(COMMENT_BODIES) });
+  }
+
+  for (let i = tasks.length; i < COMMENT_COUNT; i++) {
     tasks.push({ authorId: pick(users).id, postId: pick(postIds), body: pick(COMMENT_BODIES) });
   }
 
@@ -277,12 +306,32 @@ async function seedComments(users: { id: string }[], postIds: string[]) {
   console.log(`[seed] コメント${done}件を作成しました`);
 }
 
-async function seedFollows(users: { id: string }[]) {
+async function seedFollows(users: { id: string }[], paginationTargetUserId: string) {
   console.log(`[seed] フォロー${FOLLOW_COUNT}件を作成中...`);
   const seen = new Set<string>();
   let done = 0;
-  let guard = 0;
 
+  // ページング検証対象ユーザーに、「フォロワー」「フォロー中」をそれぞれPAGINATION_MIN_COUNT人以上、
+  // 決定的に割り当てる（FOLLOW_COUNTの内数。残りだけランダム分配）
+  const others = users.filter((u) => u.id !== paginationTargetUserId);
+  const followerCandidates = shuffle(others).slice(0, PAGINATION_MIN_COUNT);
+  for (const follower of followerCandidates) {
+    const key = `${follower.id}:${paginationTargetUserId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    await toggleFollow(follower.id, paginationTargetUserId);
+    done++;
+  }
+  const followingCandidates = shuffle(others).slice(0, PAGINATION_MIN_COUNT);
+  for (const followee of followingCandidates) {
+    const key = `${paginationTargetUserId}:${followee.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    await toggleFollow(paginationTargetUserId, followee.id);
+    done++;
+  }
+
+  let guard = 0;
   while (done < FOLLOW_COUNT && guard < FOLLOW_COUNT * 20) {
     guard++;
     const follower = pick(users);
@@ -332,7 +381,8 @@ async function seedNotifications(users: { id: string }[], postIds: string[]) {
 
 async function writeOutputFiles(
   users: { id: string; email: string; nickname: string }[],
-  postIds: string[]
+  postIds: string[],
+  paginationTargetUserId: string
 ) {
   console.log("[seed] 生成物を書き出し中...");
   await mkdir(K6_DATA_DIR, { recursive: true });
@@ -361,6 +411,10 @@ async function writeOutputFiles(
         mostLikedPostId: topLiked?.id ?? samplePostId,
         mostLikedPostAuthorId: topLiked?.authorId ?? null,
         samplePostId,
+        // GATE-22種類B（コメント・フォロワー/フォロー中のcursorページング）の負荷試験対象。
+        // 投稿したコメント・受け取ったコメント・フォロワー・フォロー中をそれぞれ51件以上
+        // 決定的に保証したユーザー（verifyPaginationTargetCounts参照）
+        paginationTargetUserId,
       },
       null,
       2
@@ -389,21 +443,55 @@ async function verifyCounterIntegrity() {
   if (sumCommentCount !== commentCount) throw new Error("commentCountの整合性チェックに失敗しました");
 }
 
+// GATE-22種類B（コメント・フォロワー/フォロー中のcursorページング）の負荷試験対象ユーザーが、
+// 4条件すべてでPAGINATION_MIN_COUNT件以上を満たすことをシード完了時に検証する。
+// 満たさない場合はperf:seed自体を失敗させ、負荷試験が「ページングされない1ページ目だけ」を
+// 計測してしまう事態（無言で境界未達のまま実行される）を防ぐ
+async function verifyPaginationTargetCounts(paginationTargetUserId: string) {
+  const [commentsWritten, commentsReceived, followers, following] = await Promise.all([
+    prisma.comment.count({ where: { authorId: paginationTargetUserId } }),
+    prisma.comment.count({ where: { post: { authorId: paginationTargetUserId } } }),
+    prisma.follow.count({ where: { followingId: paginationTargetUserId } }),
+    prisma.follow.count({ where: { followerId: paginationTargetUserId } }),
+  ]);
+
+  console.log(
+    `[seed] ページング検証対象ユーザーの件数: 投稿したコメント=${commentsWritten} / 受け取ったコメント=${commentsReceived} / フォロワー=${followers} / フォロー中=${following}`
+  );
+
+  const failures: string[] = [];
+  if (commentsWritten < PAGINATION_MIN_COUNT) failures.push(`投稿したコメント(${commentsWritten}件)`);
+  if (commentsReceived < PAGINATION_MIN_COUNT) failures.push(`受け取ったコメント(${commentsReceived}件)`);
+  if (followers < PAGINATION_MIN_COUNT) failures.push(`フォロワー(${followers}人)`);
+  if (following < PAGINATION_MIN_COUNT) failures.push(`フォロー中(${following}人)`);
+
+  if (failures.length > 0) {
+    throw new Error(
+      `ページング検証対象ユーザーが${PAGINATION_MIN_COUNT}件未満の項目があります: ${failures.join("、")}`
+    );
+  }
+}
+
 async function main() {
   const startedAt = Date.now();
 
   await cleanDatabase();
   const users = await seedUsers();
-  const postIds = await seedPosts(users);
+  // 先頭ユーザー（heavyUsersの1人目、perf_001）をGATE-22種類Bの負荷試験対象に固定する。
+  // writeOutputFiles/users.csvもemail昇順で書き出すため、常にusers[0]と一致する
+  const paginationTargetUserId = users[0].id;
+  const { postIds, targetPostIds } = await seedPosts(users, paginationTargetUserId);
   await seedLikes(users, postIds);
-  await seedComments(users, postIds);
-  await seedFollows(users);
+  await seedComments(users, postIds, paginationTargetUserId, targetPostIds);
+  await seedFollows(users, paginationTargetUserId);
   await seedNotifications(users, postIds);
   await writeOutputFiles(
     await prisma.user.findMany({ select: { id: true, email: true, nickname: true }, orderBy: { email: "asc" } }),
-    postIds
+    postIds,
+    paginationTargetUserId
   );
   await verifyCounterIntegrity();
+  await verifyPaginationTargetCounts(paginationTargetUserId);
 
   const elapsedSec = ((Date.now() - startedAt) / 1000).toFixed(1);
   console.log(`[seed] 完了（${elapsedSec}秒）`);

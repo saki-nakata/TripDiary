@@ -66,20 +66,54 @@ const FOLLOW_USER_SELECT = {
   bio: true,
 } as const;
 
-export async function findFollowers(userId: string) {
+export async function findFollowers({
+  userId,
+  cursor,
+  limit = 20,
+}: {
+  userId: string;
+  cursor?: string;
+  limit?: number;
+}) {
   const rows = await prisma.follow.findMany({
     where: { followingId: userId },
-    orderBy: { createdAt: "desc" },
-    select: { follower: { select: FOLLOW_USER_SELECT } },
+    take: limit + 1,
+    ...(cursor && { cursor: { followerId_followingId: { followerId: cursor, followingId: userId } }, skip: 1 }),
+    orderBy: [{ createdAt: "desc" }, { followerId: "desc" }], // followerIdタイブレーカーで全順序を保証（GATE-22種類B）
+    select: { followerId: true, follower: { select: FOLLOW_USER_SELECT } },
   });
-  return rows.map((r) => r.follower);
+
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+  return {
+    users: items.map((r) => r.follower),
+    nextCursor: hasMore ? items[items.length - 1].followerId : null,
+    hasMore,
+  };
 }
 
-export async function findFollowing(userId: string) {
+export async function findFollowing({
+  userId,
+  cursor,
+  limit = 20,
+}: {
+  userId: string;
+  cursor?: string;
+  limit?: number;
+}) {
   const rows = await prisma.follow.findMany({
     where: { followerId: userId },
-    orderBy: { createdAt: "desc" },
-    select: { following: { select: FOLLOW_USER_SELECT } },
+    take: limit + 1,
+    ...(cursor && { cursor: { followerId_followingId: { followerId: userId, followingId: cursor } }, skip: 1 }),
+    orderBy: [{ createdAt: "desc" }, { followingId: "desc" }], // followingIdタイブレーカーで全順序を保証（GATE-22種類B）
+    select: { followingId: true, following: { select: FOLLOW_USER_SELECT } },
   });
-  return rows.map((r) => r.following);
+
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+  return {
+    users: items.map((r) => r.following),
+    nextCursor: hasMore ? items[items.length - 1].followingId : null,
+    hasMore,
+  };
 }

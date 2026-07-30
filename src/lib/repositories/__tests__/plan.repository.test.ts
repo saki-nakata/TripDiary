@@ -2,6 +2,10 @@ import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { prisma } from "@/lib/prisma";
 import {
   findPlansByUserId,
+  findActivePlansByUserId,
+  findCompletedPlansByUserId,
+  findCompletedPlanYears,
+  countCompletedPlansByUserId,
   findPlanById,
   findPlanAuthorId,
   findPlanAuthorAndCompleted,
@@ -220,5 +224,125 @@ describe("plan.repository", () => {
     void activePlan;
 
     expect(await countActivePlansByUser(me.id)).toBe(1);
+  });
+
+  // ─── findActivePlansByUserId（GATE-22種類B: cursorページング） ───
+  it("findActivePlansByUserId_完了済みは含まれない", async () => {
+    const me = await createTestUser("plan-active1@example.com", "自分active1");
+    const active = await createPlan(me.id, basePlanInput);
+    const completed = await createPlan(me.id, basePlanInput);
+    await setPlanCompleted(completed.id, true);
+
+    const result = await findActivePlansByUserId({ userId: me.id });
+
+    expect(result.plans.map((p) => p.id)).toEqual([active.id]);
+    expect(result.hasMore).toBe(false);
+  });
+
+  it("findActivePlansByUserId_51件目以降もcursorで継続取得できる", async () => {
+    const me = await createTestUser("plan-active2@example.com", "自分active2");
+    for (let i = 0; i < 51; i++) {
+      await createPlan(me.id, { ...basePlanInput, title: `プラン${i}` });
+    }
+
+    const page1 = await findActivePlansByUserId({ userId: me.id, limit: 50 });
+    expect(page1.plans).toHaveLength(50);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findActivePlansByUserId({ userId: me.id, limit: 50, cursor: page1.nextCursor! });
+    expect(page2.plans).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = new Set([...page1.plans, ...page2.plans].map((p) => p.id));
+    expect(allIds.size).toBe(51);
+  });
+
+  it("findActivePlansByUserId_startDateが同一の進行中プラン群_idタイブレーカーで重複も欠落もなく全件取得できる", async () => {
+    const me = await createTestUser("plan-active-tie@example.com", "自分active-tie");
+    const p1 = await createPlan(me.id, { ...basePlanInput, startDate: "2026-05-01" });
+    const p2 = await createPlan(me.id, { ...basePlanInput, startDate: "2026-05-01" });
+    const p3 = await createPlan(me.id, { ...basePlanInput, startDate: "2026-05-01" });
+
+    const page1 = await findActivePlansByUserId({ userId: me.id, limit: 2 });
+    expect(page1.plans).toHaveLength(2);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findActivePlansByUserId({ userId: me.id, limit: 2, cursor: page1.nextCursor! });
+    expect(page2.plans).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = [...page1.plans, ...page2.plans].map((p) => p.id).sort();
+    expect(allIds).toEqual([p1.id, p2.id, p3.id].sort());
+  });
+
+  // ─── findCompletedPlansByUserId / findCompletedPlanYears / countCompletedPlansByUserId（GATE-22種類B） ───
+  it("findCompletedPlansByUserId_yearを指定するとstartDateがその年の完了済みプランのみ取得される", async () => {
+    const me = await createTestUser("plan-completed1@example.com", "自分completed1");
+    const plan2025 = await createPlan(me.id, { ...basePlanInput, startDate: "2025-12-31" });
+    const plan2026 = await createPlan(me.id, { ...basePlanInput, startDate: "2026-01-01" });
+    await setPlanCompleted(plan2025.id, true);
+    await setPlanCompleted(plan2026.id, true);
+
+    const result = await findCompletedPlansByUserId({ userId: me.id, year: 2026 });
+
+    expect(result.plans.map((p) => p.id)).toEqual([plan2026.id]);
+  });
+
+  it("findCompletedPlansByUserId_yearを指定しない場合startDate未設定の完了済みプランも含め全件取得される(境界値)", async () => {
+    const me = await createTestUser("plan-completed2@example.com", "自分completed2");
+    const planWithDate = await createPlan(me.id, { ...basePlanInput, startDate: "2026-01-01" });
+    const planWithoutDate = await createPlan(me.id, basePlanInput);
+    await setPlanCompleted(planWithDate.id, true);
+    await setPlanCompleted(planWithoutDate.id, true);
+
+    const result = await findCompletedPlansByUserId({ userId: me.id });
+
+    expect(result.plans.map((p) => p.id).sort()).toEqual([planWithDate.id, planWithoutDate.id].sort());
+  });
+
+  it("findCompletedPlansByUserId_startDateが同一の完了済みプラン群_idタイブレーカーで重複も欠落もなく全件取得できる", async () => {
+    const me = await createTestUser("plan-completed-tie@example.com", "自分completed-tie");
+    const p1 = await createPlan(me.id, { ...basePlanInput, startDate: "2026-05-01" });
+    const p2 = await createPlan(me.id, { ...basePlanInput, startDate: "2026-05-01" });
+    const p3 = await createPlan(me.id, { ...basePlanInput, startDate: "2026-05-01" });
+    await Promise.all([p1, p2, p3].map((p) => setPlanCompleted(p.id, true)));
+
+    const page1 = await findCompletedPlansByUserId({ userId: me.id, limit: 2 });
+    expect(page1.plans).toHaveLength(2);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findCompletedPlansByUserId({ userId: me.id, limit: 2, cursor: page1.nextCursor! });
+    expect(page2.plans).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = [...page1.plans, ...page2.plans].map((p) => p.id).sort();
+    expect(allIds).toEqual([p1.id, p2.id, p3.id].sort());
+  });
+
+  it("findCompletedPlanYears_startDate未設定の完了済みプランは対象外で、年の降順に返る(境界値)", async () => {
+    const me = await createTestUser("plan-years1@example.com", "自分years1");
+    const plan2024 = await createPlan(me.id, { ...basePlanInput, startDate: "2024-06-01" });
+    const plan2026 = await createPlan(me.id, { ...basePlanInput, startDate: "2026-01-01" });
+    const planWithoutDate = await createPlan(me.id, basePlanInput);
+    await Promise.all([plan2024, plan2026, planWithoutDate].map((p) => setPlanCompleted(p.id, true)));
+
+    expect(await findCompletedPlanYears(me.id)).toEqual([2026, 2024]);
+  });
+
+  it("findCompletedPlanYears_完了済みプランがない場合は空配列を返す(境界値)", async () => {
+    const me = await createTestUser("plan-years2@example.com", "自分years2");
+
+    expect(await findCompletedPlanYears(me.id)).toEqual([]);
+  });
+
+  it("countCompletedPlansByUserId_yearを指定した場合その年のみカウントされる", async () => {
+    const me = await createTestUser("plan-count1@example.com", "自分count1");
+    const plan2025 = await createPlan(me.id, { ...basePlanInput, startDate: "2025-12-31" });
+    const plan2026a = await createPlan(me.id, { ...basePlanInput, startDate: "2026-01-01" });
+    const plan2026b = await createPlan(me.id, { ...basePlanInput, startDate: "2026-06-01" });
+    await Promise.all([plan2025, plan2026a, plan2026b].map((p) => setPlanCompleted(p.id, true)));
+
+    expect(await countCompletedPlansByUserId(me.id, 2026)).toBe(2);
+    expect(await countCompletedPlansByUserId(me.id)).toBe(3);
   });
 });
