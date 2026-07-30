@@ -7,6 +7,7 @@ import { createComment } from "@/lib/repositories/comment.repository";
 import { toggleFollow } from "@/lib/repositories/follow.repository";
 import { createNotification } from "@/lib/repositories/notification.repository";
 import { CATEGORIES, LOCATIONS } from "@/lib/constants";
+import { assertPerfDatabase, assertPerfTruncateConfirmed, PERF_DATABASE_ALLOWLIST } from "./assert-perf-database";
 
 const USER_COUNT = 60;
 const HEAVY_USER_COUNT = 5;
@@ -88,6 +89,18 @@ function groupByPostId<T extends { postId: string }>(tasks: T[]): Map<string, T[
 }
 
 async function cleanDatabase() {
+  // 書き込み（TRUNCATE）より前に、接続先が必ずperf専用DBであることを検証する。
+  // 1) URL文字列のみでの検証（DB接続なし） 2) 実接続後にSELECT DATABASE()で再確認、の2段構え。
+  assertPerfDatabase(process.env.DATABASE_URL);
+  assertPerfTruncateConfirmed();
+
+  const [{ db }] = await prisma.$queryRaw<{ db: string }[]>`SELECT DATABASE() as db`;
+  if (db !== PERF_DATABASE_ALLOWLIST.database) {
+    throw new Error(
+      `[seed] 実接続したデータベース名（${db}）がperf専用DB（${PERF_DATABASE_ALLOWLIST.database}）と一致しません。`
+    );
+  }
+
   console.log("[seed] クリーンアップ中...");
   await prisma.$executeRawUnsafe("SET FOREIGN_KEY_CHECKS = 0");
   const tables = [
