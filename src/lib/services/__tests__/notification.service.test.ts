@@ -31,7 +31,7 @@ describe("通知の1年保持ポリシー（削除はせず、古い未読を既
   });
 
   it("getUserNotifications_一覧取得前に1年以上前の未読通知を既読化する", async () => {
-    vi.mocked(findUserNotifications).mockResolvedValue([]);
+    vi.mocked(findUserNotifications).mockResolvedValue({ notifications: [], nextCursor: null, hasMore: false });
 
     const before = Date.now();
     await getUserNotifications(USER_ID);
@@ -47,6 +47,14 @@ describe("通知の1年保持ポリシー（削除はせず、古い未読を既
     expect(vi.mocked(markStaleNotificationsAsRead).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(findUserNotifications).mock.invocationCallOrder[0]
     );
+  });
+
+  it("getUserNotifications_cursor/limitをそのままfindUserNotificationsへ渡す（GATE-22種類A）", async () => {
+    vi.mocked(findUserNotifications).mockResolvedValue({ notifications: [], nextCursor: null, hasMore: false });
+
+    await getUserNotifications(USER_ID, { cursor: "notif-5", limit: 10 });
+
+    expect(findUserNotifications).toHaveBeenCalledWith({ userId: USER_ID, cursor: "notif-5", limit: 10 });
   });
 
   it("getUnreadCountService_件数取得前に1年以上前の未読通知を既読化し、バッジ対象から除外する", async () => {

@@ -35,18 +35,31 @@ describe("checkRateLimit", () => {
     vi.useRealTimers();
   });
 
-  it("ENABLE_TEST_ENDPOINTSがtrue_上限回数を超過してもエラーを投げない", () => {
-    const original = process.env.ENABLE_TEST_ENDPOINTS;
-    process.env.ENABLE_TEST_ENDPOINTS = "true";
+  it("DISABLE_RATE_LIMIT_FOR_TESTSがtrue_上限回数を超過してもエラーを投げない", () => {
+    const original = process.env.DISABLE_RATE_LIMIT_FOR_TESTS;
+    process.env.DISABLE_RATE_LIMIT_FOR_TESTS = "true";
     try {
       for (let i = 0; i < 10; i++) {
         expect(() => checkRateLimit("key-f", 5, 1000)).not.toThrow();
       }
     } finally {
-      process.env.ENABLE_TEST_ENDPOINTS = original;
+      process.env.DISABLE_RATE_LIMIT_FOR_TESTS = original;
     }
   });
 
+  it("ENABLE_TEST_ENDPOINTSがtrueでもバイパスされない（GATE-03、フラグ分離）", () => {
+    const originalDisable = process.env.DISABLE_RATE_LIMIT_FOR_TESTS;
+    const originalEnableTestEndpoints = process.env.ENABLE_TEST_ENDPOINTS;
+    delete process.env.DISABLE_RATE_LIMIT_FOR_TESTS;
+    process.env.ENABLE_TEST_ENDPOINTS = "true";
+    try {
+      for (let i = 0; i < 5; i++) checkRateLimit("key-g", 5, 1000);
+      expect(() => checkRateLimit("key-g", 5, 1000)).toThrow(RateLimitError);
+    } finally {
+      process.env.DISABLE_RATE_LIMIT_FOR_TESTS = originalDisable;
+      process.env.ENABLE_TEST_ENDPOINTS = originalEnableTestEndpoints;
+    }
+  });
 });
 
 describe("getClientIp", () => {

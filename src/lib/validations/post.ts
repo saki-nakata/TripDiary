@@ -24,7 +24,8 @@ export const postSchema = z.object({
 export type PostInput = z.infer<typeof postSchema>;
 
 export const postUpdateSchema = postSchema.extend({
-  updatedAt: z.iso.datetime(),
+  // 楽観ロック用の競合トークン（GATE-04）。updatedAtは非正規化カウンタ更新でも進むため使わない
+  version: z.number().int().nonnegative(),
 });
 
 export type PostUpdateInput = z.infer<typeof postUpdateSchema>;

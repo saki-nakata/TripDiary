@@ -3,7 +3,7 @@ import { userUpdateSchema, passwordChangeSchema, emailChangeSchema } from "@/lib
 
 const validUser = {
   nickname: "テストユーザー",
-  updatedAt: "2026-01-01T00:00:00.000Z",
+  version: 0,
 };
 
 describe("userUpdateSchema", () => {
@@ -55,18 +55,18 @@ describe("userUpdateSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  // ─── updatedAt（楽観ロック用） ───
-  it("updatedAt_正しいISO日時文字列(Z終端)_成功", () => {
+  // ─── version（楽観ロック用） ───
+  it("version_0以上の整数_成功", () => {
     const result = userUpdateSchema.safeParse(validUser);
     expect(result.success).toBe(true);
   });
 
-  it("updatedAt_不正な日時形式_失敗", () => {
-    const result = userUpdateSchema.safeParse({ ...validUser, updatedAt: "not-a-date" });
+  it("version_負の整数_失敗", () => {
+    const result = userUpdateSchema.safeParse({ ...validUser, version: -1 });
     expect(result.success).toBe(false);
   });
 
-  it("updatedAt_未指定_失敗", () => {
+  it("version_未指定_失敗", () => {
     const result = userUpdateSchema.safeParse({ nickname: validUser.nickname });
     expect(result.success).toBe(false);
   });

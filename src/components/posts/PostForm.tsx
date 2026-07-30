@@ -223,7 +223,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
       ...data,
       imageUrls,
       costBreakdown: costBreakdown.filter((i) => i.amount > 0),
-      ...(isEdit && { updatedAt: initialData!.updatedAt }),
+      ...(isEdit && { version: initialData!.version }),
     };
 
     try {

@@ -31,3 +31,21 @@ export const planSchema = z
   );
 
 export type PlanInput = z.infer<typeof planSchema>;
+
+// 更新専用スキーマ（GATE-05楽観ロック・GATE-21完了状態統合）。作成用のplanSchemaとは分離し、
+// completed/versionが作成時に紛れ込む余地を作らない（postSchema/postUpdateSchemaと同じパターン）
+export const planUpdateSchema = planSchema.extend({
+  completed: z.boolean(),
+  version: z.number().int().nonnegative(),
+});
+
+export type PlanUpdateInput = z.infer<typeof planUpdateSchema>;
+
+// PATCH /api/plans/[id]/complete 専用（GATE-21）。目標状態completedとversionを受け取る冪等な
+// set。旧仕様（引数なしで現在値を反転するトグル）から変更した
+export const planCompleteSchema = z.object({
+  completed: z.boolean(),
+  version: z.number().int().nonnegative(),
+});
+
+export type PlanCompleteInput = z.infer<typeof planCompleteSchema>;

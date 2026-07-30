@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NotFoundError, ForbiddenError, ValidationError } from "@/lib/errors";
+import { Prisma } from "@prisma/client";
+import { NotFoundError, ForbiddenError, ValidationError, ConflictError } from "@/lib/errors";
 
 vi.mock("@/lib/repositories/plan.repository", () => ({
   findPlanAuthorId: vi.fn(),
-  findPlanAuthorAndCompleted: vi.fn(),
   findPlansByUserId: vi.fn(),
   findPlanById: vi.fn(),
   createPlan: vi.fn(),
@@ -16,7 +16,6 @@ vi.mock("@/lib/repositories/plan.repository", () => ({
 
 import {
   findPlanAuthorId,
-  findPlanAuthorAndCompleted,
   findPlansByUserId,
   findPlanById,
   createPlan,
@@ -33,8 +32,12 @@ import {
   createPlanService,
   updatePlanService,
   deletePlanService,
-  togglePlanCompletedService,
+  setPlanCompletedService,
 } from "@/lib/services/plan.service";
+
+function makeP2025() {
+  return new Prisma.PrismaClientKnownRequestError("No record found", { code: "P2025", clientVersion: "6.19.3" });
+}
 
 const USER_ID = "user-1";
 const OTHER_USER_ID = "other-user-2";
@@ -187,24 +190,37 @@ describe("updatePlanService", () => {
   it("存在しないプランID_NotFoundError", async () => {
     vi.mocked(findPlanAuthorId).mockResolvedValue(null);
 
-    await expect(updatePlanService(USER_ID, PLAN_ID, { title: "更新" })).rejects.toThrow(NotFoundError);
+    await expect(updatePlanService(USER_ID, PLAN_ID, { title: "更新", completed: false, version: 0 })).rejects.toThrow(
+      NotFoundError
+    );
     expect(updatePlan).not.toHaveBeenCalled();
   });
 
   it("他人のプラン_ForbiddenErrorかつrepository更新が呼ばれない", async () => {
     vi.mocked(findPlanAuthorId).mockResolvedValue(OTHER_USER_ID);
 
-    await expect(updatePlanService(USER_ID, PLAN_ID, { title: "更新" })).rejects.toThrow(ForbiddenError);
+    await expect(updatePlanService(USER_ID, PLAN_ID, { title: "更新", completed: false, version: 0 })).rejects.toThrow(
+      ForbiddenError
+    );
     expect(updatePlan).not.toHaveBeenCalled();
   });
 
-  it("本人のプラン_正常に更新される", async () => {
+  it("本人のプラン_正常に更新される（completed・versionもrepositoryに渡る）", async () => {
     vi.mocked(findPlanAuthorId).mockResolvedValue(USER_ID);
     vi.mocked(updatePlan).mockResolvedValue({ id: PLAN_ID } as never);
 
-    await updatePlanService(USER_ID, PLAN_ID, { title: "更新" });
+    await updatePlanService(USER_ID, PLAN_ID, { title: "更新", completed: true, version: 3 });
 
-    expect(updatePlan).toHaveBeenCalledWith(PLAN_ID, expect.objectContaining({ title: "更新" }));
+    expect(updatePlan).toHaveBeenCalledWith(PLAN_ID, expect.objectContaining({ title: "更新", completed: true }), 3);
+  });
+
+  it("他リクエストとの更新競合(P2025)_ConflictError（GATE-05）", async () => {
+    vi.mocked(findPlanAuthorId).mockResolvedValue(USER_ID);
+    vi.mocked(updatePlan).mockRejectedValue(makeP2025());
+
+    await expect(updatePlanService(USER_ID, PLAN_ID, { title: "更新", completed: false, version: 0 })).rejects.toThrow(
+      ConflictError
+    );
   });
 });
 
@@ -235,38 +251,45 @@ describe("deletePlanService", () => {
   });
 });
 
-describe("togglePlanCompletedService", () => {
+describe("setPlanCompletedService（目標状態を受け取る冪等なset、DR-01選択肢1）", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("存在しないプランID_NotFoundError", async () => {
-    vi.mocked(findPlanAuthorAndCompleted).mockResolvedValue(null);
+    vi.mocked(findPlanAuthorId).mockResolvedValue(null);
 
-    await expect(togglePlanCompletedService(USER_ID, PLAN_ID)).rejects.toThrow(NotFoundError);
+    await expect(setPlanCompletedService(USER_ID, PLAN_ID, true, 0)).rejects.toThrow(NotFoundError);
     expect(setPlanCompleted).not.toHaveBeenCalled();
   });
 
   it("他人のプラン_ForbiddenError", async () => {
-    vi.mocked(findPlanAuthorAndCompleted).mockResolvedValue({ userId: OTHER_USER_ID, completed: false });
+    vi.mocked(findPlanAuthorId).mockResolvedValue(OTHER_USER_ID);
 
-    await expect(togglePlanCompletedService(USER_ID, PLAN_ID)).rejects.toThrow(ForbiddenError);
+    await expect(setPlanCompletedService(USER_ID, PLAN_ID, true, 0)).rejects.toThrow(ForbiddenError);
     expect(setPlanCompleted).not.toHaveBeenCalled();
   });
 
-  it("未完了状態_completedがtrueに切り替えられる", async () => {
-    vi.mocked(findPlanAuthorAndCompleted).mockResolvedValue({ userId: USER_ID, completed: false });
+  it("目標状態trueを指定_completedがtrueに設定される", async () => {
+    vi.mocked(findPlanAuthorId).mockResolvedValue(USER_ID);
     vi.mocked(setPlanCompleted).mockResolvedValue({ id: PLAN_ID, completed: true } as never);
 
-    await togglePlanCompletedService(USER_ID, PLAN_ID);
+    await setPlanCompletedService(USER_ID, PLAN_ID, true, 5);
 
-    expect(setPlanCompleted).toHaveBeenCalledWith(PLAN_ID, true);
+    expect(setPlanCompleted).toHaveBeenCalledWith(PLAN_ID, true, 5);
   });
 
-  it("完了済み状態_completedがfalseに切り替えられる", async () => {
-    vi.mocked(findPlanAuthorAndCompleted).mockResolvedValue({ userId: USER_ID, completed: true });
+  it("目標状態falseを指定_completedがfalseに設定される", async () => {
+    vi.mocked(findPlanAuthorId).mockResolvedValue(USER_ID);
     vi.mocked(setPlanCompleted).mockResolvedValue({ id: PLAN_ID, completed: false } as never);
 
-    await togglePlanCompletedService(USER_ID, PLAN_ID);
+    await setPlanCompletedService(USER_ID, PLAN_ID, false, 5);
 
-    expect(setPlanCompleted).toHaveBeenCalledWith(PLAN_ID, false);
+    expect(setPlanCompleted).toHaveBeenCalledWith(PLAN_ID, false, 5);
+  });
+
+  it("他リクエストとの更新競合(P2025)_ConflictError", async () => {
+    vi.mocked(findPlanAuthorId).mockResolvedValue(USER_ID);
+    vi.mocked(setPlanCompleted).mockRejectedValue(makeP2025());
+
+    await expect(setPlanCompletedService(USER_ID, PLAN_ID, true, 0)).rejects.toThrow(ConflictError);
   });
 });

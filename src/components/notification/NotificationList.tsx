@@ -133,14 +133,38 @@ function NotificationItem({
 export function NotificationList() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
     fetch("/api/notifications")
       .then((r) => r.json())
-      .then((d) => setNotifications(d.notifications ?? []))
+      .then((d: { notifications?: Notification[]; nextCursor?: string | null; hasMore?: boolean }) => {
+        setNotifications(d.notifications ?? []);
+        setCursor(d.nextCursor ?? null);
+        setHasMore(d.hasMore ?? false);
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  // 通知一覧の継続取得（GATE-22種類A）。マイページ/プロフィールのLoadMoreListと同様、
+  // 末尾のidをcursorとして次のページを追加取得する
+  const loadMore = useCallback(async () => {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/notifications?cursor=${encodeURIComponent(cursor)}`);
+      if (!res.ok) return;
+      const data: { notifications: Notification[]; nextCursor: string | null; hasMore: boolean } = await res.json();
+      setNotifications((prev) => [...prev, ...data.notifications]);
+      setCursor(data.nextCursor);
+      setHasMore(data.hasMore);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, loadingMore]);
 
   const handleRead = useCallback(async (id: string) => {
     setNotifications((prev) =>
@@ -179,10 +203,24 @@ export function NotificationList() {
   }
 
   return (
-    <div className="rounded-xl border border-[#e2e8f0] overflow-hidden">
-      {notifications.map((n) => (
-        <NotificationItem key={n.id} notification={n} onRead={handleRead} />
-      ))}
+    <div>
+      <div className="rounded-xl border border-[#e2e8f0] overflow-hidden">
+        {notifications.map((n) => (
+          <NotificationItem key={n.id} notification={n} onRead={handleRead} />
+        ))}
+      </div>
+      {hasMore && (
+        <div className="flex justify-center mt-6">
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="px-5 py-2.5 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition-colors disabled:opacity-50"
+          >
+            {loadingMore ? "読み込み中..." : "もっと見る"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

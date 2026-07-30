@@ -9,22 +9,30 @@ import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 type Props = {
   planId: string;
   completed: boolean;
+  version: number;
   variant?: "full" | "icons";
 };
 
-export function PlanActions({ planId, completed, variant = "full" }: Props) {
+export function PlanActions({ planId, completed, version, variant = "full" }: Props) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
   const router = useRouter();
 
   async function handleToggleComplete() {
-    const res = await fetch(`/api/plans/${planId}/complete`, { method: "PATCH" });
+    // PATCH /completeは目標状態を受け取る冪等なset（旧トグル仕様から変更、DR-01）。
+    // 現在のchecked状態（completed）を反転した値とversionを送る
+    const res = await fetch(`/api/plans/${planId}/complete`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: !completed, version }),
+    });
     if (res.ok) {
       showToast(completed ? "完了を取り消しました" : "旅行を完了済みにしました");
       router.refresh();
     } else {
-      showToast("処理に失敗しました", "error");
+      const err = await res.json().catch(() => ({}));
+      showToast(err.error ?? "処理に失敗しました", "error");
     }
   }
 

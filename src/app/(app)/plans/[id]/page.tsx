@@ -89,7 +89,7 @@ export default async function PlanDetailPage({ params }: Props) {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <PlanActions planId={plan.id} completed={plan.completed} />
+            <PlanActions planId={plan.id} completed={plan.completed} version={plan.version} />
           </div>
         </div>
 

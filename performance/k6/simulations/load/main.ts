@@ -4,7 +4,7 @@ import { login } from "../../helpers/auth.ts";
 import { generateSummary } from "../../helpers/summary.ts";
 import { SUMMARY_TREND_STATS } from "../../config/config.ts";
 import { placeholderThresholds, gatingEndpointThresholds, UNGATED_ENDPOINT_NAMES } from "../../helpers/thresholds.ts";
-import { users } from "../../helpers/csv.ts";
+import { users, paginationTargetUser } from "../../helpers/csv.ts";
 import { feedScenario } from "../../scenarios/feedScenario.ts";
 import { postDetailScenario } from "../../scenarios/postDetailScenario.ts";
 import { interactionScenario } from "../../scenarios/interactionScenario.ts";
@@ -12,10 +12,12 @@ import { mypageReportScenario } from "../../scenarios/mypageReportScenario.ts";
 import { planScenario } from "../../scenarios/planScenario.ts";
 import { followScenario } from "../../scenarios/followScenario.ts";
 import { loginScenario } from "../../scenarios/loginScenario.ts";
+import { paginationScenario } from "../../scenarios/paginationScenario.ts";
 import type { RequestHeaders } from "../../helpers/auth.ts";
 
 interface SetupData {
   headersByUser: RequestHeaders[];
+  paginationHeaders: RequestHeaders;
 }
 
 const SCENARIO_NAMES = ["ramp", "steady", "rampdown"] as const;
@@ -66,7 +68,8 @@ export const options: Options = {
 
 export function setup(): SetupData {
   const headersByUser = users.map((u) => login(u.email, u.password));
-  return { headersByUser };
+  const paginationHeaders = login(paginationTargetUser().email, paginationTargetUser().password);
+  return { headersByUser, paginationHeaders };
 }
 
 function headersForCurrentVu(data: SetupData): RequestHeaders {
@@ -74,17 +77,18 @@ function headersForCurrentVu(data: SetupData): RequestHeaders {
   return data.headersByUser[index];
 }
 
-// フィード読み取り45%・投稿詳細SSR20%・いいね/コメント15%・プランCRUD10%・
-// フォロー/プロフィール閲覧5%・mypage report5%
+// フィード読み取り40%・投稿詳細SSR20%・いいね/コメント15%・プランCRUD10%・
+// フォロー/プロフィール閲覧5%・mypage report5%・コメント/フォロワー一覧のcursorページング5%
 export function mixed(data: SetupData): void {
   const headers = headersForCurrentVu(data);
   const r = Math.random();
-  if (r < 0.45) feedScenario(headers);
-  else if (r < 0.65) postDetailScenario(headers);
-  else if (r < 0.8) interactionScenario(headers);
-  else if (r < 0.9) planScenario(headers);
-  else if (r < 0.95) followScenario(headers);
-  else mypageReportScenario(headers);
+  if (r < 0.4) feedScenario(headers);
+  else if (r < 0.6) postDetailScenario(headers);
+  else if (r < 0.75) interactionScenario(headers);
+  else if (r < 0.85) planScenario(headers);
+  else if (r < 0.9) followScenario(headers);
+  else if (r < 0.95) mypageReportScenario(headers);
+  else paginationScenario(data.paginationHeaders);
 }
 
 export function loginOnly(): void {

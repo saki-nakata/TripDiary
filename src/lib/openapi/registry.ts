@@ -4,7 +4,7 @@ import { z } from "zod";
 import { postSchema, postUpdateSchema } from "@/lib/validations/post";
 import { signupApiSchema, loginSchema } from "@/lib/validations/auth";
 import { userUpdateSchema, passwordChangeApiSchema, emailChangeSchema } from "@/lib/validations/user";
-import { planSchema } from "@/lib/validations/plan";
+import { planSchema, planUpdateSchema } from "@/lib/validations/plan";
 import {
   errorResponseSchema,
   validationErrorResponseSchema,
@@ -12,16 +12,19 @@ import {
   postListResponseSchema,
   commentResponseSchema,
   commentListResponseSchema,
+  authorCommentListResponseSchema,
   likeToggleResponseSchema,
   notificationListResponseSchema,
   uploadResponseSchema,
   userResponseSchema,
   userProfileResponseSchema,
   followToggleResponseSchema,
+  followUserListResponseSchema,
   userListResponseSchema,
   messageResponseSchema,
   planResponseSchema,
   planListResponseSchema,
+  paginatedPlanListResponseSchema,
   planDetailResponseSchema,
   statsYearsResponseSchema,
   statsResponseSchema,
@@ -116,7 +119,7 @@ registry.registerPath({
     401: commonErrors[401],
     403: commonErrors[403],
     404: commonErrors[404],
-    409: { description: "他のリクエストによる更新と競合（updatedAt不一致）", content: { "application/json": { schema: errorResponseSchema } } },
+    409: { description: "他のリクエストによる更新と競合（version不一致）", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 
@@ -175,6 +178,37 @@ registry.registerPath({
         },
       },
     },
+  },
+});
+
+// ─── mypage（継続取得API、GATE-22） ───
+registry.registerPath({
+  method: "get",
+  path: "/api/mypage/wishlist",
+  summary: "自分の行きたいリスト一覧（継続取得、本人のみ）",
+  tags: ["Posts"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "投稿一覧", content: { "application/json": { schema: postListResponseSchema } } },
+    401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/mypage/visited",
+  summary: "自分の訪問済みリスト一覧（継続取得、本人のみ）",
+  tags: ["Posts"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "投稿一覧", content: { "application/json": { schema: postListResponseSchema } } },
+    401: commonErrors[401],
   },
 });
 
@@ -250,9 +284,12 @@ registry.registerPath({
 registry.registerPath({
   method: "get",
   path: "/api/notifications",
-  summary: "通知一覧取得",
+  summary: "通知一覧取得（継続取得、既定limit=20・最大50）",
   tags: ["Notifications"],
   security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
   responses: {
     200: { description: "通知一覧", content: { "application/json": { schema: notificationListResponseSchema } } },
     401: commonErrors[401],
@@ -299,6 +336,24 @@ registry.registerPath({
 });
 
 registry.registerPath({
+  method: "get",
+  path: "/api/users/{id}/posts",
+  summary: "指定ユーザーの投稿一覧（継続取得、認証不要）。マイページ「自分の投稿」タブ・公開プロフィールの投稿タブの両方で使用（GATE-22）",
+  tags: ["Posts"],
+  request: {
+    params: z.object({ id: z.string() }),
+    query: z.object({
+      cursor: z.string().optional(),
+      limit: z.string().optional(),
+      year: z.string().optional(),
+    }),
+  },
+  responses: {
+    200: { description: "投稿一覧", content: { "application/json": { schema: postListResponseSchema } } },
+  },
+});
+
+registry.registerPath({
   method: "put",
   path: "/api/users/{id}",
   summary: "プロフィール編集（本人のみ）",
@@ -314,7 +369,7 @@ registry.registerPath({
     401: commonErrors[401],
     403: commonErrors[403],
     404: commonErrors[404],
-    409: { description: "他のリクエストによる更新と競合（updatedAt不一致）", content: { "application/json": { schema: errorResponseSchema } } },
+    409: { description: "他のリクエストによる更新と競合（version不一致）", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 
@@ -366,6 +421,65 @@ registry.registerPath({
     200: { description: "トグル結果", content: { "application/json": { schema: followToggleResponseSchema } } },
     400: commonErrors[400],
     401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/users/{id}/comments",
+  summary: "投稿したコメント一覧を継続取得（cursor/limit対応、既定limit=20・最大50。GATE-22種類B、2026-07-30新設）",
+  tags: ["Users"],
+  request: {
+    params: z.object({ id: z.string() }),
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "コメント一覧", content: { "application/json": { schema: authorCommentListResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/users/{id}/comments-received",
+  summary: "自分の投稿に届いたコメント一覧を継続取得（本人限定、cursor/limit対応。GATE-22種類B、2026-07-30新設）",
+  tags: ["Users"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({ id: z.string() }),
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "コメント一覧", content: { "application/json": { schema: authorCommentListResponseSchema } } },
+    401: commonErrors[401],
+    403: commonErrors[403],
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/users/{id}/followers",
+  summary: "フォロワー一覧を継続取得（cursor/limit対応、既定limit=20・最大50。GATE-22種類B、2026-07-30新設）",
+  tags: ["Users"],
+  request: {
+    params: z.object({ id: z.string() }),
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "フォロワー一覧", content: { "application/json": { schema: followUserListResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/users/{id}/following",
+  summary: "フォロー中一覧を継続取得（cursor/limit対応、既定limit=20・最大50。GATE-22種類B、2026-07-30新設）",
+  tags: ["Users"],
+  request: {
+    params: z.object({ id: z.string() }),
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "フォロー中一覧", content: { "application/json": { schema: followUserListResponseSchema } } },
   },
 });
 
@@ -445,6 +559,36 @@ registry.registerPath({
 });
 
 registry.registerPath({
+  method: "get",
+  path: "/api/mypage/plans/active",
+  summary: "進行中プラン一覧を継続取得（本人限定、cursor/limit対応、既定limit=20・最大50。GATE-22種類B、2026-07-30新設）",
+  tags: ["Plans"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({ cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "進行中プラン一覧", content: { "application/json": { schema: paginatedPlanListResponseSchema } } },
+    401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/mypage/plans/completed",
+  summary: "完了済みプラン一覧を継続取得（本人限定、year/cursor/limit対応、既定limit=20・最大50。GATE-22種類B、2026-07-30新設）",
+  tags: ["Plans"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({ year: z.string().optional(), cursor: z.string().optional(), limit: z.string().optional() }),
+  },
+  responses: {
+    200: { description: "完了済みプラン一覧", content: { "application/json": { schema: paginatedPlanListResponseSchema } } },
+    401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
   method: "post",
   path: "/api/plans",
   summary: "プラン作成",
@@ -478,12 +622,12 @@ registry.registerPath({
 registry.registerPath({
   method: "put",
   path: "/api/plans/{id}",
-  summary: "プラン更新（本人のみ）",
+  summary: "プラン更新（本人のみ）。完了状態（completed）もここに統合されており、PATCH /complete相当の呼び出しは不要（GATE-21）",
   tags: ["Plans"],
   security: [{ [bearerAuth.name]: [] }],
   request: {
     params: z.object({ id: z.string() }),
-    body: { content: { "application/json": { schema: planSchema } } },
+    body: { content: { "application/json": { schema: planUpdateSchema } } },
   },
   responses: {
     200: { description: "更新されたプラン", content: { "application/json": { schema: planResponseSchema } } },
@@ -491,6 +635,7 @@ registry.registerPath({
     401: commonErrors[401],
     403: commonErrors[403],
     404: commonErrors[404],
+    409: { description: "他のリクエストによる更新と競合（version不一致）", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 
@@ -512,15 +657,26 @@ registry.registerPath({
 registry.registerPath({
   method: "patch",
   path: "/api/plans/{id}/complete",
-  summary: "完了フラグ切り替え（本人のみ）",
+  summary: "完了フラグの設定（本人のみ）。目標状態completedとversionを受け取る冪等な更新（旧トグル仕様から変更）",
   tags: ["Plans"],
   security: [{ [bearerAuth.name]: [] }],
-  request: { params: z.object({ id: z.string() }) },
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({ completed: z.boolean(), version: z.number().int().nonnegative() }),
+        },
+      },
+    },
+  },
   responses: {
     200: { description: "更新されたプラン", content: { "application/json": { schema: planResponseSchema } } },
+    400: commonErrors[400],
     401: commonErrors[401],
     403: commonErrors[403],
     404: commonErrors[404],
+    409: { description: "他のリクエストによる更新と競合（version不一致）", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 

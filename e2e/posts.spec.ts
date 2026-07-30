@@ -60,7 +60,7 @@ test.describe.serial("投稿の主要フロー（作成 → 詳細表示 → い
     await page.goto(`/posts/${postId}`);
 
     await expect(page.getByRole("heading", { name: POST.title })).toBeVisible();
-    await expect(page.getByText(POST.body)).toBeVisible();
+    await expect(page.getByTestId("post-body")).toHaveText(POST.body);
   });
 
   test("ホームのカードの💬アイコンをクリック → 投稿詳細のコメント欄へ遷移する", async ({ page }) => {
@@ -100,7 +100,7 @@ test.describe.serial("投稿の主要フロー（作成 → 詳細表示 → い
   test("投稿削除 → ホーム画面へ遷移する", async ({ page }) => {
     await page.goto(`/posts/${postId}`);
 
-    await page.getByTestId("delete-post-button").click();
+    await page.locator("main").getByTestId("delete-post-button").click();
     await page.getByRole("button", { name: "削除する" }).click();
 
     await expect(page).toHaveURL("/", { timeout: 5000 });

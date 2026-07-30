@@ -153,18 +153,47 @@ describe("user.repository", () => {
   it("updateUser_nickname_bio_imageが更新される", async () => {
     const user = await createTestUser("update@example.com", "更新前");
 
-    const updated = await updateUser(user.id, { nickname: "更新後", bio: "自己紹介", image: "/uploads/a.jpg" }, user.updatedAt);
+    const updated = await updateUser(user.id, { nickname: "更新後", bio: "自己紹介", image: "/uploads/a.jpg" }, user.version);
 
     expect(updated).toEqual({ id: user.id, nickname: "更新後", bio: "自己紹介", image: "/uploads/a.jpg" });
   });
 
-  it("updateUser_updatedAtが実際と異なる_失敗する(楽観ロック)", async () => {
+  it("updateUser_versionが実際と異なる_失敗する(楽観ロック)", async () => {
     const user = await createTestUser("update-stale@example.com", "更新前2");
-    const staleUpdatedAt = new Date(user.updatedAt.getTime() - 1000 * 60);
+    const staleVersion = user.version + 1;
 
     await expect(
-      updateUser(user.id, { nickname: "更新後2", bio: null, image: null }, staleUpdatedAt)
+      updateUser(user.id, { nickname: "更新後2", bio: null, image: null }, staleVersion)
     ).rejects.toThrow();
+  });
+
+  it("updateUser_同一versionで2件を同時実行_片方のみ成功しもう片方は失敗する（GATE-04、実DB並行更新）", async () => {
+    const user = await createTestUser("update-concurrent@example.com", "並行更新前");
+
+    const results = await Promise.allSettled([
+      updateUser(user.id, { nickname: "並行更新A", bio: null, image: null }, user.version),
+      updateUser(user.id, { nickname: "並行更新B", bio: null, image: null }, user.version),
+    ]);
+
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter((r) => r.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    const updated = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(updated?.version).toBe(user.version + 1);
+  });
+
+  it("updateUser_異なるユーザーへの同時更新は競合せずどちらも成功する（GATE-04、非競合時の正常系）", async () => {
+    const userA = await createTestUser("update-concurrent-a@example.com", "並行A更新前");
+    const userB = await createTestUser("update-concurrent-b@example.com", "並行B更新前");
+
+    const results = await Promise.allSettled([
+      updateUser(userA.id, { nickname: "並行A更新後", bio: null, image: null }, userA.version),
+      updateUser(userB.id, { nickname: "並行B更新後", bio: null, image: null }, userB.version),
+    ]);
+
+    expect(results.every((r) => r.status === "fulfilled")).toBe(true);
   });
 
   // ─── カウント系 ───
@@ -210,16 +239,61 @@ describe("user.repository", () => {
     });
     await prisma.comment.create({ data: { authorId: commenter.id, postId: post.id, body: "投稿者への感想" } });
 
-    const written = await findCommentsByAuthor(commenter.id);
-    const received = await findCommentsReceivedByAuthor(author.id);
+    const written = await findCommentsByAuthor({ authorId: commenter.id });
+    const received = await findCommentsReceivedByAuthor({ authorId: author.id });
 
-    expect(written).toHaveLength(1);
-    expect(written[0].body).toBe("投稿者への感想");
-    expect(written[0].post.images).toEqual([{ url: "/uploads/post3.jpg" }]);
-    expect(written[0].post.author.id).toBe(author.id);
-    expect(received).toHaveLength(1);
-    expect(received[0].author.id).toBe(commenter.id);
-    expect(received[0].post.images).toEqual([{ url: "/uploads/post3.jpg" }]);
+    expect(written.comments).toHaveLength(1);
+    expect(written.comments[0].body).toBe("投稿者への感想");
+    expect(written.comments[0].post.images).toEqual([{ url: "/uploads/post3.jpg" }]);
+    expect(written.comments[0].post.author.id).toBe(author.id);
+    expect(written.hasMore).toBe(false);
+    expect(received.comments).toHaveLength(1);
+    expect(received.comments[0].author.id).toBe(commenter.id);
+    expect(received.comments[0].post.images).toEqual([{ url: "/uploads/post3.jpg" }]);
+    expect(received.hasMore).toBe(false);
+  });
+
+  // ─── findCommentsByAuthor / findCommentsReceivedByAuthor（GATE-22種類B: cursorページング） ───
+  it("findCommentsByAuthor_51件目以降もcursorで継続取得できる", async () => {
+    const commenter = await createTestUser("comment-cursor1@example.com", "コメント投稿者cursor1");
+    const author = await createTestUser("comment-cursor2@example.com", "投稿者cursor2");
+    const post = await createPost(author.id, { title: "投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    for (let i = 0; i < 51; i++) {
+      await prisma.comment.create({ data: { authorId: commenter.id, postId: post.id, body: `コメント${i}` } });
+    }
+
+    const page1 = await findCommentsByAuthor({ authorId: commenter.id, limit: 50 });
+    expect(page1.comments).toHaveLength(50);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findCommentsByAuthor({ authorId: commenter.id, limit: 50, cursor: page1.nextCursor! });
+    expect(page2.comments).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = new Set([...page1.comments, ...page2.comments].map((c) => c.id));
+    expect(allIds.size).toBe(51);
+  });
+
+  it("findCommentsByAuthor_createdAtが同一のコメント群_idタイブレーカーで重複も欠落もなく全件取得できる", async () => {
+    const commenter = await createTestUser("comment-tie1@example.com", "コメント投稿者tie1");
+    const author = await createTestUser("comment-tie2@example.com", "投稿者tie2");
+    const post = await createPost(author.id, { title: "投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const c1 = await prisma.comment.create({ data: { authorId: commenter.id, postId: post.id, body: "コメントA" } });
+    const c2 = await prisma.comment.create({ data: { authorId: commenter.id, postId: post.id, body: "コメントB" } });
+    const c3 = await prisma.comment.create({ data: { authorId: commenter.id, postId: post.id, body: "コメントC" } });
+    const sameCreatedAt = new Date("2026-01-01T00:00:00.000Z");
+    await prisma.comment.updateMany({ where: { id: { in: [c1.id, c2.id, c3.id] } }, data: { createdAt: sameCreatedAt } });
+
+    const page1 = await findCommentsByAuthor({ authorId: commenter.id, limit: 2 });
+    expect(page1.comments).toHaveLength(2);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findCommentsByAuthor({ authorId: commenter.id, limit: 2, cursor: page1.nextCursor! });
+    expect(page2.comments).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = [...page1.comments, ...page2.comments].map((c) => c.id).sort();
+    expect(allIds).toEqual([c1.id, c2.id, c3.id].sort());
   });
 
   // ─── countCommentsByAuthor ───

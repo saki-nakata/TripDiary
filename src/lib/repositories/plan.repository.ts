@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import type { PlanInput } from "@/lib/validations/plan";
+import { ConflictError } from "@/lib/errors";
+import type { PlanInput, PlanUpdateInput } from "@/lib/validations/plan";
 
 const PLAN_SELECT = {
   id: true,
@@ -13,6 +14,7 @@ const PLAN_SELECT = {
   userId: true,
   createdAt: true,
   updatedAt: true,
+  version: true,
 } as const;
 
 const SPOT_POST_SELECT = {
@@ -37,14 +39,11 @@ const LINKED_POST_SELECT = {
 } as const;
 
 type PlanWithBudget = PlanInput & { budget: number | null };
+type PlanUpdateWithBudget = PlanUpdateInput & { budget: number | null };
 
 export async function findPlanAuthorId(planId: string): Promise<string | null> {
   const plan = await prisma.plan.findUnique({ where: { id: planId }, select: { userId: true } });
   return plan?.userId ?? null;
-}
-
-export async function findPlanAuthorAndCompleted(planId: string): Promise<{ userId: string; completed: boolean } | null> {
-  return prisma.plan.findUnique({ where: { id: planId }, select: { userId: true, completed: true } });
 }
 
 export async function findPlansByUserId(userId: string) {
@@ -54,6 +53,91 @@ export async function findPlansByUserId(userId: string) {
     select: { ...PLAN_SELECT, _count: { select: { planSpots: true } } },
   });
   return plans.map(formatPlan);
+}
+
+// マイページ「旅行プラン」タブの継続取得API（GATE-22種類B）。進行中プランのみを対象に、
+// idを末尾のタイブレーカーとして安定した順序でページングする
+export async function findActivePlansByUserId({
+  userId,
+  cursor,
+  limit = 20,
+}: {
+  userId: string;
+  cursor?: string;
+  limit?: number;
+}) {
+  const plans = await prisma.plan.findMany({
+    where: { userId, completed: false },
+    take: limit + 1,
+    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+    orderBy: [{ startDate: "asc" }, { id: "asc" }],
+    select: { ...PLAN_SELECT, _count: { select: { planSpots: true } } },
+  });
+
+  const hasMore = plans.length > limit;
+  const items = hasMore ? plans.slice(0, limit) : plans;
+  return {
+    plans: items.map(formatPlan),
+    nextCursor: hasMore ? items[items.length - 1].id : null,
+    hasMore,
+  };
+}
+
+// マイページ「旅行プラン」タブの完了済みプラン継続取得API（GATE-22種類B）。yearを指定すると
+// startDateがその年のものだけに絞り込む。未指定（全期間）の場合はstartDate未設定の完了済み
+// プランも含める（従来の「全期間」表示と同じ範囲を維持する）
+export async function findCompletedPlansByUserId({
+  userId,
+  year,
+  cursor,
+  limit = 20,
+}: {
+  userId: string;
+  year?: number;
+  cursor?: string;
+  limit?: number;
+}) {
+  const dateFilter =
+    year != null
+      ? { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) }
+      : undefined;
+  const plans = await prisma.plan.findMany({
+    where: { userId, completed: true, ...(dateFilter ? { startDate: dateFilter } : {}) },
+    take: limit + 1,
+    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+    orderBy: [{ startDate: "desc" }, { id: "desc" }],
+    select: { ...PLAN_SELECT, _count: { select: { planSpots: true } } },
+  });
+
+  const hasMore = plans.length > limit;
+  const items = hasMore ? plans.slice(0, limit) : plans;
+  return {
+    plans: items.map(formatPlan),
+    nextCursor: hasMore ? items[items.length - 1].id : null,
+    hasMore,
+  };
+}
+
+// 完了済みプランが存在する年の一覧（startDate未設定分は対象外）。ページングされた取得結果とは
+// 独立に、全期間を対象とした軽量なDISTINCT集計で取得する（年フィルタの選択肢を常に完全な状態に保つため）
+export async function findCompletedPlanYears(userId: string) {
+  const rows = await prisma.$queryRaw<Array<{ year: number }>>`
+    SELECT DISTINCT YEAR(startDate) AS year
+    FROM plans
+    WHERE userId = ${userId} AND completed = true AND startDate IS NOT NULL
+    ORDER BY year DESC
+  `;
+  return rows.map((r) => Number(r.year));
+}
+
+export async function countCompletedPlansByUserId(userId: string, year?: number) {
+  const dateFilter =
+    year != null
+      ? { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) }
+      : undefined;
+  return prisma.plan.count({
+    where: { userId, completed: true, ...(dateFilter ? { startDate: dateFilter } : {}) },
+  });
 }
 
 export async function findPlanById(id: string) {
@@ -119,21 +203,24 @@ export async function createPlan(userId: string, data: PlanWithBudget) {
   });
 }
 
-export async function updatePlan(id: string, data: PlanWithBudget) {
-  const { spots, budgetBreakdown, startDate, endDate, budget, ...rest } = data;
+export async function updatePlan(id: string, data: PlanUpdateWithBudget, expectedVersion: number) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { spots, budgetBreakdown, startDate, endDate, budget, version, ...rest } = data;
 
   return prisma.$transaction(async (tx) => {
-    const plan = await tx.plan.update({
-      where: { id },
+    // completed（GATE-21）とversion判定（GATE-05）を同一のUPDATEに含める。
+    const { count } = await tx.plan.updateMany({
+      where: { id, version: expectedVersion },
       data: {
         ...rest,
         budget,
         budgetBreakdown: budgetBreakdown && budgetBreakdown.length > 0 ? budgetBreakdown : undefined,
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
+        version: { increment: 1 },
       },
-      select: PLAN_SELECT,
     });
+    if (count !== 1) throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
 
     if (spots !== undefined) {
       await tx.planSpot.deleteMany({ where: { planId: id } });
@@ -142,6 +229,7 @@ export async function updatePlan(id: string, data: PlanWithBudget) {
       }
     }
 
+    const plan = await tx.plan.findUniqueOrThrow({ where: { id }, select: PLAN_SELECT });
     return formatPlan(plan);
   });
 }
@@ -150,8 +238,15 @@ export async function deletePlan(id: string) {
   return prisma.plan.delete({ where: { id } });
 }
 
-export async function setPlanCompleted(id: string, completed: boolean) {
-  const plan = await prisma.plan.update({ where: { id }, data: { completed }, select: PLAN_SELECT });
+export async function setPlanCompleted(id: string, completed: boolean, expectedVersion: number) {
+  // 目標状態completedを受け取る冪等なset（旧: 現在値を読んで反転するトグル）。GATE-21対応の一環として
+  // PlanActions.tsx単独の完了トグルにもversionロックを適用する（DR-01選択肢1）
+  const { count } = await prisma.plan.updateMany({
+    where: { id, version: expectedVersion },
+    data: { completed, version: { increment: 1 } },
+  });
+  if (count !== 1) throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
+  const plan = await prisma.plan.findUniqueOrThrow({ where: { id }, select: PLAN_SELECT });
   return formatPlan(plan);
 }
 

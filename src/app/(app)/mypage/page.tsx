@@ -8,17 +8,22 @@ import {
   findFollowingPostsService,
   countFollowingFeedPostsService,
 } from "@/lib/services/post.service";
-import { findPlansByUserIdService, countActivePlansByUserService } from "@/lib/services/plan.service";
+import {
+  findActivePlansByUserIdService,
+  findCompletedPlansByUserIdService,
+  getCompletedPlanYearsService,
+  countCompletedPlansByUserService,
+  countActivePlansByUserService,
+} from "@/lib/services/plan.service";
 import { getAvailableYearsService, getYearlyStatsService } from "@/lib/services/stats.service";
 import { countUserPostsService, countVisitedByUserService } from "@/lib/services/user.service";
 import { countWishlistByUserService } from "@/lib/services/wishlist.service";
-import { PostCard } from "@/components/posts/PostCard";
-import { SavedMapSection } from "@/components/posts/SavedMapSection";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ReportSummary } from "@/components/plans/ReportSummary";
-import { FollowFeed } from "@/components/posts/FollowFeed";
+import { LoadMoreList } from "@/components/posts/LoadMoreList";
 import { PlanActions } from "@/components/plans/PlanActions";
 import { CompletedPlansAccordion } from "@/components/plans/CompletedPlansAccordion";
+import { PlanLoadMoreList } from "@/components/plans/PlanLoadMoreList";
 import { YearFilterBar } from "@/components/mypage/YearFilterBar";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { formatDateSlash } from "@/lib/date";
@@ -170,7 +175,7 @@ function PlanListItem({ plan }: { plan: Plan }) {
           {plan.spotCount ?? 0}スポット
         </span>
         <div className="opacity-100 xl:opacity-0 transition-opacity xl:group-hover:opacity-100">
-          <PlanActions planId={plan.id} completed={plan.completed} variant="icons" />
+          <PlanActions planId={plan.id} completed={plan.completed} version={plan.version} variant="icons" />
         </div>
       </div>
     </div>
@@ -178,18 +183,26 @@ function PlanListItem({ plan }: { plan: Plan }) {
 }
 
 async function renderPlans(userId: string, yearParam?: string) {
-  const plans = await findPlansByUserIdService(userId);
-  const activePlans = plans.filter((p) => !p.completed);
-  const completedPlansAll = plans.filter((p) => p.completed);
+  // 進行中プラン・完了済みプランの年一覧・完了済み総数（年フィルタの選択肢を常に完全な状態に保つため、
+  // 読み込み済みページとは独立に取得する。GATE-22種類B対応）
+  const [activeResult, completedYears, totalCompletedCount] = await Promise.all([
+    findActivePlansByUserIdService({ userId }),
+    getCompletedPlanYearsService(userId),
+    countCompletedPlansByUserService(userId),
+  ]);
 
-  // 旅行済みプランの年度切り替え（開始日=startDateの年で判定。未設定のプランは対象外）
-  const completedYears = Array.from(
-    new Set(completedPlansAll.filter((p) => p.startDate).map((p) => new Date(p.startDate!).getFullYear()))
-  ).sort((a, b) => b - a);
   const parsedYear = yearParam ? Number(yearParam) : NaN;
   const year: number | "all" = completedYears.includes(parsedYear) ? parsedYear : "all";
-  const completedPlans =
-    year === "all" ? completedPlansAll : completedPlansAll.filter((p) => p.startDate && new Date(p.startDate).getFullYear() === year);
+  const selectedYear = year === "all" ? undefined : year;
+
+  const [completedResult, completedCount] = await Promise.all([
+    findCompletedPlansByUserIdService({ userId, year: selectedYear }),
+    year === "all" ? Promise.resolve(totalCompletedCount) : countCompletedPlansByUserService(userId, selectedYear),
+  ]);
+
+  const hasAnyPlans = activeResult.plans.length > 0 || totalCompletedCount > 0;
+  const activeBaseUrl = "/api/mypage/plans/active";
+  const completedBaseUrl = `/api/mypage/plans/completed${selectedYear != null ? `?year=${selectedYear}` : ""}`;
 
   return (
     <div className="space-y-4">
@@ -201,25 +214,32 @@ async function renderPlans(userId: string, yearParam?: string) {
           ＋ 新しいプラン
         </Link>
       </div>
-      {plans.length === 0 ? (
+      {!hasAnyPlans ? (
         <EmptyState codepoint="1f9ed" message="まだ旅行プランがありません" />
-      ) : activePlans.length === 0 ? (
+      ) : activeResult.plans.length === 0 ? (
         <EmptyState codepoint="1f9ed" message="進行中のプランがありません" />
       ) : (
-        <div className="max-w-5xl space-y-2">
-          {activePlans.map((plan) => (
-            <PlanListItem key={plan.id} plan={plan as unknown as Plan} />
-          ))}
-        </div>
+        <PlanLoadMoreList
+          initialPlans={activeResult.plans as unknown as Plan[]}
+          initialNextCursor={activeResult.nextCursor}
+          initialHasMore={activeResult.hasMore}
+          baseUrl={activeBaseUrl}
+        />
       )}
-      {completedPlansAll.length > 0 && (
+      {totalCompletedCount > 0 && (
         <div className="max-w-5xl">
           <CompletedPlansAccordion
-            count={completedPlans.length}
+            count={completedCount}
             yearFilter={completedYears.length > 0 ? <YearFilterBar tab="plans" years={completedYears} value={year} /> : undefined}
           >
-            {completedPlans.length > 0 ? (
-              completedPlans.map((plan) => <PlanListItem key={plan.id} plan={plan as unknown as Plan} />)
+            {completedResult.plans.length > 0 ? (
+              <PlanLoadMoreList
+                key={`completed-${year}`}
+                initialPlans={completedResult.plans as unknown as Plan[]}
+                initialNextCursor={completedResult.nextCursor}
+                initialHasMore={completedResult.hasMore}
+                baseUrl={completedBaseUrl}
+              />
             ) : (
               <p className="py-6 text-center text-sm text-zinc-400">{year}年の完了済みプランがありません。</p>
             )}
@@ -231,7 +251,7 @@ async function renderPlans(userId: string, yearParam?: string) {
 }
 
 async function renderMyPosts(userId: string, year: number | "all") {
-  const { posts } = await findPostsByAuthorIdService({
+  const { posts, nextCursor, hasMore } = await findPostsByAuthorIdService({
     authorId: userId,
     viewerId: userId,
     year: year === "all" ? undefined : year,
@@ -248,12 +268,17 @@ async function renderMyPosts(userId: string, year: number | "all") {
     );
   }
 
+  const baseUrl = `/api/users/${userId}/posts${year === "all" ? "" : `?year=${year}`}`;
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-      {posts.map((p) => (
-        <PostCard key={p.id} post={p as unknown as Post} viewerId={userId} />
-      ))}
-    </div>
+    <LoadMoreList
+      key={baseUrl}
+      initialPosts={posts as unknown as Post[]}
+      initialNextCursor={nextCursor}
+      initialHasMore={hasMore}
+      baseUrl={baseUrl}
+      variant="post-grid"
+      viewerId={userId}
+    />
   );
 }
 
@@ -261,26 +286,44 @@ const SAVED_CONFIG = {
   wishlist: {
     fetch: findWishlistedPostsService,
     empty: { codepoint: "1f516", message: "行きたいリストがまだありません", ctaLabel: "スポットを探す", ctaHref: "/" },
+    apiUrl: "/api/mypage/wishlist",
   },
   visited: {
     fetch: findVisitedPostsService,
     empty: { codepoint: "1f6a9", message: "訪問済みのスポットがありません" },
+    apiUrl: "/api/mypage/visited",
   },
 } as const;
 
 async function renderSaved(userId: string, kind: "wishlist" | "visited") {
   const cfg = SAVED_CONFIG[kind];
-  const { posts } = await cfg.fetch({ userId });
+  const { posts, nextCursor, hasMore } = await cfg.fetch({ userId });
   if (posts.length === 0) {
     return <EmptyState {...cfg.empty} />;
   }
-  return <SavedMapSection posts={posts as unknown as Post[]} kind={kind} />;
+  return (
+    <LoadMoreList
+      initialPosts={posts as unknown as Post[]}
+      initialNextCursor={nextCursor}
+      initialHasMore={hasMore}
+      baseUrl={cfg.apiUrl}
+      variant={kind}
+    />
+  );
 }
 
 async function renderFollowFeed(userId: string) {
-  const { posts } = await findFollowingPostsService({ userId });
+  const { posts, nextCursor, hasMore } = await findFollowingPostsService({ userId });
   if (posts.length === 0) {
     return <EmptyState codepoint="1f465" message="フォロー中のユーザーがいません" ctaLabel="ユーザーを探す" ctaHref="/search?tab=user" />;
   }
-  return <FollowFeed posts={posts as unknown as Post[]} />;
+  return (
+    <LoadMoreList
+      initialPosts={posts as unknown as Post[]}
+      initialNextCursor={nextCursor}
+      initialHasMore={hasMore}
+      baseUrl="/api/posts"
+      variant="follow-feed"
+    />
+  );
 }

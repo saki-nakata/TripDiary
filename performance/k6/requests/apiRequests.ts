@@ -73,6 +73,51 @@ export function toggleFollowRequest(headers: RequestHeaders, userId: string) {
   return res;
 }
 
+function pagedListUrl(basePath: string, cursor?: string): string {
+  const query = cursor ? `?limit=50&cursor=${encodeURIComponent(cursor)}` : "?limit=50";
+  return `${BASE_URL}${basePath}${query}`;
+}
+
+export function getUserComments(headers: RequestHeaders, userId: string, cursor?: string) {
+  const res = http.get(pagedListUrl(`/api/users/${userId}/comments`, cursor), {
+    headers,
+    timeout: TIMEOUT,
+    tags: { endpoint: "users_comments_written" },
+  });
+  check(res, { "getUserComments: status 200": (r) => r.status === 200 });
+  return res;
+}
+
+export function getUserCommentsReceived(headers: RequestHeaders, userId: string, cursor?: string) {
+  const res = http.get(pagedListUrl(`/api/users/${userId}/comments-received`, cursor), {
+    headers,
+    timeout: TIMEOUT,
+    tags: { endpoint: "users_comments_received" },
+  });
+  check(res, { "getUserCommentsReceived: status 200": (r) => r.status === 200 });
+  return res;
+}
+
+export function getUserFollowers(headers: RequestHeaders, userId: string, cursor?: string) {
+  const res = http.get(pagedListUrl(`/api/users/${userId}/followers`, cursor), {
+    headers,
+    timeout: TIMEOUT,
+    tags: { endpoint: "users_followers" },
+  });
+  check(res, { "getUserFollowers: status 200": (r) => r.status === 200 });
+  return res;
+}
+
+export function getUserFollowing(headers: RequestHeaders, userId: string, cursor?: string) {
+  const res = http.get(pagedListUrl(`/api/users/${userId}/following`, cursor), {
+    headers,
+    timeout: TIMEOUT,
+    tags: { endpoint: "users_following" },
+  });
+  check(res, { "getUserFollowing: status 200": (r) => r.status === 200 });
+  return res;
+}
+
 export function getStats(headers: RequestHeaders, year: string = "all") {
   const res = http.get(`${BASE_URL}/api/stats?year=${year}`, {
     headers,

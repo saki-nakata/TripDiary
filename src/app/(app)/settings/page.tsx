@@ -30,7 +30,7 @@ export default async function SettingsPage() {
           initialNickname={user!.nickname}
           initialBio={user!.bio}
           initialImage={user!.image}
-          initialUpdatedAt={user!.updatedAt.toISOString()}
+          initialVersion={user!.version}
         />
       </div>
     </div>
