@@ -14,16 +14,6 @@ function makeComment(id: string, body: string): AuthorComment {
   };
 }
 
-function renderBodies(comments: AuthorComment[]) {
-  return (
-    <ul>
-      {comments.map((c) => (
-        <li key={c.id}>{c.body}</li>
-      ))}
-    </ul>
-  );
-}
-
 describe("CommentLoadMoreList（GATE-22種類B: 継続取得の共通UI導線）", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -37,7 +27,7 @@ describe("CommentLoadMoreList（GATE-22種類B: 継続取得の共通UI導線）
         initialNextCursor={null}
         initialHasMore={false}
         baseUrl="/api/users/author-1/comments"
-        render={renderBodies}
+        variant="written"
       />
     );
 
@@ -57,7 +47,7 @@ describe("CommentLoadMoreList（GATE-22種類B: 継続取得の共通UI導線）
         initialNextCursor="c1"
         initialHasMore={true}
         baseUrl="/api/users/author-1/comments"
-        render={renderBodies}
+        variant="written"
       />
     );
 

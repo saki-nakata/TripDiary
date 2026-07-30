@@ -25,16 +25,6 @@ function makePlan(id: string, title: string): Plan {
   };
 }
 
-function renderTitles(plans: Plan[]) {
-  return (
-    <ul>
-      {plans.map((p) => (
-        <li key={p.id}>{p.title}</li>
-      ))}
-    </ul>
-  );
-}
-
 describe("PlanLoadMoreList（GATE-22種類B: 継続取得の共通UI導線）", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -48,7 +38,6 @@ describe("PlanLoadMoreList（GATE-22種類B: 継続取得の共通UI導線）", 
         initialNextCursor={null}
         initialHasMore={false}
         baseUrl="/api/mypage/plans/active"
-        render={renderTitles}
       />
     );
 
@@ -68,7 +57,6 @@ describe("PlanLoadMoreList（GATE-22種類B: 継続取得の共通UI導線）", 
         initialNextCursor="plan-1"
         initialHasMore={true}
         baseUrl="/api/mypage/plans/active"
-        render={renderTitles}
       />
     );
 
@@ -93,7 +81,6 @@ describe("PlanLoadMoreList（GATE-22種類B: 継続取得の共通UI導線）", 
         initialNextCursor="plan-1"
         initialHasMore={true}
         baseUrl="/api/mypage/plans/completed?year=2026"
-        render={renderTitles}
       />
     );
 
@@ -114,7 +101,6 @@ describe("PlanLoadMoreList（GATE-22種類B: 継続取得の共通UI導線）", 
         initialNextCursor="plan-1"
         initialHasMore={true}
         baseUrl="/api/mypage/plans/active"
-        render={renderTitles}
       />
     );
 

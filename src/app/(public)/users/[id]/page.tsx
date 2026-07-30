@@ -17,7 +17,6 @@ import { BackButton } from "@/components/posts/BackButton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CommentLoadMoreList } from "@/components/users/CommentLoadMoreList";
 import { UserLoadMoreList } from "@/components/users/UserLoadMoreList";
-import { formatDateSlash } from "@/lib/date";
 import type { Post } from "@/types/post";
 
 type Props = {
@@ -257,30 +256,7 @@ async function renderCommentsWritten(authorId: string) {
       initialNextCursor={nextCursor}
       initialHasMore={hasMore}
       baseUrl={`/api/users/${authorId}/comments`}
-      render={(items) => (
-        <div className="space-y-3">
-          {items.map((c) => (
-            <Link
-              key={c.id}
-              href={`/posts/${c.postId}`}
-              className="flex gap-3 p-4 rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors"
-            >
-              <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-zinc-200 shrink-0">
-                {c.post.images[0] && (
-                  <Image src={c.post.images[0].url} alt={c.post.title} fill sizes="56px" className="object-cover" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-zinc-400 mb-1">
-                  『{c.post.title}』（{c.post.author.nickname}）
-                </p>
-                <p className="text-sm text-zinc-700">{c.body}</p>
-                <p className="text-xs text-zinc-400 mt-1">{formatDateSlash(c.createdAt)}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+      variant="written"
     />
   );
 }
@@ -296,34 +272,7 @@ async function renderCommentsReceived(authorId: string) {
       initialNextCursor={nextCursor}
       initialHasMore={hasMore}
       baseUrl={`/api/users/${authorId}/comments-received`}
-      render={(items) => (
-        <div className="space-y-3">
-          {items.map((c) => (
-            <Link
-              key={c.id}
-              href={`/posts/${c.postId}`}
-              className="flex gap-3 p-4 rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors"
-            >
-              <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-200 shrink-0">
-                {c.author.image ? (
-                  <Image src={c.author.image} alt={c.author.nickname} fill sizes="40px" className="object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm text-zinc-500 font-medium">
-                    {c.author.nickname[0]}
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-zinc-400 mb-1">
-                  <span className="font-bold text-zinc-600">{c.author.nickname}</span> さんから『{c.post.title}』へ
-                </p>
-                <p className="text-sm text-zinc-700">{c.body}</p>
-                <p className="text-xs text-zinc-400 mt-1">{formatDateSlash(c.createdAt)}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+      variant="received"
     />
   );
 }
@@ -343,35 +292,7 @@ async function renderUserList(userId: string, type: "followers" | "following", v
       initialNextCursor={nextCursor}
       initialHasMore={hasMore}
       baseUrl={`/api/users/${userId}/${type}`}
-      render={(items) => (
-        <div className="space-y-2">
-          {items.map((u) => (
-            <div
-              key={u.id}
-              className="flex items-center gap-3 p-3 rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors"
-            >
-              <Link href={`/users/${u.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-200 shrink-0">
-                  {u.image ? (
-                    <Image src={u.image} alt={u.nickname} fill sizes="40px" className="object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-sm text-zinc-500 font-medium">
-                      {u.nickname[0]}
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-zinc-900 truncate">{u.nickname}</p>
-                  {u.bio && <p className="text-xs text-zinc-500 truncate">{u.bio}</p>}
-                </div>
-              </Link>
-              {viewerId && viewerId !== u.id && (
-                <FollowButton userId={u.id} initialFollowing={u.followedByCurrentUser} isLoggedIn={!!viewerId} size="sm" />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      viewerId={viewerId}
     />
   );
 }

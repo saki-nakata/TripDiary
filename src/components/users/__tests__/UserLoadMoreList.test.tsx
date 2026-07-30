@@ -7,16 +7,6 @@ function makeUser(id: string, nickname: string): FollowListUser {
   return { id, nickname, image: null, bio: null, followedByCurrentUser: false };
 }
 
-function renderNicknames(users: FollowListUser[]) {
-  return (
-    <ul>
-      {users.map((u) => (
-        <li key={u.id}>{u.nickname}</li>
-      ))}
-    </ul>
-  );
-}
-
 describe("UserLoadMoreList（GATE-22種類B: 継続取得の共通UI導線）", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -30,7 +20,6 @@ describe("UserLoadMoreList（GATE-22種類B: 継続取得の共通UI導線）", 
         initialNextCursor={null}
         initialHasMore={false}
         baseUrl="/api/users/user-1/followers"
-        render={renderNicknames}
       />
     );
 
@@ -50,7 +39,6 @@ describe("UserLoadMoreList（GATE-22種類B: 継続取得の共通UI導線）", 
         initialNextCursor="u1"
         initialHasMore={true}
         baseUrl="/api/users/user-1/followers"
-        render={renderNicknames}
       />
     );
 
