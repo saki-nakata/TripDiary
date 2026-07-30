@@ -5,6 +5,10 @@ import { ToastProvider } from "@/contexts/toast-context";
 import { PlanLoadMoreList } from "@/components/plans/PlanLoadMoreList";
 import type { Plan } from "@/types/plan";
 
+vi.mock("@/components/plans/PlanActions", () => ({
+  PlanActions: () => null,
+}));
+
 function renderWithToast(component: React.ReactNode) {
   render(<ToastProvider>{component}</ToastProvider>);
 }
