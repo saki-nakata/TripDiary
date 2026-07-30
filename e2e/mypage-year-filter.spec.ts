@@ -8,12 +8,10 @@ const TEST_USER = {
 };
 
 test.describe.serial("マイページの年度切り替え（自分の投稿・旅行プラン）", () => {
-  test.beforeAll(async ({ request }) => {
+  test.beforeEach(async ({ page, request }) => {
+    // Playwrightのretryでも前試行の投稿・プランを残さず、件数アサーションを独立させる。
     await request.delete(`/api/test/cleanup?email=${encodeURIComponent(TEST_EMAIL)}`);
     await request.post("/api/auth/signup", { data: TEST_USER });
-  });
-
-  test.beforeEach(async ({ page }) => {
     await page.goto("/login");
     await page.fill("#email", TEST_USER.email);
     await page.fill("#password", TEST_USER.password);
