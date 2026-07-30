@@ -27,7 +27,7 @@ test.describe.serial("アカウント設定の主要フロー（パスワード�
 
     await page.goto("/settings/account");
     const passwordForm = page.locator("form").nth(1);
-    await passwordForm.locator('input[name="currentPassword"]').fill(TEST_USER.password);
+    await passwordForm.locator('input[name="passwordCurrentPassword"]').fill(TEST_USER.password);
     await passwordForm.locator('input[name="newPassword"]').fill(NEW_PASSWORD);
     await passwordForm.locator('input[name="confirmNewPassword"]').fill(NEW_PASSWORD);
 
@@ -66,6 +66,33 @@ test.describe.serial("アカウント設定の主要フロー（パスワード�
     await expect(page).toHaveURL("/", { timeout: 15000 });
   });
 
+  test("メールアドレス変更フォーム：現在のパスワードが誤り_エラーがメール変更フォーム自身に表示されパスワード変更フォームには表示されない（GATE-41）", async ({ page }) => {
+    await page.goto("/login");
+    await page.fill("#email", TEST_USER.email);
+    await page.fill("#password", NEW_PASSWORD);
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL("/", { timeout: 15000 });
+
+    await page.goto("/settings/account");
+    const emailForm = page.locator("form").nth(0);
+    const passwordForm = page.locator("form").nth(1);
+    await emailForm.locator('input[name="newEmail"]').fill(TEST_EMAIL_CHANGED);
+    await emailForm.locator('input[name="emailCurrentPassword"]').fill("wrong-password");
+
+    const [response] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes("/email") && res.request().method() === "PATCH"),
+      emailForm.getByRole("button", { name: "メールアドレスを変更する" }).click(),
+    ]);
+    expect(response.status()).toBe(400);
+
+    // エラーはメール変更フォーム自身の「現在のパスワード」入力欄の下に表示され、
+    // パスワード変更フォーム側には一切表示されない
+    await expect(emailForm.getByText("現在のパスワードが正しくありません")).toBeVisible();
+    await expect(passwordForm.getByText("現在のパスワードが正しくありません")).toHaveCount(0);
+    // まだログイン状態のまま（signOutされていない）ことも確認する
+    await expect(page).toHaveURL("/settings/account");
+  });
+
   test("メールアドレス変更 → ログアウトされ新メールアドレスで再ログインできる", async ({ page }) => {
     // 各 test() は新しいブラウザコンテキストを持つため、前のテストで変更したパスワードで改めてログインする
     await page.goto("/login");
@@ -76,10 +103,11 @@ test.describe.serial("アカウント設定の主要フロー（パスワード�
 
     await page.goto("/settings/account");
     const emailForm = page.locator("form").nth(0);
-    const passwordForm = page.locator("form").nth(1);
-    // 現在のパスワード欄はパスワード変更セクションに集約されており、メールアドレス変更時もその値を使用する
+    // GATE-41対応（2026-07-30）：現在のパスワード欄はメール変更フォーム自身に独立して存在する
+    // （以前はパスワード変更フォームの入力欄と状態を共有しており、メール変更だけの操作では
+    // 画面下部の別フォームへ入力する必要があった）
     await emailForm.locator('input[name="newEmail"]').fill(TEST_EMAIL_CHANGED);
-    await passwordForm.locator('input[name="currentPassword"]').fill(NEW_PASSWORD);
+    await emailForm.locator('input[name="emailCurrentPassword"]').fill(NEW_PASSWORD);
 
     const [response] = await Promise.all([
       page.waitForResponse((res) => res.url().includes("/email") && res.request().method() === "PATCH"),
