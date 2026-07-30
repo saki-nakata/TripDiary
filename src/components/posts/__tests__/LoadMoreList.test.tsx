@@ -30,6 +30,7 @@ function makePost(id: string, title: string): Post {
     authorId: "author-1",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
+    version: 0,
     author: { id: "author-1", nickname: "投稿者", image: null },
     images: [],
     _count: { likes: 0, comments: 0 },
