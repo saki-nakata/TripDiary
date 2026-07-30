@@ -16,7 +16,12 @@ async function handlePATCH(req: NextRequest, { params }: Params) {
     }
 
     const { id } = await params;
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      throw new ValidationError("Validation failed");
+    }
     const parsed = planCompleteSchema.safeParse(body);
     if (!parsed.success) {
       throw new ValidationError("Validation failed", parsed.error.flatten().fieldErrors);

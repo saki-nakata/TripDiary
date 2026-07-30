@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { ConflictError } from "@/lib/errors";
 import type { PlanInput, PlanUpdateInput } from "@/lib/validations/plan";
 
 const PLAN_SELECT = {
@@ -122,9 +123,8 @@ export async function updatePlan(id: string, data: PlanUpdateWithBudget, expecte
   const { spots, budgetBreakdown, startDate, endDate, budget, version, ...rest } = data;
 
   return prisma.$transaction(async (tx) => {
-    // completed（GATE-21）とversion判定（GATE-05）を同一のtx.plan.update呼び出しに含める。
-    // version不一致（他の更新が先に成功済み）の場合は0件更新となりPrismaがP2025を投げる
-    const plan = await tx.plan.update({
+    // completed（GATE-21）とversion判定（GATE-05）を同一のUPDATEに含める。
+    const { count } = await tx.plan.updateMany({
       where: { id, version: expectedVersion },
       data: {
         ...rest,
@@ -134,8 +134,8 @@ export async function updatePlan(id: string, data: PlanUpdateWithBudget, expecte
         endDate: endDate ? new Date(endDate) : null,
         version: { increment: 1 },
       },
-      select: PLAN_SELECT,
     });
+    if (count !== 1) throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
 
     if (spots !== undefined) {
       await tx.planSpot.deleteMany({ where: { planId: id } });
@@ -144,6 +144,7 @@ export async function updatePlan(id: string, data: PlanUpdateWithBudget, expecte
       }
     }
 
+    const plan = await tx.plan.findUniqueOrThrow({ where: { id }, select: PLAN_SELECT });
     return formatPlan(plan);
   });
 }
@@ -155,11 +156,12 @@ export async function deletePlan(id: string) {
 export async function setPlanCompleted(id: string, completed: boolean, expectedVersion: number) {
   // 目標状態completedを受け取る冪等なset（旧: 現在値を読んで反転するトグル）。GATE-21対応の一環として
   // PlanActions.tsx単独の完了トグルにもversionロックを適用する（DR-01選択肢1）
-  const plan = await prisma.plan.update({
+  const { count } = await prisma.plan.updateMany({
     where: { id, version: expectedVersion },
     data: { completed, version: { increment: 1 } },
-    select: PLAN_SELECT,
   });
+  if (count !== 1) throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
+  const plan = await prisma.plan.findUniqueOrThrow({ where: { id }, select: PLAN_SELECT });
   return formatPlan(plan);
 }
 

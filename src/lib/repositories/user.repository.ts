@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { ConflictError } from "@/lib/errors";
 
 export async function findUserByEmail(email: string) {
   return prisma.user.findUnique({ where: { email } });
@@ -36,13 +37,13 @@ export async function updateUser(
   data: { nickname: string; bio?: string | null; image?: string | null },
   expectedVersion: number
 ) {
-  // version不一致（他の更新が先に成功済み）の場合は0件更新となりPrismaがP2025を投げる。
-  // updatedAtはfollow等の非正規化カウンタ更新でも進むため競合検知に使えない（GATE-04）
-  return prisma.user.update({
+  const { count } = await prisma.user.updateMany({
+    // updatedAtはfollow等の非正規化カウンタ更新でも進むため競合検知に使えない（GATE-04）
     where: { id, version: expectedVersion },
     data: { ...data, version: { increment: 1 } },
-    select: { id: true, nickname: true, bio: true, image: true },
   });
+  if (count !== 1) throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
+  return prisma.user.findUniqueOrThrow({ where: { id }, select: { id: true, nickname: true, bio: true, image: true } });
 }
 
 export async function findUserPasswordHash(id: string) {

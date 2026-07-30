@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { ConflictError } from "@/lib/errors";
 import type { PostInput, PostUpdateInput } from "@/lib/validations/post";
 
 const POST_SELECT = {
@@ -406,12 +407,9 @@ export async function updatePost(id: string, data: PostUpdateInput, expectedVers
   const cost = costBreakdown?.reduce((sum, item) => sum + item.amount, 0) ?? null;
 
   return prisma.$transaction(async (tx) => {
-    if (imageUrls !== undefined) {
-      await tx.postImage.deleteMany({ where: { postId: id } });
-    }
-
-    return tx.post.update({
-      // version不一致（他の更新が先に成功済み）の場合は0件更新となりPrismaがP2025を投げる。
+    const { count } = await tx.post.updateMany({
+      // updateMany は MySQL でも id/version を同じ UPDATE の WHERE 句に含めるため、
+      // 同一versionの並行更新で両方が成功することを防ぐ。
       // updatedAtは非正規化カウンタ更新（いいね等）でも進むため競合検知に使えない（GATE-04）
       where: { id, version: expectedVersion },
       data: {
@@ -420,14 +418,19 @@ export async function updatePost(id: string, data: PostUpdateInput, expectedVers
         costBreakdown: costBreakdown ?? undefined,
         visitedAt: new Date(rest.visitedAt),
         version: { increment: 1 },
-        ...(imageUrls && imageUrls.length > 0 && {
-          images: {
-            create: imageUrls.map((url, displayOrder) => ({ url, displayOrder })),
-          },
-        }),
       },
-      select: { id: true },
     });
+
+    if (count !== 1) throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
+
+    if (imageUrls !== undefined) {
+      await tx.postImage.deleteMany({ where: { postId: id } });
+      if (imageUrls.length > 0) {
+        await tx.postImage.createMany({ data: imageUrls.map((url, displayOrder) => ({ postId: id, url, displayOrder })) });
+      }
+    }
+
+    return tx.post.findUniqueOrThrow({ where: { id }, select: { id: true } });
   });
 }
 
