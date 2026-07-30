@@ -68,9 +68,9 @@ export async function createFollowNotification(fromUserId: string, targetUserId:
   return createNotification({ userId: targetUserId, fromUserId, type: "follow" });
 }
 
-export async function getUserNotifications(userId: string) {
+export async function getUserNotifications(userId: string, options: { cursor?: string; limit?: number } = {}) {
   await markStaleNotificationsAsRead(userId, staleNotificationCutoff());
-  return findUserNotifications(userId);
+  return findUserNotifications({ userId, ...options });
 }
 
 export async function getUnreadCountService(userId: string) {

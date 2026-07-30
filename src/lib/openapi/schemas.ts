@@ -97,14 +97,19 @@ export const notificationResponseSchema = z
   .object({
     id: z.string(),
     type: z.string(),
-    isRead: z.boolean(),
+    postId: z.string().nullable(),
+    commentBody: z.string().nullable(),
+    read: z.boolean(),
     createdAt: z.string(),
+    fromUser: authorSchema,
   })
   .openapi("Notification");
 
 export const notificationListResponseSchema = z
   .object({
     notifications: z.array(notificationResponseSchema),
+    nextCursor: z.string().nullable(),
+    hasMore: z.boolean(),
   })
   .openapi("NotificationList");
 

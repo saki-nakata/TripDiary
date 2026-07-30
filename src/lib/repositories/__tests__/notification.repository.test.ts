@@ -40,16 +40,63 @@ describe("notification.repository", () => {
 
     await createNotification({ userId: recipient.id, fromUserId: sender.id, type: "like", postId: post.id });
 
-    const notifications = await findUserNotifications(recipient.id);
-    expect(notifications).toHaveLength(1);
-    expect(notifications[0].type).toBe("like");
-    expect(notifications[0].read).toBe(false);
+    const result = await findUserNotifications({ userId: recipient.id });
+    expect(result.notifications).toHaveLength(1);
+    expect(result.notifications[0].type).toBe("like");
+    expect(result.notifications[0].read).toBe(false);
+    expect(result.hasMore).toBe(false);
+    expect(result.nextCursor).toBeNull();
   });
 
   it("findUserNotifications_通知なし_空配列を返す(境界値)", async () => {
     const user = await createTestUser("n3@example.com", "ユーザー");
 
-    expect(await findUserNotifications(user.id)).toEqual([]);
+    const result = await findUserNotifications({ userId: user.id });
+    expect(result.notifications).toEqual([]);
+    expect(result.hasMore).toBe(false);
+    expect(result.nextCursor).toBeNull();
+  });
+
+  // ─── findUserNotifications（GATE-22種類A: cursorページング） ───
+  it("findUserNotifications_51件目以降もcursorで継続取得できる", async () => {
+    const recipient = await createTestUser("n-cursor1@example.com", "受信者");
+    const sender = await createTestUser("n-cursor2@example.com", "送信者");
+    for (let i = 0; i < 51; i++) {
+      await createNotification({ userId: recipient.id, fromUserId: sender.id, type: "follow" });
+    }
+
+    const page1 = await findUserNotifications({ userId: recipient.id, limit: 50 });
+    expect(page1.notifications).toHaveLength(50);
+    expect(page1.hasMore).toBe(true);
+    expect(page1.nextCursor).not.toBeNull();
+
+    const page2 = await findUserNotifications({ userId: recipient.id, limit: 50, cursor: page1.nextCursor! });
+    expect(page2.notifications).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = new Set([...page1.notifications, ...page2.notifications].map((n) => n.id));
+    expect(allIds.size).toBe(51);
+  });
+
+  it("findUserNotifications_createdAtが同一の通知群_idタイブレーカーで重複も欠落もなく全件取得できる", async () => {
+    const recipient = await createTestUser("n-tie1@example.com", "受信者");
+    const sender = await createTestUser("n-tie2@example.com", "送信者");
+    const n1 = await createNotification({ userId: recipient.id, fromUserId: sender.id, type: "follow" });
+    const n2 = await createNotification({ userId: recipient.id, fromUserId: sender.id, type: "follow" });
+    const n3 = await createNotification({ userId: recipient.id, fromUserId: sender.id, type: "follow" });
+    const sameCreatedAt = new Date("2026-01-01T00:00:00.000Z");
+    await prisma.notification.updateMany({ where: { id: { in: [n1.id, n2.id, n3.id] } }, data: { createdAt: sameCreatedAt } });
+
+    const page1 = await findUserNotifications({ userId: recipient.id, limit: 2 });
+    expect(page1.notifications).toHaveLength(2);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findUserNotifications({ userId: recipient.id, limit: 2, cursor: page1.nextCursor! });
+    expect(page2.notifications).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = [...page1.notifications, ...page2.notifications].map((n) => n.id).sort();
+    expect(allIds).toEqual([n1.id, n2.id, n3.id].sort());
   });
 
   // ─── findNotificationByLike ───
