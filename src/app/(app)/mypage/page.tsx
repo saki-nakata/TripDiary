@@ -12,11 +12,8 @@ import { findPlansByUserIdService, countActivePlansByUserService } from "@/lib/s
 import { getAvailableYearsService, getYearlyStatsService } from "@/lib/services/stats.service";
 import { countUserPostsService, countVisitedByUserService } from "@/lib/services/user.service";
 import { countWishlistByUserService } from "@/lib/services/wishlist.service";
-import { PostCard } from "@/components/posts/PostCard";
-import { SavedMapSection } from "@/components/posts/SavedMapSection";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ReportSummary } from "@/components/plans/ReportSummary";
-import { FollowFeed } from "@/components/posts/FollowFeed";
 import { LoadMoreList } from "@/components/posts/LoadMoreList";
 import { PlanActions } from "@/components/plans/PlanActions";
 import { CompletedPlansAccordion } from "@/components/plans/CompletedPlansAccordion";
@@ -256,13 +253,8 @@ async function renderMyPosts(userId: string, year: number | "all") {
       initialNextCursor={nextCursor}
       initialHasMore={hasMore}
       baseUrl={baseUrl}
-      render={(allPosts) => (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-          {allPosts.map((p) => (
-            <PostCard key={p.id} post={p} viewerId={userId} />
-          ))}
-        </div>
-      )}
+      variant="post-grid"
+      viewerId={userId}
     />
   );
 }
@@ -292,7 +284,7 @@ async function renderSaved(userId: string, kind: "wishlist" | "visited") {
       initialNextCursor={nextCursor}
       initialHasMore={hasMore}
       baseUrl={cfg.apiUrl}
-      render={(allPosts) => <SavedMapSection posts={allPosts} kind={kind} />}
+      variant={kind}
     />
   );
 }
@@ -308,7 +300,7 @@ async function renderFollowFeed(userId: string) {
       initialNextCursor={nextCursor}
       initialHasMore={hasMore}
       baseUrl="/api/posts"
-      render={(allPosts) => <FollowFeed posts={allPosts} />}
+      variant="follow-feed"
     />
   );
 }

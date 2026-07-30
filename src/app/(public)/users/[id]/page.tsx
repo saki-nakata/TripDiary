@@ -11,7 +11,6 @@ import {
 } from "@/lib/services/user.service";
 import { findPostsByAuthorIdService } from "@/lib/services/post.service";
 import { findFollowersService, findFollowingService, findFollowingIdsAmongService } from "@/lib/services/follow.service";
-import { PostCard } from "@/components/posts/PostCard";
 import { LoadMoreList } from "@/components/posts/LoadMoreList";
 import { FollowButton } from "@/components/users/FollowButton";
 import { BackButton } from "@/components/posts/BackButton";
@@ -242,13 +241,7 @@ async function renderPosts(authorId: string, viewerId?: string) {
       initialNextCursor={nextCursor}
       initialHasMore={hasMore}
       baseUrl={`/api/users/${authorId}/posts`}
-      render={(allPosts) => (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-          {allPosts.map((p) => (
-            <PostCard key={p.id} post={p} />
-          ))}
-        </div>
-      )}
+      variant="post-grid"
     />
   );
 }

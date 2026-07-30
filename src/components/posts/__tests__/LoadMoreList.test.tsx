@@ -32,16 +32,6 @@ function makePost(id: string, title: string): Post {
   };
 }
 
-function renderTitles(posts: Post[]) {
-  return (
-    <ul>
-      {posts.map((p) => (
-        <li key={p.id}>{p.title}</li>
-      ))}
-    </ul>
-  );
-}
-
 describe("LoadMoreList（GATE-22種類A: 継続取得の共通UI導線）", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -55,7 +45,7 @@ describe("LoadMoreList（GATE-22種類A: 継続取得の共通UI導線）", () =
         initialNextCursor={null}
         initialHasMore={false}
         baseUrl="/api/users/author-1/posts"
-        render={renderTitles}
+        variant="post-grid"
       />
     );
 
@@ -79,7 +69,7 @@ describe("LoadMoreList（GATE-22種類A: 継続取得の共通UI導線）", () =
         initialNextCursor="post-1"
         initialHasMore={true}
         baseUrl="/api/users/author-1/posts"
-        render={renderTitles}
+        variant="post-grid"
       />
     );
 
@@ -104,7 +94,7 @@ describe("LoadMoreList（GATE-22種類A: 継続取得の共通UI導線）", () =
         initialNextCursor="post-1"
         initialHasMore={true}
         baseUrl="/api/users/author-1/posts?year=2026"
-        render={renderTitles}
+        variant="post-grid"
       />
     );
 
@@ -125,7 +115,7 @@ describe("LoadMoreList（GATE-22種類A: 継続取得の共通UI導線）", () =
         initialNextCursor="post-1"
         initialHasMore={true}
         baseUrl="/api/users/author-1/posts"
-        render={renderTitles}
+        variant="post-grid"
       />
     );
 
