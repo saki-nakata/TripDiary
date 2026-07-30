@@ -398,7 +398,8 @@ export async function createPost(authorId: string, data: PostInput) {
       visited: false,
     },
   });
-  return formatPost(post);
+  // 作成者自身が返り値を受け取るため、viewerId=authorIdとしてcost/costBreakdownを含める
+  return formatPost(post, authorId);
 }
 
 export async function updatePost(id: string, data: PostUpdateInput, expectedVersion: number) {
@@ -464,9 +465,13 @@ function paginateResults(posts: any[], limit: number, userId?: string) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatPost(post: any, userId?: string) {
-  const { likes, wishlists, visited, likeCount, commentCount, ...rest } = post;
+  // cost/costBreakdownは本人（投稿者=閲覧者）にのみ返す。未認証・他人の場合はキー自体を含めない
+  // （投稿機能定義書「費用内訳：自分のみ表示」。GATE-02）
+  const { likes, wishlists, visited, likeCount, commentCount, cost, costBreakdown, ...rest } = post;
+  const isOwner = userId !== undefined && userId === post.authorId;
   return {
     ...rest,
+    ...(isOwner ? { cost, costBreakdown } : {}),
     visitedAt: rest.visitedAt instanceof Date ? rest.visitedAt.toISOString() : rest.visitedAt,
     createdAt: rest.createdAt instanceof Date ? rest.createdAt.toISOString() : rest.createdAt,
     updatedAt: rest.updatedAt instanceof Date ? rest.updatedAt.toISOString() : rest.updatedAt,
