@@ -40,14 +40,17 @@ export const postResponseSchema = z
     category: z.enum(CATEGORIES).nullable(),
     rating: z.number().int().min(1).max(5).nullable(),
     visitedAt: z.string(),
-    cost: z.number().int().nullable(),
-    costBreakdown: z.array(z.object({ label: z.string(), amount: z.number().int() })).nullable(),
+    // 本人（authorId === 閲覧者）にのみ含まれるフィールド。他人・未認証の場合はレスポンスに含まれない（GATE-02）
+    cost: z.number().int().nullable().optional(),
+    costBreakdown: z.array(z.object({ label: z.string(), amount: z.number().int() })).nullable().optional(),
     lat: z.number().nullable(),
     lng: z.number().nullable(),
     planId: z.string().nullable(),
     authorId: z.string(),
     createdAt: z.string(),
     updatedAt: z.string(),
+    // 楽観ロック用の競合トークン（GATE-04）。更新時はこの値をそのまま送り返す
+    version: z.number().int(),
     author: authorSchema,
     images: z.array(postImageSchema),
     _count: z.object({ likes: z.number().int(), comments: z.number().int() }),
@@ -204,6 +207,8 @@ export const planResponseSchema = z
     userId: z.string(),
     createdAt: z.string(),
     updatedAt: z.string(),
+    // 楽観ロック用の競合トークン（GATE-05）。更新時はこの値をそのまま送り返す
+    version: z.number().int(),
     spotCount: z.number().int().optional(),
   })
   .openapi("Plan");

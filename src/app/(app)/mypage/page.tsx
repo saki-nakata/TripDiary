@@ -168,7 +168,7 @@ function PlanListItem({ plan }: { plan: Plan }) {
           {plan.spotCount ?? 0}スポット
         </span>
         <div className="opacity-100 xl:opacity-0 transition-opacity xl:group-hover:opacity-100">
-          <PlanActions planId={plan.id} completed={plan.completed} variant="icons" />
+          <PlanActions planId={plan.id} completed={plan.completed} version={plan.version} variant="icons" />
         </div>
       </div>
     </div>

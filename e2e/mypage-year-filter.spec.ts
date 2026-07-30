@@ -8,10 +8,12 @@ const TEST_USER = {
 };
 
 test.describe.serial("マイページの年度切り替え（自分の投稿・旅行プラン）", () => {
-  test.beforeEach(async ({ page, request }) => {
-    // Playwrightのretryでも前試行の投稿・プランを残さず、件数アサーションを独立させる。
+  test.beforeAll(async ({ request }) => {
     await request.delete(`/api/test/cleanup?email=${encodeURIComponent(TEST_EMAIL)}`);
     await request.post("/api/auth/signup", { data: TEST_USER });
+  });
+
+  test.beforeEach(async ({ page }) => {
     await page.goto("/login");
     await page.fill("#email", TEST_USER.email);
     await page.fill("#password", TEST_USER.password);
@@ -20,7 +22,6 @@ test.describe.serial("マイページの年度切り替え（自分の投稿・�
   });
 
   test("自分の投稿タブ: 年度セレクトで絞り込むとカードとカウントバッジが連動する", async ({ page }) => {
-    // retry時に同じタイトルの投稿を追加してstrict locatorが失敗しないよう、試行ごとに新しいタイトルを使う。
     const post2025Title = `E2E年度テスト投稿2025_${Date.now()}`;
     const post2026Title = `E2E年度テスト投稿2026_${Date.now()}`;
     const post2025 = await page.request.post("/api/posts", {
@@ -75,8 +76,8 @@ test.describe.serial("マイページの年度切り替え（自分の投稿・�
     const plan2026 = await plan2026Res.json();
 
     // 両方とも完了済みにする（アコーディオンの年度フィルターは完了済みプランのみが対象）
-    expect((await page.request.patch(`/api/plans/${plan2025.id}/complete`)).status()).toBe(200);
-    expect((await page.request.patch(`/api/plans/${plan2026.id}/complete`)).status()).toBe(200);
+    expect((await page.request.patch(`/api/plans/${plan2025.id}/complete`, { data: { completed: true, version: plan2025.version } })).status()).toBe(200);
+    expect((await page.request.patch(`/api/plans/${plan2026.id}/complete`, { data: { completed: true, version: plan2026.version } })).status()).toBe(200);
 
     await page.goto("/mypage?tab=plans");
     await page.getByText(/完了済みの旅行プラン/).click();

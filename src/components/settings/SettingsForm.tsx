@@ -14,10 +14,10 @@ type Props = {
   initialNickname: string;
   initialBio: string | null;
   initialImage: string | null;
-  initialUpdatedAt: string;
+  initialVersion: number;
 };
 
-export function SettingsForm({ userId, initialNickname, initialBio, initialImage, initialUpdatedAt }: Props) {
+export function SettingsForm({ userId, initialNickname, initialBio, initialImage, initialVersion }: Props) {
   const router = useRouter();
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -31,7 +31,7 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
     formState: { errors, isSubmitting },
   } = useForm<UserUpdateInput>({
     resolver: zodResolver(userUpdateSchema),
-    defaultValues: { nickname: initialNickname, bio: initialBio ?? "", updatedAt: initialUpdatedAt },
+    defaultValues: { nickname: initialNickname, bio: initialBio ?? "", version: initialVersion },
   });
 
   // eslint-disable-next-line react-hooks/incompatible-library

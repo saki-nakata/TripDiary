@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { ConflictError } from "@/lib/errors";
 import type { PostInput, PostUpdateInput } from "@/lib/validations/post";
 
 const POST_SELECT = {
@@ -18,6 +19,7 @@ const POST_SELECT = {
   authorId: true,
   createdAt: true,
   updatedAt: true,
+  version: true,
   author: {
     select: { id: true, nickname: true, image: true },
   },
@@ -398,34 +400,40 @@ export async function createPost(authorId: string, data: PostInput) {
       visited: false,
     },
   });
-  return formatPost(post);
+  // 作成者自身が返り値を受け取るため、viewerId=authorIdとしてcost/costBreakdownを含める
+  return formatPost(post, authorId);
 }
 
-export async function updatePost(id: string, data: PostUpdateInput, expectedUpdatedAt: Date) {
+export async function updatePost(id: string, data: PostUpdateInput, expectedVersion: number) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { costBreakdown, imageUrls, updatedAt, ...rest } = data;
+  const { costBreakdown, imageUrls, version, ...rest } = data;
   const cost = costBreakdown?.reduce((sum, item) => sum + item.amount, 0) ?? null;
 
   return prisma.$transaction(async (tx) => {
-    if (imageUrls !== undefined) {
-      await tx.postImage.deleteMany({ where: { postId: id } });
-    }
-
-    return tx.post.update({
-      where: { id, updatedAt: expectedUpdatedAt },
+    const { count } = await tx.post.updateMany({
+      // updateMany は MySQL でも id/version を同じ UPDATE の WHERE 句に含めるため、
+      // 同一versionの並行更新で両方が成功することを防ぐ。
+      // updatedAtは非正規化カウンタ更新（いいね等）でも進むため競合検知に使えない（GATE-04）
+      where: { id, version: expectedVersion },
       data: {
         ...rest,
         cost,
         costBreakdown: costBreakdown ?? undefined,
         visitedAt: new Date(rest.visitedAt),
-        ...(imageUrls && imageUrls.length > 0 && {
-          images: {
-            create: imageUrls.map((url, displayOrder) => ({ url, displayOrder })),
-          },
-        }),
+        version: { increment: 1 },
       },
-      select: { id: true },
     });
+
+    if (count !== 1) throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
+
+    if (imageUrls !== undefined) {
+      await tx.postImage.deleteMany({ where: { postId: id } });
+      if (imageUrls.length > 0) {
+        await tx.postImage.createMany({ data: imageUrls.map((url, displayOrder) => ({ postId: id, url, displayOrder })) });
+      }
+    }
+
+    return tx.post.findUniqueOrThrow({ where: { id }, select: { id: true } });
   });
 }
 
@@ -459,9 +467,13 @@ function paginateResults(posts: any[], limit: number, userId?: string) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatPost(post: any, userId?: string) {
-  const { likes, wishlists, visited, likeCount, commentCount, ...rest } = post;
+  // cost/costBreakdownは本人（投稿者=閲覧者）にのみ返す。未認証・他人の場合はキー自体を含めない
+  // （投稿機能定義書「費用内訳：自分のみ表示」。GATE-02）
+  const { likes, wishlists, visited, likeCount, commentCount, cost, costBreakdown, ...rest } = post;
+  const isOwner = userId !== undefined && userId === post.authorId;
   return {
     ...rest,
+    ...(isOwner ? { cost, costBreakdown } : {}),
     visitedAt: rest.visitedAt instanceof Date ? rest.visitedAt.toISOString() : rest.visitedAt,
     createdAt: rest.createdAt instanceof Date ? rest.createdAt.toISOString() : rest.createdAt,
     updatedAt: rest.updatedAt instanceof Date ? rest.updatedAt.toISOString() : rest.updatedAt,

@@ -40,6 +40,7 @@ erDiagram
         Int followingCount
         DateTime createdAt
         DateTime updatedAt
+        Int version "楽観ロック専用（GATE-04）。updatedAtは非正規化カウンタ更新でも進むため競合検知に使わない"
     }
 
     Post {
@@ -60,6 +61,7 @@ erDiagram
         String authorId FK
         DateTime createdAt
         DateTime updatedAt
+        Int version "楽観ロック専用（GATE-04）。updatedAtは非正規化カウンタ更新でも進むため競合検知に使わない"
     }
 
     Notification {
@@ -85,6 +87,7 @@ erDiagram
         String userId FK
         DateTime createdAt
         DateTime updatedAt
+        Int version "楽観ロック専用（GATE-05）。updatePlan/setPlanCompleted呼び出し時のみincrement"
     }
 
     PlanSpot {
@@ -192,6 +195,7 @@ erDiagram
 | isProtected | BOOLEAN | NOT NULL | false | 確認用アカウント等、パスワード・メールアドレス変更を禁止するフラグ（対象はパスワード変更API・メールアドレス変更APIのみ。プロフィール編集等は許可） |
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
 | updatedAt | DATETIME(3) | NOT NULL | - | 更新日時 |
+| version | INT | NOT NULL | 0 | 楽観ロック専用カウンタ（GATE-04、2026-07-30追加）。`updateUser`呼び出し時のみ`+1`する。`updatedAt`はフォロー等の非正規化カウンタ更新でも進むため競合検知には使えず、役割を分離した |
 
 **制約**
 - 主キー：`id`
@@ -225,6 +229,7 @@ erDiagram
 | authorId | VARCHAR(30) | NOT NULL | - | 投稿者のユーザーID |
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
 | updatedAt | DATETIME(3) | NOT NULL | - | 更新日時 |
+| version | INT | NOT NULL | 0 | 楽観ロック専用カウンタ（GATE-04、2026-07-30追加）。`updatePost`呼び出し時のみ`+1`する。`updatedAt`はいいね・コメント等の非正規化カウンタ更新でも進むため競合検知には使えず、役割を分離した |
 
 **制約**
 - 主キー：`id`
@@ -364,6 +369,7 @@ erDiagram
 | userId | VARCHAR(30) | NOT NULL | - | プラン作成者のユーザーID |
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
 | updatedAt | DATETIME(3) | NOT NULL | - | 更新日時 |
+| version | INT | NOT NULL | 0 | 楽観ロック専用カウンタ（GATE-05、2026-07-30追加）。`updatePlan`/`setPlanCompleted`呼び出し時のみ`+1`する。導入前はプランに楽観ロック自体が存在せず、複数タブ編集で無警告に上書きされる不具合があった |
 
 **制約**
 - 主キー：`id`

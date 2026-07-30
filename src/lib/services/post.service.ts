@@ -119,7 +119,7 @@ export async function updatePostService(userId: string, id: string, data: PostUp
 
   let result;
   try {
-    result = await updatePost(id, data, new Date(data.updatedAt));
+    result = await updatePost(id, data, data.version);
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
