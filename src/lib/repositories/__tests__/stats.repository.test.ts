@@ -83,9 +83,9 @@ describe("stats.repository", () => {
   it("findYearlyCompletedPlans_startDate未設定のプランは除外される", async () => {
     const me = await createTestUser("stats-me4@example.com", "自分4");
     const planWithDate = await createPlan(me.id, { title: "日程ありプラン", startDate: "2026-05-01", budget: null });
-    await setPlanCompleted(planWithDate.id, true);
+    await setPlanCompleted(planWithDate.id, true, planWithDate.version);
     const planWithoutDate = await createPlan(me.id, { title: "日程なしプラン", budget: null });
-    await setPlanCompleted(planWithoutDate.id, true);
+    await setPlanCompleted(planWithoutDate.id, true, planWithoutDate.version);
 
     const count = await findYearlyCompletedPlans(me.id, 2026);
 
@@ -104,9 +104,9 @@ describe("stats.repository", () => {
   it("findYearlyCompletedPlans_yearがnull（全期間）の場合は日程未設定のプランも含めて全て数える", async () => {
     const me = await createTestUser("stats-me5b@example.com", "自分5b");
     const planWithDate = await createPlan(me.id, { title: "日程ありプラン", startDate: "2025-05-01", budget: null });
-    await setPlanCompleted(planWithDate.id, true);
+    await setPlanCompleted(planWithDate.id, true, planWithDate.version);
     const planWithoutDate = await createPlan(me.id, { title: "日程なしプラン", budget: null });
-    await setPlanCompleted(planWithoutDate.id, true);
+    await setPlanCompleted(planWithoutDate.id, true, planWithoutDate.version);
     await createPlan(me.id, { title: "未完了プラン", startDate: "2026-05-01", budget: null });
 
     const count = await findYearlyCompletedPlans(me.id, null);

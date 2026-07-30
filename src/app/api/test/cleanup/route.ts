@@ -11,6 +11,14 @@ async function handleDELETE(req: NextRequest) {
   if (process.env.ENABLE_TEST_ENDPOINTS !== "true") {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
+  // 認証なしでアカウント削除ができる強力なエンドポイントのため、フラグに加えて
+  // 専用シークレットの一致も必須にする（多層防御。GATE-03）。TEST_CLEANUP_SECRET未設定の
+  // 場合は「secretチェックが機能していない」状態とみなし、常に拒否する（フェイルセーフ）。
+  const expectedSecret = process.env.TEST_CLEANUP_SECRET;
+  const providedSecret = req.headers.get("x-test-cleanup-secret");
+  if (!expectedSecret || providedSecret !== expectedSecret) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
   const email = req.nextUrl.searchParams.get("email");
   if (!email) return NextResponse.json({ error: "email required" }, { status: 400 });
   try {

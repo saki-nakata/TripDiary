@@ -76,8 +76,8 @@ test.describe.serial("マイページの年度切り替え（自分の投稿・�
     const plan2026 = await plan2026Res.json();
 
     // 両方とも完了済みにする（アコーディオンの年度フィルターは完了済みプランのみが対象）
-    expect((await page.request.patch(`/api/plans/${plan2025.id}/complete`)).status()).toBe(200);
-    expect((await page.request.patch(`/api/plans/${plan2026.id}/complete`)).status()).toBe(200);
+    expect((await page.request.patch(`/api/plans/${plan2025.id}/complete`, { data: { completed: true, version: plan2025.version } })).status()).toBe(200);
+    expect((await page.request.patch(`/api/plans/${plan2026.id}/complete`, { data: { completed: true, version: plan2026.version } })).status()).toBe(200);
 
     await page.goto("/mypage?tab=plans");
     await page.getByText(/完了済みの旅行プラン/).click();

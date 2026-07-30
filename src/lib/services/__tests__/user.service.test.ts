@@ -85,7 +85,7 @@ describe("getUserProfileService", () => {
 
   // ─── email非公開 ───
   it("getUserProfile_レスポンスにemailを含まない", async () => {
-    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0, updatedAt: new Date("2026-01-01T00:00:00.000Z") });
+    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0, updatedAt: new Date("2026-01-01T00:00:00.000Z"), version: 0 });
 
     const profile = await getUserProfileService(USER_ID);
 
@@ -94,7 +94,7 @@ describe("getUserProfileService", () => {
 
   // ─── フォロー状態 ───
   it("getUserProfile_閲覧者IDなし_followedByCurrentUserはfalse", async () => {
-    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0, updatedAt: new Date("2026-01-01T00:00:00.000Z") });
+    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0, updatedAt: new Date("2026-01-01T00:00:00.000Z"), version: 0 });
 
     const profile = await getUserProfileService(USER_ID);
 
@@ -103,7 +103,7 @@ describe("getUserProfileService", () => {
   });
 
   it("getUserProfile_閲覧者がフォロー中_followedByCurrentUserはtrue", async () => {
-    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0, updatedAt: new Date("2026-01-01T00:00:00.000Z") });
+    vi.mocked(findUserById).mockResolvedValue({ id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0, updatedAt: new Date("2026-01-01T00:00:00.000Z"), version: 0 });
     vi.mocked(isFollowing).mockResolvedValue(true);
 
     const profile = await getUserProfileService(USER_ID, VIEWER_ID);
@@ -115,7 +115,8 @@ describe("getUserProfileService", () => {
 
 describe("updateUserService", () => {
   const UPDATED_AT = "2026-01-01T00:00:00.000Z";
-  const baseUser = { id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0, updatedAt: new Date(UPDATED_AT) };
+  const VERSION = 0;
+  const baseUser = { id: USER_ID, nickname: "たろう", image: null, bio: null, followerCount: 0, followingCount: 0, updatedAt: new Date(UPDATED_AT), version: VERSION };
 
   function p2025Error() {
     return new Prisma.PrismaClientKnownRequestError("No record found", { code: "P2025", clientVersion: "6.19.3" });
@@ -129,7 +130,7 @@ describe("updateUserService", () => {
   // ─── 権限 ───
   it("updateUser_本人以外が編集_ForbiddenErrorかつfindUserById_更新いずれも呼ばれない", async () => {
     await expect(
-      updateUserService(USER_ID, VIEWER_ID, { nickname: "たろう", updatedAt: UPDATED_AT })
+      updateUserService(USER_ID, VIEWER_ID, { nickname: "たろう", version: VERSION })
     ).rejects.toThrow(ForbiddenError);
     expect(findUserById).not.toHaveBeenCalled();
     expect(updateUser).not.toHaveBeenCalled();
@@ -141,7 +142,7 @@ describe("updateUserService", () => {
     vi.mocked(findUserById).mockResolvedValue(null);
 
     await expect(
-      updateUserService(USER_ID, USER_ID, { nickname: "たろう", updatedAt: UPDATED_AT })
+      updateUserService(USER_ID, USER_ID, { nickname: "たろう", version: VERSION })
     ).rejects.toThrow(NotFoundError);
     expect(updateUser).not.toHaveBeenCalled();
   });
@@ -150,10 +151,10 @@ describe("updateUserService", () => {
     vi.mocked(findUserById).mockResolvedValue(baseUser);
     vi.mocked(updateUser).mockResolvedValue({ id: USER_ID, nickname: "たろう2", bio: null, image: null });
 
-    const result = await updateUserService(USER_ID, USER_ID, { nickname: "たろう2", updatedAt: UPDATED_AT });
+    const result = await updateUserService(USER_ID, USER_ID, { nickname: "たろう2", version: VERSION });
 
     expect(result.nickname).toBe("たろう2");
-    expect(updateUser).toHaveBeenCalledWith(USER_ID, { nickname: "たろう2" }, new Date(UPDATED_AT));
+    expect(updateUser).toHaveBeenCalledWith(USER_ID, { nickname: "たろう2" }, VERSION);
   });
 
   // ─── 楽観ロック ───
@@ -162,7 +163,7 @@ describe("updateUserService", () => {
     vi.mocked(updateUser).mockRejectedValue(p2025Error());
 
     await expect(
-      updateUserService(USER_ID, USER_ID, { nickname: "たろう2", updatedAt: UPDATED_AT })
+      updateUserService(USER_ID, USER_ID, { nickname: "たろう2", version: VERSION })
     ).rejects.toThrow(ConflictError);
   });
 
@@ -175,7 +176,7 @@ describe("updateUserService", () => {
       updateUserService(USER_ID, USER_ID, {
         nickname: "たろう",
         image: "https://bucket/uploads/user-1/new.jpg",
-        updatedAt: UPDATED_AT,
+        version: VERSION,
       })
     ).rejects.toThrow(ConflictError);
     expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();
@@ -190,7 +191,7 @@ describe("updateUserService", () => {
       updateUserService(USER_ID, USER_ID, {
         nickname: "たろう",
         image: "https://bucket/uploads/other-user/a.jpg",
-        updatedAt: UPDATED_AT,
+        version: VERSION,
       })
     ).rejects.toThrow(ValidationError);
     expect(updateUser).not.toHaveBeenCalled();
@@ -204,7 +205,7 @@ describe("updateUserService", () => {
     await updateUserService(USER_ID, USER_ID, {
       nickname: "たろう",
       image: "https://bucket/uploads/user-1/a.jpg",
-      updatedAt: UPDATED_AT,
+      version: VERSION,
     });
 
     expect(updateUser).toHaveBeenCalled();
@@ -215,7 +216,7 @@ describe("updateUserService", () => {
     vi.mocked(findUserById).mockResolvedValue({ ...baseUser, image: "https://bucket/uploads/user-1/old.jpg" });
     vi.mocked(updateUser).mockResolvedValue({ id: USER_ID, nickname: "たろう2", bio: null, image: "https://bucket/uploads/user-1/old.jpg" });
 
-    await updateUserService(USER_ID, USER_ID, { nickname: "たろう2", updatedAt: UPDATED_AT });
+    await updateUserService(USER_ID, USER_ID, { nickname: "たろう2", version: VERSION });
 
     expect(isOwnedS3Url).not.toHaveBeenCalled();
     expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();
@@ -227,7 +228,7 @@ describe("updateUserService", () => {
     vi.mocked(isOwnedS3Url).mockReturnValue(true);
     vi.mocked(updateUser).mockResolvedValue({ id: USER_ID, nickname: "たろう", bio: null, image: sameUrl });
 
-    await updateUserService(USER_ID, USER_ID, { nickname: "たろう", image: sameUrl, updatedAt: UPDATED_AT });
+    await updateUserService(USER_ID, USER_ID, { nickname: "たろう", image: sameUrl, version: VERSION });
 
     expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();
   });
@@ -240,7 +241,7 @@ describe("updateUserService", () => {
     await updateUserService(USER_ID, USER_ID, {
       nickname: "たろう",
       image: "https://bucket/uploads/user-1/a.jpg",
-      updatedAt: UPDATED_AT,
+      version: VERSION,
     });
 
     expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();
@@ -255,7 +256,7 @@ describe("updateUserService", () => {
     await updateUserService(USER_ID, USER_ID, {
       nickname: "たろう",
       image: "https://bucket/uploads/user-1/new.jpg",
-      updatedAt: UPDATED_AT,
+      version: VERSION,
     });
 
     expect(findStillReferencedUrls).toHaveBeenCalledWith([oldUrl]);
@@ -267,7 +268,7 @@ describe("updateUserService", () => {
     vi.mocked(findUserById).mockResolvedValue({ ...baseUser, image: oldUrl });
     vi.mocked(updateUser).mockResolvedValue({ id: USER_ID, nickname: "たろう", bio: null, image: null });
 
-    await updateUserService(USER_ID, USER_ID, { nickname: "たろう", image: null, updatedAt: UPDATED_AT });
+    await updateUserService(USER_ID, USER_ID, { nickname: "たろう", image: null, version: VERSION });
 
     expect(deleteOwnedObjectsByUrl).toHaveBeenCalledWith([oldUrl], USER_ID);
   });
@@ -281,7 +282,7 @@ describe("updateUserService", () => {
       updateUserService(USER_ID, USER_ID, {
         nickname: "たろう",
         image: "https://bucket/uploads/user-1/new.jpg",
-        updatedAt: UPDATED_AT,
+        version: VERSION,
       })
     ).rejects.toThrow("db error");
     expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();
@@ -298,7 +299,7 @@ describe("updateUserService", () => {
     await updateUserService(USER_ID, USER_ID, {
       nickname: "たろう",
       image: "https://bucket/uploads/user-1/new.jpg",
-      updatedAt: UPDATED_AT,
+      version: VERSION,
     });
 
     expect(deleteOwnedObjectsByUrl).not.toHaveBeenCalled();

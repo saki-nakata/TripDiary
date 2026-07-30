@@ -18,15 +18,15 @@ import {
 import { getAvailableYearsService, getYearlyStatsService } from "@/lib/services/stats.service";
 import { countUserPostsService, countVisitedByUserService } from "@/lib/services/user.service";
 import { countWishlistByUserService } from "@/lib/services/wishlist.service";
-import { PostCard } from "@/components/posts/PostCard";
-import { SavedMapSection } from "@/components/posts/SavedMapSection";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ReportSummary } from "@/components/plans/ReportSummary";
-import { FollowFeed } from "@/components/posts/FollowFeed";
+import { LoadMoreList } from "@/components/posts/LoadMoreList";
+import { PlanActions } from "@/components/plans/PlanActions";
 import { CompletedPlansAccordion } from "@/components/plans/CompletedPlansAccordion";
 import { PlanLoadMoreList } from "@/components/plans/PlanLoadMoreList";
 import { YearFilterBar } from "@/components/mypage/YearFilterBar";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { formatDateSlash } from "@/lib/date";
 import type { Post } from "@/types/post";
 import type { Plan } from "@/types/plan";
 
@@ -154,6 +154,34 @@ async function renderReport(userId: string, years: number[], year: number | "all
 }
 
 
+function PlanListItem({ plan }: { plan: Plan }) {
+  return (
+    <div className="group flex items-start justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 hover:bg-zinc-100">
+      <Link href={`/plans/${plan.id}`} className="min-w-0 flex-1">
+        <p className="flex items-center gap-1.5 truncate text-base font-bold text-zinc-800">
+          <TwemojiIcon codepoint="1f9ed" alt="🧭" className="h-5 w-5 shrink-0" /> {plan.title}
+        </p>
+        {(plan.startDate || plan.endDate) && (
+          <p className="mt-1 flex items-center gap-1.5 text-[13px] text-zinc-400">
+            <TwemojiIcon codepoint="1f4c5" alt="📅" className="h-3 w-3" />
+            {plan.startDate ? formatDateSlash(plan.startDate) : "未定"} 〜{" "}
+            {plan.endDate ? formatDateSlash(plan.endDate) : "未定"}
+          </p>
+        )}
+        {plan.memo && <p className="mt-1 truncate text-[13px] text-zinc-500">{plan.memo}</p>}
+      </Link>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-[13px] font-semibold text-zinc-500">
+          {plan.spotCount ?? 0}スポット
+        </span>
+        <div className="opacity-100 xl:opacity-0 transition-opacity xl:group-hover:opacity-100">
+          <PlanActions planId={plan.id} completed={plan.completed} version={plan.version} variant="icons" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 async function renderPlans(userId: string, yearParam?: string) {
   // 進行中プラン・完了済みプランの年一覧・完了済み総数（年フィルタの選択肢を常に完全な状態に保つため、
   // 読み込み済みページとは独立に取得する。GATE-22種類B対応）
@@ -223,7 +251,7 @@ async function renderPlans(userId: string, yearParam?: string) {
 }
 
 async function renderMyPosts(userId: string, year: number | "all") {
-  const { posts } = await findPostsByAuthorIdService({
+  const { posts, nextCursor, hasMore } = await findPostsByAuthorIdService({
     authorId: userId,
     viewerId: userId,
     year: year === "all" ? undefined : year,
@@ -240,12 +268,17 @@ async function renderMyPosts(userId: string, year: number | "all") {
     );
   }
 
+  const baseUrl = `/api/users/${userId}/posts${year === "all" ? "" : `?year=${year}`}`;
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-      {posts.map((p) => (
-        <PostCard key={p.id} post={p as unknown as Post} viewerId={userId} />
-      ))}
-    </div>
+    <LoadMoreList
+      key={baseUrl}
+      initialPosts={posts as unknown as Post[]}
+      initialNextCursor={nextCursor}
+      initialHasMore={hasMore}
+      baseUrl={baseUrl}
+      variant="post-grid"
+      viewerId={userId}
+    />
   );
 }
 
@@ -253,26 +286,44 @@ const SAVED_CONFIG = {
   wishlist: {
     fetch: findWishlistedPostsService,
     empty: { codepoint: "1f516", message: "行きたいリストがまだありません", ctaLabel: "スポットを探す", ctaHref: "/" },
+    apiUrl: "/api/mypage/wishlist",
   },
   visited: {
     fetch: findVisitedPostsService,
     empty: { codepoint: "1f6a9", message: "訪問済みのスポットがありません" },
+    apiUrl: "/api/mypage/visited",
   },
 } as const;
 
 async function renderSaved(userId: string, kind: "wishlist" | "visited") {
   const cfg = SAVED_CONFIG[kind];
-  const { posts } = await cfg.fetch({ userId });
+  const { posts, nextCursor, hasMore } = await cfg.fetch({ userId });
   if (posts.length === 0) {
     return <EmptyState {...cfg.empty} />;
   }
-  return <SavedMapSection posts={posts as unknown as Post[]} kind={kind} />;
+  return (
+    <LoadMoreList
+      initialPosts={posts as unknown as Post[]}
+      initialNextCursor={nextCursor}
+      initialHasMore={hasMore}
+      baseUrl={cfg.apiUrl}
+      variant={kind}
+    />
+  );
 }
 
 async function renderFollowFeed(userId: string) {
-  const { posts } = await findFollowingPostsService({ userId });
+  const { posts, nextCursor, hasMore } = await findFollowingPostsService({ userId });
   if (posts.length === 0) {
     return <EmptyState codepoint="1f465" message="フォロー中のユーザーがいません" ctaLabel="ユーザーを探す" ctaHref="/search?tab=user" />;
   }
-  return <FollowFeed posts={posts as unknown as Post[]} />;
+  return (
+    <LoadMoreList
+      initialPosts={posts as unknown as Post[]}
+      initialNextCursor={nextCursor}
+      initialHasMore={hasMore}
+      baseUrl="/api/posts"
+      variant="follow-feed"
+    />
+  );
 }

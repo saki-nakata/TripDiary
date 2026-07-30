@@ -28,17 +28,33 @@ export async function findNotificationByLike(userId: string, fromUserId: string,
   });
 }
 
-export async function findUserNotifications(userId: string, limit = 50) {
+export async function findUserNotifications({
+  userId,
+  cursor,
+  limit = 20,
+}: {
+  userId: string;
+  cursor?: string;
+  limit?: number;
+}) {
   const notifications = await prisma.notification.findMany({
     where: { userId },
-    orderBy: { createdAt: "desc" },
-    take: limit,
+    take: limit + 1,
+    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }], // idタイブレーカーで全順序を保証（GATE-22種類A）
     select: NOTIFICATION_SELECT,
   });
-  return notifications.map((n) => ({
-    ...n,
-    createdAt: n.createdAt instanceof Date ? n.createdAt.toISOString() : n.createdAt,
-  }));
+
+  const hasMore = notifications.length > limit;
+  const items = hasMore ? notifications.slice(0, limit) : notifications;
+  return {
+    notifications: items.map((n) => ({
+      ...n,
+      createdAt: n.createdAt instanceof Date ? n.createdAt.toISOString() : n.createdAt,
+    })),
+    nextCursor: hasMore ? items[items.length - 1].id : null,
+    hasMore,
+  };
 }
 
 export async function getUnreadCount(userId: string) {

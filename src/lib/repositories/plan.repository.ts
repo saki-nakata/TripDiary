@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import type { PlanInput } from "@/lib/validations/plan";
+import { ConflictError } from "@/lib/errors";
+import type { PlanInput, PlanUpdateInput } from "@/lib/validations/plan";
 
 const PLAN_SELECT = {
   id: true,
@@ -13,6 +14,7 @@ const PLAN_SELECT = {
   userId: true,
   createdAt: true,
   updatedAt: true,
+  version: true,
 } as const;
 
 const SPOT_POST_SELECT = {
@@ -37,14 +39,11 @@ const LINKED_POST_SELECT = {
 } as const;
 
 type PlanWithBudget = PlanInput & { budget: number | null };
+type PlanUpdateWithBudget = PlanUpdateInput & { budget: number | null };
 
 export async function findPlanAuthorId(planId: string): Promise<string | null> {
   const plan = await prisma.plan.findUnique({ where: { id: planId }, select: { userId: true } });
   return plan?.userId ?? null;
-}
-
-export async function findPlanAuthorAndCompleted(planId: string): Promise<{ userId: string; completed: boolean } | null> {
-  return prisma.plan.findUnique({ where: { id: planId }, select: { userId: true, completed: true } });
 }
 
 export async function findPlansByUserId(userId: string) {
@@ -204,21 +203,24 @@ export async function createPlan(userId: string, data: PlanWithBudget) {
   });
 }
 
-export async function updatePlan(id: string, data: PlanWithBudget) {
-  const { spots, budgetBreakdown, startDate, endDate, budget, ...rest } = data;
+export async function updatePlan(id: string, data: PlanUpdateWithBudget, expectedVersion: number) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { spots, budgetBreakdown, startDate, endDate, budget, version, ...rest } = data;
 
   return prisma.$transaction(async (tx) => {
-    const plan = await tx.plan.update({
-      where: { id },
+    // completed（GATE-21）とversion判定（GATE-05）を同一のUPDATEに含める。
+    const { count } = await tx.plan.updateMany({
+      where: { id, version: expectedVersion },
       data: {
         ...rest,
         budget,
         budgetBreakdown: budgetBreakdown && budgetBreakdown.length > 0 ? budgetBreakdown : undefined,
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
+        version: { increment: 1 },
       },
-      select: PLAN_SELECT,
     });
+    if (count !== 1) throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
 
     if (spots !== undefined) {
       await tx.planSpot.deleteMany({ where: { planId: id } });
@@ -227,6 +229,7 @@ export async function updatePlan(id: string, data: PlanWithBudget) {
       }
     }
 
+    const plan = await tx.plan.findUniqueOrThrow({ where: { id }, select: PLAN_SELECT });
     return formatPlan(plan);
   });
 }
@@ -235,8 +238,15 @@ export async function deletePlan(id: string) {
   return prisma.plan.delete({ where: { id } });
 }
 
-export async function setPlanCompleted(id: string, completed: boolean) {
-  const plan = await prisma.plan.update({ where: { id }, data: { completed }, select: PLAN_SELECT });
+export async function setPlanCompleted(id: string, completed: boolean, expectedVersion: number) {
+  // 目標状態completedを受け取る冪等なset（旧: 現在値を読んで反転するトグル）。GATE-21対応の一環として
+  // PlanActions.tsx単独の完了トグルにもversionロックを適用する（DR-01選択肢1）
+  const { count } = await prisma.plan.updateMany({
+    where: { id, version: expectedVersion },
+    data: { completed, version: { increment: 1 } },
+  });
+  if (count !== 1) throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
+  const plan = await prisma.plan.findUniqueOrThrow({ where: { id }, select: PLAN_SELECT });
   return formatPlan(plan);
 }
 

@@ -1,6 +1,5 @@
 import {
   findPlanAuthorId,
-  findPlanAuthorAndCompleted,
   findPlansByUserId,
   findActivePlansByUserId,
   findCompletedPlansByUserId,
@@ -14,13 +13,13 @@ import {
   findExistingPostIds,
   countActivePlansByUser,
 } from "@/lib/repositories/plan.repository";
-import type { PlanInput } from "@/lib/validations/plan";
-import { NotFoundError, ForbiddenError, ValidationError } from "@/lib/errors";
+import { Prisma } from "@prisma/client";
+import type { PlanInput, PlanUpdateInput } from "@/lib/validations/plan";
+import { NotFoundError, ForbiddenError, ValidationError, ConflictError } from "@/lib/errors";
 
-function withComputedBudget(data: PlanInput) {
+function withComputedBudget<T extends PlanInput>(data: T): T & { budget: number | null } {
   const filtered = (data.budgetBreakdown ?? []).filter((item) => item.amount > 0 || item.label.trim() !== "");
-  const budget = filtered.length > 0 ? filtered.reduce((sum, item) => sum + item.amount, 0) : null;
-  return { ...data, budgetBreakdown: filtered.length > 0 ? filtered : undefined, budget };
+  return { ...data, budgetBreakdown: filtered.length > 0 ? filtered : undefined, budget: filtered.length > 0 ? filtered.reduce((sum, item) => sum + item.amount, 0) : null };
 }
 
 async function assertSpotsExist(spots?: PlanInput["spots"]) {
@@ -76,13 +75,20 @@ export async function createPlanService(userId: string, data: PlanInput) {
   return createPlan(userId, withComputedBudget(data));
 }
 
-export async function updatePlanService(userId: string, id: string, data: PlanInput) {
+export async function updatePlanService(userId: string, id: string, data: PlanUpdateInput) {
   const authorId = await findPlanAuthorId(id);
   if (!authorId) throw new NotFoundError();
   if (authorId !== userId) throw new ForbiddenError();
 
   await assertSpotsExist(data.spots);
-  return updatePlan(id, withComputedBudget(data));
+  try {
+    return await updatePlan(id, withComputedBudget(data), data.version);
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
+    }
+    throw e;
+  }
 }
 
 export async function deletePlanService(userId: string, id: string) {
@@ -92,10 +98,20 @@ export async function deletePlanService(userId: string, id: string) {
   return deletePlan(id);
 }
 
-export async function togglePlanCompletedService(userId: string, id: string) {
-  const plan = await findPlanAuthorAndCompleted(id);
-  if (!plan) throw new NotFoundError();
-  if (plan.userId !== userId) throw new ForbiddenError();
+// 目標状態completedを受け取る冪等なset（DR-01選択肢1）。PlanActions.tsxの完了トグルUIから、
+// 現在値を反転した値＋versionを送ってもらう形に変更した（旧togglePlanCompletedServiceは
+// 引数なしで現在値を読んで反転するトグルだったため、再送時に意図せず二重反転する余地があった）
+export async function setPlanCompletedService(userId: string, id: string, completed: boolean, expectedVersion: number) {
+  const authorId = await findPlanAuthorId(id);
+  if (!authorId) throw new NotFoundError();
+  if (authorId !== userId) throw new ForbiddenError();
 
-  return setPlanCompleted(id, !plan.completed);
+  try {
+    return await setPlanCompleted(id, completed, expectedVersion);
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
+    }
+    throw e;
+  }
 }

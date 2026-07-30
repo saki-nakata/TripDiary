@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { ConflictError } from "@/lib/errors";
 
 export async function findUserByEmail(email: string) {
   return prisma.user.findUnique({ where: { email } });
@@ -18,20 +19,31 @@ export async function createUser(data: { nickname: string; email: string; passwo
 export async function findUserById(id: string) {
   return prisma.user.findUnique({
     where: { id },
-    select: { id: true, nickname: true, image: true, bio: true, followerCount: true, followingCount: true, updatedAt: true },
+    select: {
+      id: true,
+      nickname: true,
+      image: true,
+      bio: true,
+      followerCount: true,
+      followingCount: true,
+      updatedAt: true,
+      version: true,
+    },
   });
 }
 
 export async function updateUser(
   id: string,
   data: { nickname: string; bio?: string | null; image?: string | null },
-  expectedUpdatedAt: Date
+  expectedVersion: number
 ) {
-  return prisma.user.update({
-    where: { id, updatedAt: expectedUpdatedAt },
-    data,
-    select: { id: true, nickname: true, bio: true, image: true },
+  const { count } = await prisma.user.updateMany({
+    // updatedAtはfollow等の非正規化カウンタ更新でも進むため競合検知に使えない（GATE-04）
+    where: { id, version: expectedVersion },
+    data: { ...data, version: { increment: 1 } },
   });
+  if (count !== 1) throw new ConflictError("他の画面で更新されています。再読み込みしてください。");
+  return prisma.user.findUniqueOrThrow({ where: { id }, select: { id: true, nickname: true, bio: true, image: true } });
 }
 
 export async function findUserPasswordHash(id: string) {

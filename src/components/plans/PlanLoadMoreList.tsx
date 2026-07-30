@@ -87,7 +87,7 @@ function PlanListItem({ plan }: { plan: Plan }) {
       <div className="flex shrink-0 flex-col items-end gap-1">
         <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-[13px] font-semibold text-zinc-500">{plan.spotCount ?? 0}スポット</span>
         <div className="opacity-100 xl:opacity-0 transition-opacity xl:group-hover:opacity-100">
-          <PlanActions planId={plan.id} completed={plan.completed} variant="icons" />
+          <PlanActions planId={plan.id} completed={plan.completed} version={plan.version} variant="icons" />
         </div>
       </div>
     </div>

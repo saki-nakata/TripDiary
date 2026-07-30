@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { togglePlanCompletedService } from "@/lib/services/plan.service";
+import { setPlanCompletedService } from "@/lib/services/plan.service";
+import { planCompleteSchema } from "@/lib/validations/plan";
 import { handleApiError } from "@/lib/api-error";
-import { UnauthorizedError } from "@/lib/errors";
+import { UnauthorizedError, ValidationError } from "@/lib/errors";
 import { withRequestLogging } from "@/lib/request-logging";
 
 type Params = { params: Promise<{ id: string }> };
 
-async function handlePATCH(_req: NextRequest, { params }: Params) {
+async function handlePATCH(req: NextRequest, { params }: Params) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -15,7 +16,18 @@ async function handlePATCH(_req: NextRequest, { params }: Params) {
     }
 
     const { id } = await params;
-    const updated = await togglePlanCompletedService(session.user.id, id);
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      throw new ValidationError("Validation failed");
+    }
+    const parsed = planCompleteSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new ValidationError("Validation failed", parsed.error.flatten().fieldErrors);
+    }
+
+    const updated = await setPlanCompletedService(session.user.id, id, parsed.data.completed, parsed.data.version);
     return NextResponse.json(updated);
   } catch (e) {
     return handleApiError(e);

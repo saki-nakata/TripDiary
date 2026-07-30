@@ -140,7 +140,7 @@ export default async function PostDetailPage({ params }: Props) {
         </div>
 
         {/* Body */}
-        <p className="text-[0.975rem] text-zinc-700 leading-[1.85] whitespace-pre-wrap">{post.body}</p>
+        <p data-testid="post-body" className="text-[0.975rem] text-zinc-700 leading-[1.85] whitespace-pre-wrap">{post.body}</p>
 
         {/* 費用内訳（自分の投稿のみ） */}
         {isAuthor && post.cost != null && post.cost > 0 && (

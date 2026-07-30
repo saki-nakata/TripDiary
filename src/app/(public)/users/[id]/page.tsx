@@ -11,7 +11,7 @@ import {
 } from "@/lib/services/user.service";
 import { findPostsByAuthorIdService } from "@/lib/services/post.service";
 import { findFollowersService, findFollowingService } from "@/lib/services/follow.service";
-import { PostCard } from "@/components/posts/PostCard";
+import { LoadMoreList } from "@/components/posts/LoadMoreList";
 import { FollowButton } from "@/components/users/FollowButton";
 import { BackButton } from "@/components/posts/BackButton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -232,16 +232,18 @@ export default async function UserProfilePage({ params, searchParams }: Props) {
 }
 
 async function renderPosts(authorId: string, viewerId?: string) {
-  const { posts } = await findPostsByAuthorIdService({ authorId, viewerId });
+  const { posts, nextCursor, hasMore } = await findPostsByAuthorIdService({ authorId, viewerId });
   if (posts.length === 0) {
     return <EmptyState codepoint="2708" message="まだ投稿がありません" />;
   }
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-      {posts.map((p) => (
-        <PostCard key={p.id} post={p as unknown as Post} />
-      ))}
-    </div>
+    <LoadMoreList
+      initialPosts={posts as unknown as Post[]}
+      initialNextCursor={nextCursor}
+      initialHasMore={hasMore}
+      baseUrl={`/api/users/${authorId}/posts`}
+      variant="post-grid"
+    />
   );
 }
 
