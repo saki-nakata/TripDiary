@@ -32,7 +32,8 @@ test.describe("PR-7a: 共有レイアウトのダークテーマ対応（未ロ�
       await expect(autoToggle).toBeVisible();
       expect(await getContrastRatio(autoToggle)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
 
-      await expect(page).toHaveScreenshot(`guest-desktop-${colorScheme}.png`, { fullPage: false });
+      // フィード本文は他のE2Eが並列に作成するデータで変動するため、共有レイアウトの視覚回帰からは除外する。
+      await expect(page).toHaveScreenshot(`guest-desktop-${colorScheme}.png`, { fullPage: false, mask: [page.locator("main")] });
     });
 
     test(`未ログイン・モバイル幅（${colorScheme}）`, async ({ page }) => {
@@ -50,7 +51,7 @@ test.describe("PR-7a: 共有レイアウトのダークテーマ対応（未ロ�
       expect(await getContrastRatio(searchLabel)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
       expect(await getContrastRatio(loginLabel)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
 
-      await expect(page).toHaveScreenshot(`guest-mobile-${colorScheme}.png`, { fullPage: false });
+      await expect(page).toHaveScreenshot(`guest-mobile-${colorScheme}.png`, { fullPage: false, mask: [page.locator("main")] });
     });
   }
 });
@@ -89,7 +90,7 @@ test.describe("PR-7a: 共有レイアウトのダークテーマ対応（ログ�
       await expect(darkToggle).toBeVisible();
       expect(await getContrastRatio(darkToggle)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
 
-      await expect(page).toHaveScreenshot(`authed-desktop-dropdown-${colorScheme}.png`, { fullPage: false });
+      await expect(page).toHaveScreenshot(`authed-desktop-dropdown-${colorScheme}.png`, { fullPage: false, mask: [page.locator("main")] });
     });
   }
 
