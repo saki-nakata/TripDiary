@@ -36,10 +36,10 @@ export function FollowFeed({ posts }: { posts: Post[] }) {
     <div className="mx-auto max-w-7xl space-y-8">
       {orderedGroups.map((label) => (
         <section key={label} className="space-y-4">
-          <h2 className="flex items-center gap-2 text-sm font-bold text-zinc-500">
-            <span className="h-px flex-1 bg-zinc-200" />
+          <h2 className="flex items-center gap-2 text-sm font-bold text-zinc-500 dark:text-zinc-400">
+            <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-700" />
             {label}
-            <span className="h-px flex-1 bg-zinc-200" />
+            <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-700" />
           </h2>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {groups.get(label)!.map((post) => (
@@ -59,7 +59,7 @@ function FollowFeedCard({ post, now }: { post: Post; now: Date }) {
   return (
     <Link
       href={`/posts/${post.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition-colors hover:border-zinc-300"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-surface-border bg-surface transition-colors hover:border-zinc-300 dark:hover:border-zinc-600"
     >
       {/* 投稿者ヘッダー（誰が・いつ） */}
       <div className="flex items-center gap-2.5 px-4 py-3">
@@ -72,23 +72,23 @@ function FollowFeedCard({ post, now }: { post: Post; now: Date }) {
             className="h-9 w-9 shrink-0 rounded-full object-cover"
           />
         ) : (
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm font-medium text-zinc-500">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-700 text-sm font-medium text-zinc-500 dark:text-zinc-300">
             {post.author.nickname[0]}
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-zinc-800" title={post.author.nickname}>
+          <p className="truncate text-sm font-semibold text-surface-foreground" title={post.author.nickname}>
             {post.author.nickname}
           </p>
           <p className="text-xs text-zinc-400">{formatRelativeTime(post.createdAt, now)}</p>
         </div>
-        <span className="flex shrink-0 items-center gap-1 rounded-full border border-zinc-300 px-2 py-0.5 text-[0.78rem] font-medium text-[#16a34a]">
+        <span className="flex shrink-0 items-center gap-1 rounded-full border border-zinc-300 dark:border-zinc-600 px-2 py-0.5 text-[0.78rem] font-medium text-[#16a34a] dark:text-[#4ade80]">
           <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" /> {post.location}
         </span>
       </div>
 
       {/* メイン写真（フィードらしく大きめ。スマホは1カラムで幅が広いぶん縦も少し長めにして見やすくする） */}
-      <div className="relative aspect-[4/3] sm:aspect-[3/2] overflow-hidden bg-zinc-100">
+      <div className="relative aspect-[4/3] sm:aspect-[3/2] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
         {thumbnail ? (
           <CardImage
             src={thumbnail}
@@ -98,7 +98,7 @@ function FollowFeedCard({ post, now }: { post: Post; now: Date }) {
             imgClassName="group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-5xl text-zinc-300">
+          <div className="flex h-full items-center justify-center text-5xl text-zinc-300 dark:text-zinc-600">
             <CategoryIcon category={category} />
           </div>
         )}
@@ -120,7 +120,7 @@ function FollowFeedCard({ post, now }: { post: Post; now: Date }) {
 
       {/* タイトルとエンゲージメント */}
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <p className="line-clamp-2 text-base font-bold text-zinc-800">{post.title}</p>
+        <p className="line-clamp-2 text-base font-bold text-surface-foreground">{post.title}</p>
         <div className="mt-auto flex items-center gap-3 pt-1 text-[0.82rem] text-zinc-400">
           <span className="flex items-center gap-1">
             <TwemojiIcon codepoint="2764" alt="❤️" className="h-3.5 w-3.5" /> {post._count.likes}

@@ -25,10 +25,10 @@ export default async function EditPostPage({ params }: Props) {
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6 -mt-4">
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-zinc-900">
+      <h1 className="flex items-center gap-2 text-2xl font-bold text-surface-foreground">
         <TwemojiIcon codepoint="270f" className="h-6 w-6" /> 旅の記録を編集する
       </h1>
-      <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 md:p-8">
+      <div className="bg-surface border border-surface-border rounded-2xl shadow-sm p-4 md:p-8">
         <PostForm initialData={post as Post} />
       </div>
     </div>

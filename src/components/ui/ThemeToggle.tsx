@@ -6,10 +6,12 @@ import { useTheme } from "@/components/providers/ThemeProvider";
 export function ThemeToggle({
   className,
   compact = false,
+  narrowBelowSidebar = false,
   showLabels = false,
 }: {
   className?: string;
   compact?: boolean;
+  narrowBelowSidebar?: boolean;
   showLabels?: boolean;
 }) {
   const { choice, select } = useTheme();
@@ -29,7 +31,7 @@ export function ThemeToggle({
           aria-checked={choice === opt.value}
           aria-label={`表示テーマ: ${opt.label}`}
           onClick={() => select(opt.value)}
-          className={`rounded-md font-medium transition-colors ${showLabels ? "flex-1 flex flex-col items-center justify-center gap-0.5 px-2 py-1.5" : compact ? "px-1.5 py-0.5" : "px-2.5 py-1"} ${
+          className={`rounded-md font-medium transition-colors ${showLabels ? `flex-1 flex flex-col items-center justify-center gap-0.5 ${narrowBelowSidebar ? "px-1 sidebar:px-2" : "px-2"} py-1.5` : compact ? "px-1.5 py-0.5" : "px-2.5 py-1"} ${
             choice === opt.value
               ? "bg-[#dcfce7] text-[#14532d] dark:bg-[#14532d] dark:text-[#bbf7d0]"
               : "text-surface-foreground hover:bg-black/5 dark:hover:bg-white/10"
@@ -37,7 +39,7 @@ export function ThemeToggle({
         >
           {/* 絵文字はcompact指定の影響を受けず常に同じ大きさで表示する。ラベルのみcompact時に縮小する */}
           <span aria-hidden="true" className="text-base leading-none">{opt.emoji}</span>
-          {showLabels && <span className={`leading-none ${compact ? "text-[0.65rem]" : "text-xs"}`}>{opt.label}</span>}
+          {showLabels && <span className={`whitespace-nowrap leading-none ${compact ? "text-[0.65rem]" : "text-xs"}`}>{opt.label}</span>}
         </button>
       ))}
     </div>

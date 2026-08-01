@@ -91,7 +91,7 @@ export function RemovableSavedCard({
         disabled={loading}
         title={cfg.title}
         aria-label={cfg.title}
-        className="absolute top-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-100 bg-white/70 xl:bg-white/85 shadow transition hover:bg-red-50 disabled:opacity-50 opacity-100 xl:opacity-0 xl:group-hover/saved:opacity-100"
+        className="absolute top-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-100 dark:border-zinc-700 bg-white/70 dark:bg-zinc-900/70 xl:bg-white/85 xl:dark:bg-zinc-900/85 shadow transition hover:bg-red-50 dark:hover:bg-red-900 disabled:opacity-50 opacity-100 xl:opacity-0 xl:group-hover/saved:opacity-100"
       >
         <TwemojiIcon codepoint={cfg.icon} alt={cfg.alt} className="h-4 w-4" />
       </button>

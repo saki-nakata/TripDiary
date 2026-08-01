@@ -21,7 +21,7 @@ export function ImageCarousel({ images, title }: Props) {
 
   return (
     <>
-      <div className="relative rounded-xl overflow-hidden bg-zinc-100">
+      <div className="relative rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800">
         <div className="relative h-72 md:h-[28rem]">
           <Image
             src={images[current].url}

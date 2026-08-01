@@ -90,34 +90,37 @@ export function DateField({ value, onChange, max, error, testId }: Props) {
         type="button"
         data-testid={testId}
         onClick={() => (open ? setOpen(false) : openCalendar())}
-        className={`w-full flex items-center justify-between rounded-lg border px-3 py-2 text-sm bg-white text-left focus:outline-none focus:ring-2 focus:ring-green-500 ${
-          error ? "border-red-400" : "border-zinc-200"
+        className={`w-full flex items-center justify-between rounded-lg border px-3 py-2 text-sm bg-surface text-left focus:outline-none focus:ring-2 focus:ring-green-500 ${
+          error ? "border-red-400" : "border-surface-border"
         }`}
       >
-        <span className={selected ? "text-zinc-900" : "text-zinc-400"}>
+        <span className={selected ? "text-surface-foreground" : "text-zinc-400"}>
           {selected ? formatDisplay(selected) : "選択してください"}
         </span>
         <TwemojiIcon codepoint="1f4c5" alt="📅" className="h-4 w-4 shrink-0" />
       </button>
 
       {open && (
-        <div className="absolute z-20 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-zinc-200 bg-white p-3 shadow-lg">
+        <div
+          data-testid={testId ? `${testId}-calendar` : undefined}
+          className="absolute z-20 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-surface-border bg-surface p-3 shadow-lg"
+        >
           <div className="flex items-center justify-between mb-2">
             <button
               type="button"
               onClick={() => setViewDate(new Date(year, month - 1, 1))}
-              className="h-8 w-8 flex items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100"
+              className="h-8 w-8 flex items-center justify-center rounded-full text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5"
             >
               ‹
             </button>
-            <span className="text-sm font-semibold text-zinc-700">
+            <span className="text-sm font-semibold text-surface-foreground">
               {year}年{month + 1}月
             </span>
             <button
               type="button"
               onClick={() => setViewDate(new Date(year, month + 1, 1))}
               disabled={isNextMonthDisabled}
-              className="h-8 w-8 flex items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent"
+              className="h-8 w-8 flex items-center justify-center rounded-full text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent"
             >
               ›
             </button>
@@ -144,12 +147,12 @@ export function DateField({ value, onChange, max, error, testId }: Props) {
                   disabled={isDisabled(day)}
                   className={`h-8 w-8 flex items-center justify-center rounded-full text-sm transition-colors ${
                     isSelected(day)
-                      ? "bg-green-600 text-white font-semibold"
+                      ? "bg-green-700 text-white font-semibold"
                       : isDisabled(day)
-                        ? "text-zinc-300"
+                        ? "text-zinc-300 dark:text-zinc-600"
                         : isToday(day)
-                          ? "text-green-600 font-semibold hover:bg-green-50"
-                          : "text-zinc-700 hover:bg-zinc-100"
+                          ? "text-green-600 dark:text-green-400 font-semibold hover:bg-green-50 dark:hover:bg-green-950"
+                          : "text-surface-foreground hover:bg-zinc-100 dark:hover:bg-white/5"
                   }`}
                 >
                   {day}

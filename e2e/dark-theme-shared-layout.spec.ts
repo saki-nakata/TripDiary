@@ -67,7 +67,8 @@ test.describe("PR-7a: 共有レイアウトのダークテーマ対応（ログ�
     await page.fill("#email", TEST_USER.email);
     await page.fill("#password", TEST_USER.password);
     await page.click('button[type="submit"]');
-    await expect(page).toHaveURL("/", { timeout: 15000 });
+    // 認証URLのホスト名が環境ごとに異なっても、ログイン後の遷移先パスを検証する。
+    await expect(page).toHaveURL((url) => url.pathname === "/", { timeout: 15000 });
   });
 
   for (const colorScheme of ["light", "dark"] as const) {
@@ -93,6 +94,26 @@ test.describe("PR-7a: 共有レイアウトのダークテーマ対応（ログ�
       await expect(page).toHaveScreenshot(`authed-desktop-dropdown-${colorScheme}.png`, { fullPage: false, mask: [page.locator("main")] });
     });
   }
+
+  test("ログイン後・タブレット幅、表示テーマのラベルが横書きで収まる", async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 900 });
+    await page.goto("/");
+
+    await page.getByRole("button", { name: TEST_USER.nickname }).click();
+
+    for (const label of ["ライト", "ダーク", "自動"]) {
+      const toggle = page.getByRole("radio", { name: `表示テーマ: ${label}` });
+      const labelElement = toggle.getByText(label, { exact: true });
+      await expect(toggle).toBeVisible();
+      await expect(labelElement).toHaveCSS("white-space", "nowrap");
+
+      const [toggleBox, labelBox] = await Promise.all([toggle.boundingBox(), labelElement.boundingBox()]);
+      expect(toggleBox).not.toBeNull();
+      expect(labelBox).not.toBeNull();
+      expect(labelBox!.x).toBeGreaterThanOrEqual(toggleBox!.x);
+      expect(labelBox!.x + labelBox!.width).toBeLessThanOrEqual(toggleBox!.x + toggleBox!.width);
+    }
+  });
 
   for (const colorScheme of ["light", "dark"] as const) {
     test(`ログイン後・モバイル幅、ユーザーメニュー内の表示テーマトグル（${colorScheme}）`, async ({ page }) => {
@@ -133,5 +154,57 @@ test.describe("PR-7a: 共有レイアウトのダークテーマ対応（ログ�
 
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  });
+});
+
+// ログイン直後のアバター長押しヒントトースト（Sidebar.tsx）は、ボトムナビ自体が
+// `md:hidden`（768px未満のみ表示）のアイコン専用導線のため、それ以外の幅では意味がない。
+// 以前はビューポート判定を持たず全幅で表示されてしまう実装バグがあり、PR-7cのダーク
+// テーマE2Eでスクリーンショットへ非決定的に写り込む形で発覚した（matchMediaで是正済み）。
+// 既存の「ログイン後」describeはbeforeEachのログイン自体が既定ビューポート（デスクトップ幅）で
+// 実行されフラグを消費してしまうため、ここではビューポートを設定してからログインする
+// 専用のヘルパー・専用アカウントを使う
+const HINT_TEST_EMAIL = "test_playwright_dark_theme_hint_boundary@example.com";
+const HINT_TEST_USER = {
+  nickname: "ヒント境界確認用ユーザー",
+  email: HINT_TEST_EMAIL,
+  password: "Password1234",
+};
+
+test.describe("PR-7c: ログイン直後ヒントトーストの表示境界（ボトムナビ表示幅のみ）", () => {
+  test.beforeAll(async ({ request }) => {
+    await request.delete(`/api/test/cleanup?email=${encodeURIComponent(HINT_TEST_EMAIL)}`);
+  });
+
+  async function loginAtViewport(page: import("@playwright/test").Page, width: number) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/login");
+    await page.fill("#email", HINT_TEST_USER.email);
+    await page.fill("#password", HINT_TEST_USER.password);
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL((url) => url.pathname === "/", { timeout: 15000 });
+  }
+
+  test("767px（ボトムナビ表示幅）ではヒントトーストが表示される", async ({ request, page }) => {
+    await request.post("/api/auth/signup", { data: HINT_TEST_USER }).catch(() => {});
+    await loginAtViewport(page, 767);
+    // トーストは2.5秒で自動的に消えるため、タイムアウトを延ばすだけでは根本対応にならない
+    // （ハイドレーションが遅い環境では、アサーション開始前に表示ウィンドウを過ぎてしまう）。
+    // Sidebarのeffect（sessionStorageの"justLoggedIn"を読んでtoastを出し、即座に消費する）が
+    // 実行済みであることをまず同期点として待ってから、表示→自動消滅を検証する
+    await page.waitForFunction(() => sessionStorage.getItem("justLoggedIn") === null);
+    const hint = page.getByText("下のアイコンを長押しすると名前が表示されます");
+    await expect(hint).toBeVisible();
+    await expect(hint).toBeHidden();
+  });
+
+  test("768px（ボトムナビ非表示幅）ではヒントトーストが表示されない", async ({ request, page }) => {
+    await request.post("/api/auth/signup", { data: HINT_TEST_USER }).catch(() => {});
+    await loginAtViewport(page, 768);
+    // Sidebarのeffectが実行される前はトーストがまだDOMにないため、その時点で
+    // not.toBeVisible()を評価すると実装が常に通ってしまう。フラグ消費を同期点にしてから
+    // トーストが生成されていないことを確認する。
+    await page.waitForFunction(() => sessionStorage.getItem("justLoggedIn") === null);
+    await expect(page.getByText("下のアイコンを長押しすると名前が表示されます")).toHaveCount(0);
   });
 });

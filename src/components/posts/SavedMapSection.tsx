@@ -14,7 +14,7 @@ const SAVED_GRID = "grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4";
 /** 地図の色の濃さ（＝保存件数＝旅の熱量）の凡例 */
 function HeatLegend() {
   return (
-    <div className="flex items-center justify-center gap-2 text-xs text-zinc-500">
+    <div className="flex items-center justify-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
       <span>少ない</span>
       <span
         className="h-2.5 w-24 rounded-full"
@@ -115,10 +115,10 @@ export function SavedMapSection({ posts, kind }: { posts: Post[]; kind: Kind }) 
                 sectionRefs.current[location] = el;
               }}
               className={`scroll-mt-6 space-y-3 rounded-xl p-3 -mx-3 transition-colors duration-500 ${
-                isHighlighted ? "bg-green-50" : ""
+                isHighlighted ? "bg-green-50 dark:bg-green-950" : ""
               }`}
             >
-              <h3 className="flex items-center gap-1.5 text-base font-bold text-zinc-800">
+              <h3 className="flex items-center gap-1.5 text-base font-bold text-surface-foreground">
                 <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-5 w-5" />
                 {location}
                 <span className="text-sm font-semibold text-zinc-400">（{group.length}件）</span>
@@ -136,7 +136,7 @@ export function SavedMapSection({ posts, kind }: { posts: Post[]; kind: Kind }) 
         <button
           type="button"
           onClick={scrollToMap}
-          className="animate-fade-in fixed bottom-24 right-4 z-40 flex items-center gap-1.5 rounded-full border border-green-100 bg-white/80 px-4 py-2.5 text-sm font-semibold text-green-700 shadow-[0_8px_24px_-4px_rgba(22,163,74,0.35)] backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-[0_12px_28px_-4px_rgba(22,163,74,0.45)] md:bottom-6"
+          className="animate-fade-in fixed bottom-24 right-4 z-40 flex items-center gap-1.5 rounded-full border border-green-100 dark:border-green-900 bg-white/80 dark:bg-zinc-900/80 px-4 py-2.5 text-sm font-semibold text-green-700 dark:text-green-400 shadow-[0_8px_24px_-4px_rgba(22,163,74,0.35)] backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/90 dark:hover:bg-zinc-900/90 hover:shadow-[0_12px_28px_-4px_rgba(22,163,74,0.45)] md:bottom-6"
         >
           <TwemojiIcon codepoint="1f5fa" alt="🗺️" className="h-4 w-4" />
           地図に戻る
