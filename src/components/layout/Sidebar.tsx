@@ -83,6 +83,17 @@ export function Sidebar({ user }: { user: User }) {
   // clickが発火せずフラグが残っても他の無関係なボタンには影響しない設計にする）
   const wasLongPressKey = useRef<string | null>(null);
 
+  // ログアウト直前にDBの最新テーマ設定をCookieへミラーしてからsignOut()する
+  // （POSTが失敗してもログアウト自体は必ず継続する。PR-7b）
+  async function handleSignOut() {
+    try {
+      await fetch("/api/me/theme", { method: "POST" });
+    } catch {
+      // 同期に失敗してもログアウトは継続する
+    }
+    signOut({ callbackUrl: "/" });
+  }
+
   useEffect(() => {
     // iPad SafariはIPアドレス直打ち（HTTPSでもドメインでもないオリジン）でのアクセス時に
     // プライバシー保護でsessionStorageへのアクセス自体が例外を投げることがある。
@@ -292,7 +303,7 @@ export function Sidebar({ user }: { user: User }) {
                   <ThemeToggle showLabels />
                 </div>
                 <button
-                  onClick={() => { setDropdownOpen(false); signOut({ callbackUrl: "/" }); }}
+                  onClick={() => { setDropdownOpen(false); handleSignOut(); }}
                   className="w-full text-left px-4 py-[11px] text-[0.9rem] text-red-500 hover:bg-[#fff5f5] dark:hover:bg-red-500/10 border-t border-surface-border transition-colors"
                 >
                   ログアウト
@@ -363,7 +374,7 @@ export function Sidebar({ user }: { user: User }) {
                 <ThemeToggle showLabels compact />
               </div>
               <button
-                onClick={() => { setMobileDropdownOpen(false); signOut({ callbackUrl: "/" }); }}
+                onClick={() => { setMobileDropdownOpen(false); handleSignOut(); }}
                 className="w-full text-left px-4 py-[11px] text-[0.9rem] text-red-500 hover:bg-[#fff5f5] dark:hover:bg-red-500/10 border-t border-surface-border transition-colors"
               >
                 ログアウト

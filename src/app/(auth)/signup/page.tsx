@@ -41,14 +41,28 @@ export default function SignupPage() {
         return;
       }
 
-      await signIn("credentials", { email: data.email, password: data.password, callbackUrl: "/" });
+      // redirect:falseにすることで、ログイン成功後にPOST /api/me/themeを挟んでから
+      // フルナビゲーションできるようにする（テーマ設定のCookie→DB同期、PR-7b）
+      const result = await signIn("credentials", { email: data.email, password: data.password, redirect: false, callbackUrl: "/" });
+
+      if (result?.error) {
+        setApiError("登録は完了しましたが、自動ログインに失敗しました。ログイン画面からログインしてください");
+        return;
+      }
+
+      try {
+        await fetch("/api/me/theme", { method: "POST" });
+      } catch {
+        // テーマ同期に失敗してもログイン自体は継続する
+      }
+      window.location.assign(result?.url ?? "/");
     });
   }
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-lg">
-        <div className="rounded-2xl bg-white px-9 py-10 shadow-md border border-[#e2e8f0]">
+        <div className="rounded-2xl bg-surface px-9 py-10 shadow-md border border-surface-border">
           <div className="text-center mb-7">
             <Link href="/" className="inline-flex items-center gap-1 group mb-2">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-[#16a34a] opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -56,21 +70,21 @@ export default function SignupPage() {
               </svg>
               <span className="flex items-center gap-1.5 text-2xl font-bold group-hover:opacity-70 transition-opacity">
                 <TwemojiIcon codepoint="2708" alt="✈️" className="h-6 w-6" />
-                <Logo variant="guest" adaptsToColorScheme={false} />
+                <Logo variant="guest" />
               </span>
             </Link>
-            <p className="text-sm text-[#64748b]">アカウントを作成して旅を記録しよう</p>
+            <p className="text-sm text-[#64748b] dark:text-zinc-400">アカウントを作成して旅を記録しよう</p>
           </div>
 
           {apiError && (
-            <div className="mb-4 rounded-lg bg-[#fef2f2] border border-[#fecaca] px-4 py-3 text-sm text-[#ef4444]">
+            <div className="mb-4 rounded-lg bg-[#fef2f2] border border-[#fecaca] px-4 py-3 text-sm text-[#ef4444] dark:bg-red-950 dark:border-red-900 dark:text-red-300">
               {apiError}
             </div>
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label htmlFor="nickname" className="block text-sm font-medium text-[#1e293b] mb-1">
+              <label htmlFor="nickname" className="block text-sm font-medium text-surface-foreground mb-1">
                 ニックネーム
               </label>
               <input
@@ -79,13 +93,13 @@ export default function SignupPage() {
                 {...register("nickname")}
                 placeholder="例：旅人さくら"
                 autoComplete="nickname"
-                className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#1e293b] placeholder:text-[#94a3b8] outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-white ${errors.nickname ? "border-red-400 focus:border-red-400" : "border-[#e2e8f0] focus:border-[#16a34a]"}`}
+                className={`w-full rounded-xl border px-4 py-2.5 text-sm text-surface-foreground placeholder:text-[#94a3b8] dark:placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-surface ${errors.nickname ? "border-red-400 focus:border-red-400" : "border-surface-border focus:border-[#16a34a]"}`}
               />
               {errors.nickname && <p className="mt-1 text-xs text-red-500">{errors.nickname.message}</p>}
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-[#1e293b] mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-surface-foreground mb-1">
                 メールアドレス
               </label>
               <input
@@ -94,13 +108,13 @@ export default function SignupPage() {
                 {...register("email")}
                 placeholder="example@email.com"
                 autoComplete="email"
-                className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#1e293b] placeholder:text-[#94a3b8] outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-white ${errors.email ? "border-red-400 focus:border-red-400" : "border-[#e2e8f0] focus:border-[#16a34a]"}`}
+                className={`w-full rounded-xl border px-4 py-2.5 text-sm text-surface-foreground placeholder:text-[#94a3b8] dark:placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-surface ${errors.email ? "border-red-400 focus:border-red-400" : "border-surface-border focus:border-[#16a34a]"}`}
               />
               {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-[#1e293b] mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-surface-foreground mb-1">
                 パスワード
               </label>
               <div className="relative">
@@ -110,7 +124,7 @@ export default function SignupPage() {
                   {...register("password")}
                   placeholder="8文字以上で入力してください"
                   autoComplete="new-password"
-                  className={`peer w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-[#1e293b] placeholder:text-[#94a3b8] outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-white ${errors.password ? "border-red-400 focus:border-red-400" : "border-[#e2e8f0] focus:border-[#16a34a]"}`}
+                  className={`peer w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-surface-foreground placeholder:text-[#94a3b8] dark:placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-surface ${errors.password ? "border-red-400 focus:border-red-400" : "border-surface-border focus:border-[#16a34a]"}`}
                 />
                 <button
                     type="button"
@@ -120,7 +134,7 @@ export default function SignupPage() {
                     onTouchStart={() => setShowPassword(true)}
                     onTouchEnd={() => setShowPassword(false)}
                     onTouchCancel={() => setShowPassword(false)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none touch-manipulation peer-placeholder-shown:hidden"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] dark:text-zinc-500 dark:hover:text-zinc-300 select-none touch-manipulation peer-placeholder-shown:hidden"
                     tabIndex={-1}
                     aria-label={showPassword ? "パスワードを隠す" : "パスワードを表示"}
                   >
@@ -140,7 +154,7 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#1e293b] mb-1">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-surface-foreground mb-1">
                 パスワード（確認）
               </label>
               <div className="relative">
@@ -150,7 +164,7 @@ export default function SignupPage() {
                   {...register("confirmPassword")}
                   placeholder="もう一度入力してください"
                   autoComplete="new-password"
-                  className={`peer w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-[#1e293b] placeholder:text-[#94a3b8] outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-white ${errors.confirmPassword ? "border-red-400 focus:border-red-400" : "border-[#e2e8f0] focus:border-[#16a34a]"}`}
+                  className={`peer w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-surface-foreground placeholder:text-[#94a3b8] dark:placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-surface ${errors.confirmPassword ? "border-red-400 focus:border-red-400" : "border-surface-border focus:border-[#16a34a]"}`}
                 />
                 <button
                     type="button"
@@ -160,7 +174,7 @@ export default function SignupPage() {
                     onTouchStart={() => setShowConfirmPassword(true)}
                     onTouchEnd={() => setShowConfirmPassword(false)}
                     onTouchCancel={() => setShowConfirmPassword(false)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] select-none touch-manipulation peer-placeholder-shown:hidden"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] dark:text-zinc-500 dark:hover:text-zinc-300 select-none touch-manipulation peer-placeholder-shown:hidden"
                     tabIndex={-1}
                     aria-label={showConfirmPassword ? "パスワードを隠す" : "パスワードを表示"}
                   >
@@ -188,9 +202,9 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <p className="mt-5 text-center text-sm text-[#64748b]">
+          <p className="mt-5 text-center text-sm text-[#64748b] dark:text-zinc-400">
             すでにアカウントをお持ちの方は{" "}
-            <Link href="/login" className="text-[#16a34a] font-semibold hover:underline">
+            <Link href="/login" className="text-[#16a34a] dark:text-[#4ade80] font-semibold hover:underline">
               ログイン
             </Link>
           </p>

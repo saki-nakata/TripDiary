@@ -18,7 +18,7 @@ export function CommentIconLink({ postId, count }: Props) {
         router.push(`/posts/${postId}#comments`);
       }}
       data-testid="comment-icon-link"
-      className="hover:text-zinc-600 transition-colors"
+      className="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
     >
       💬 {count}
     </button>

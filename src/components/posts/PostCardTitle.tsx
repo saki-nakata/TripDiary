@@ -24,7 +24,7 @@ export function PostCardTitle({ title }: Props) {
     <div className="min-h-[2.35rem]">
       <h3
         ref={ref}
-        className={`font-bold text-zinc-900 line-clamp-2 leading-snug ${
+        className={`font-bold text-surface-foreground line-clamp-2 leading-snug ${
           small ? "text-[0.85rem]" : "text-[0.95rem]"
         }`}
       >

@@ -14,6 +14,8 @@ import {
   computeTabiScoreInputsForUsers,
   findUserPasswordHash,
   findUserPasswordHashAndEmail,
+  findUserThemePreference,
+  updateUserThemePreference,
 } from "@/lib/repositories/user.repository";
 import { createPost } from "@/lib/repositories/post.repository";
 
@@ -347,5 +349,33 @@ describe("user.repository", () => {
   it("computeTabiScoreInputsForUsers_空配列を渡すと空のMapを返す", async () => {
     const result = await computeTabiScoreInputsForUsers([]);
     expect(result.size).toBe(0);
+  });
+});
+
+describe("themePreference", () => {
+  it("findUserThemePreference_未設定のユーザーはnullを返す", async () => {
+    const user = await createTestUser("theme1@example.com", "テーマ1");
+
+    const result = await findUserThemePreference(user.id);
+
+    expect(result).toBeNull();
+  });
+
+  it("updateUserThemePreference_値を保存しfindUserThemePreferenceで取得できる", async () => {
+    const user = await createTestUser("theme2@example.com", "テーマ2");
+
+    await updateUserThemePreference(user.id, "dark");
+    const result = await findUserThemePreference(user.id);
+
+    expect(result).toBe("dark");
+  });
+
+  it("updateUserThemePreference_versionを増やさない（楽観ロック用カウンタと無関係）", async () => {
+    const user = await createTestUser("theme3@example.com", "テーマ3");
+
+    await updateUserThemePreference(user.id, "light");
+
+    const reloaded = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { version: true } });
+    expect(reloaded.version).toBe(0);
   });
 });

@@ -44,7 +44,7 @@ function PasswordInput({
         value={value}
         disabled={disabled}
         onChange={(e) => onChange?.(e.target.value)}
-        className={`w-full border rounded-lg px-3 py-2 pr-11 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30 ${disabled || dimmed ? "bg-zinc-50 text-zinc-400" : ""} ${error ? "border-red-400" : "border-zinc-200"}`}
+        className={`w-full border rounded-lg px-3 py-2 pr-11 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30 ${disabled || dimmed ? "bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-400" : "bg-surface text-surface-foreground"} ${error ? "border-red-400" : "border-surface-border"}`}
       />
       {hasValue && (
         <button
@@ -52,7 +52,7 @@ function PasswordInput({
           onMouseDown={() => setVisible(true)}
           onMouseUp={() => setVisible(false)}
           onMouseLeave={() => setVisible(false)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 select-none"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 select-none"
           tabIndex={-1}
           aria-label={visible ? "パスワードを隠す" : "パスワードを表示"}
         >
@@ -189,22 +189,22 @@ export function AccountForms({ userId, initialEmail }: Props) {
     <div className="space-y-16">
       {/* メールアドレス変更 */}
       <form onSubmit={handleEmailSubmit} className="space-y-6 max-w-xl mx-auto">
-        <h2 className="flex items-center gap-2 text-lg font-bold text-zinc-900">
+        <h2 className="flex items-center gap-2 text-lg font-bold text-surface-foreground">
           <TwemojiIcon codepoint="1f4e9" className="h-5 w-5" /> メールアドレス変更
         </h2>
 
         <div>
-          <label className="block text-sm font-semibold text-zinc-700 mb-1">現在のメールアドレス</label>
+          <label className="block text-sm font-semibold text-surface-foreground mb-1">現在のメールアドレス</label>
           <input
             type="email"
             value={initialEmail}
             disabled
-            className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-zinc-50 text-zinc-400"
+            className="w-full border border-surface-border rounded-lg px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-400"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-zinc-700 mb-1">
+          <label className="block text-sm font-semibold text-surface-foreground mb-1">
             変更したいメールアドレス <span className="text-red-500">*</span>
           </label>
           <input
@@ -213,13 +213,13 @@ export function AccountForms({ userId, initialEmail }: Props) {
             autoComplete="email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
-            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30 ${emailErrors.email ? "border-red-400" : "border-zinc-200"}`}
+            className={`w-full border rounded-lg px-3 py-2 text-sm bg-surface text-surface-foreground focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30 ${emailErrors.email ? "border-red-400" : "border-surface-border"}`}
           />
           {emailErrors.email && <p className="text-xs text-red-500 mt-1">{emailErrors.email}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-zinc-700 mb-1">
+          <label className="block text-sm font-semibold text-surface-foreground mb-1">
             現在のパスワード <span className="text-red-500">*</span>
           </label>
           <PasswordInput
@@ -246,12 +246,12 @@ export function AccountForms({ userId, initialEmail }: Props) {
 
       {/* パスワード変更 */}
       <form onSubmit={handlePasswordSubmit} className="space-y-6 max-w-xl mx-auto">
-        <h2 className="flex items-center gap-2 text-lg font-bold text-zinc-900">
+        <h2 className="flex items-center gap-2 text-lg font-bold text-surface-foreground">
           🔑 パスワード変更
         </h2>
 
         <div>
-          <label className="block text-sm font-semibold text-zinc-700 mb-1">
+          <label className="block text-sm font-semibold text-surface-foreground mb-1">
             現在のパスワード <span className="text-red-500">*</span>
           </label>
           <PasswordInput
@@ -266,7 +266,7 @@ export function AccountForms({ userId, initialEmail }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-zinc-700 mb-1">
+          <label className="block text-sm font-semibold text-surface-foreground mb-1">
             新しいパスワード <span className="text-red-500">*</span>
           </label>
           <PasswordInput
@@ -281,7 +281,7 @@ export function AccountForms({ userId, initialEmail }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-zinc-700 mb-1">
+          <label className="block text-sm font-semibold text-surface-foreground mb-1">
             新しいパスワード（確認） <span className="text-red-500">*</span>
           </label>
           <PasswordInput

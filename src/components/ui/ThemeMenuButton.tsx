@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { THEME_OPTIONS, useThemeChoice } from "@/components/ui/theme";
+import { THEME_OPTIONS } from "@/components/ui/theme";
+import { useTheme } from "@/components/providers/ThemeProvider";
 
 /**
  * 未ログインモバイル向け「現在テーマのアイコン1個＋選択メニュー」（2026-08-01決定）。
  * 常時3択を横並び表示する`ThemeToggle`と異なり、省スペースな1ボタン+ポップアップメニュー。
  */
 export function ThemeMenuButton() {
-  const { choice, select } = useThemeChoice();
+  const { choice, select } = useTheme();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const current = THEME_OPTIONS.find((opt) => opt.value === choice) ?? THEME_OPTIONS[2];

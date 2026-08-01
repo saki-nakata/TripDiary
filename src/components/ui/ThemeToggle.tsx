@@ -1,6 +1,7 @@
 "use client";
 
-import { THEME_OPTIONS, useThemeChoice } from "@/components/ui/theme";
+import { THEME_OPTIONS } from "@/components/ui/theme";
+import { useTheme } from "@/components/providers/ThemeProvider";
 
 export function ThemeToggle({
   className,
@@ -11,7 +12,7 @@ export function ThemeToggle({
   compact?: boolean;
   showLabels?: boolean;
 }) {
-  const { choice, select } = useThemeChoice();
+  const { choice, select } = useTheme();
 
   return (
     <div

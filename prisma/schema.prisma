@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ThemePreference {
+  light
+  dark
+  system
+}
+
 model User {
   id              String   @id @default(cuid())
   email           String   @unique
@@ -14,6 +20,10 @@ model User {
   image           String?  @db.Text
   bio             String?  @db.VarChar(200)
   password        String?  @db.VarChar(255)
+  // 表示テーマ設定（PR-7b）。未設定は「一度も選択していない」ことを表しnullのまま。
+  // system（自動選択済み）とnull（未選択）を区別するため@default(system)にはしない。
+  // テーマ変更ではプロフィール編集用のversionを増やさない
+  themePreference ThemePreference?
   // 非正規化カウンタ。follows テーブルの increment/decrement と同一トランザクションで更新される
   // （follow.repository.ts の toggleFollow）。フォロワー数/フォロー中数が必要な場合は
   // 必ずこの列を参照し、`_count: { select: { followers/following: true } }` によるライブ集計を書かないこと

@@ -19,6 +19,8 @@ vi.mock("@/lib/repositories/user.repository", () => ({
   findUserByEmail: vi.fn(),
   findUserPasswordHashAndEmail: vi.fn(),
   updateUserEmail: vi.fn(),
+  findUserThemePreference: vi.fn(),
+  updateUserThemePreference: vi.fn(),
 }));
 vi.mock("@/lib/repositories/follow.repository", () => ({
   isFollowing: vi.fn(),
@@ -50,6 +52,8 @@ import {
   findUserByEmail,
   findUserPasswordHashAndEmail,
   updateUserEmail,
+  findUserThemePreference,
+  updateUserThemePreference,
 } from "@/lib/repositories/user.repository";
 import { isFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
 import {
@@ -61,6 +65,9 @@ import {
   searchUsersService,
   changePasswordService,
   changeEmailService,
+  getThemePreferenceService,
+  syncThemeOnAuthBoundaryService,
+  updateThemePreferenceService,
 } from "@/lib/services/user.service";
 
 const USER_ID = "user-1";
@@ -580,5 +587,44 @@ describe("changeEmailService", () => {
     expect(compare).not.toHaveBeenCalled();
     expect(findUserByEmail).not.toHaveBeenCalled();
     expect(updateUserEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("theme preference services", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("getThemePreferenceService_リポジトリの戻り値をそのまま返す", async () => {
+    vi.mocked(findUserThemePreference).mockResolvedValue("dark");
+
+    const result = await getThemePreferenceService(USER_ID);
+
+    expect(result).toBe("dark");
+    expect(findUserThemePreference).toHaveBeenCalledWith(USER_ID);
+  });
+
+  it("syncThemeOnAuthBoundary_DBに値がある_DB値を返しDBへは書き込まない", async () => {
+    vi.mocked(findUserThemePreference).mockResolvedValue("dark");
+
+    const result = await syncThemeOnAuthBoundaryService(USER_ID, "light");
+
+    expect(result).toBe("dark");
+    expect(updateUserThemePreference).not.toHaveBeenCalled();
+  });
+
+  it("syncThemeOnAuthBoundary_DBがnull_Cookie値をDBへ昇格しCookie値を返す", async () => {
+    vi.mocked(findUserThemePreference).mockResolvedValue(null);
+
+    const result = await syncThemeOnAuthBoundaryService(USER_ID, "light");
+
+    expect(result).toBe("light");
+    expect(updateUserThemePreference).toHaveBeenCalledWith(USER_ID, "light");
+  });
+
+  it("updateThemePreferenceService_リポジトリのupdateを呼ぶ", async () => {
+    await updateThemePreferenceService(USER_ID, "system");
+
+    expect(updateUserThemePreference).toHaveBeenCalledWith(USER_ID, "system");
   });
 });

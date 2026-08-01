@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+/* Tailwindの`dark:`はデフォルトでprefers-color-schemeのみに従い、data-theme属性による
+   手動選択を無視してしまう（OSがライトのまま手動で「ダーク」を選んだ場合、dark:が
+   適用されない）。--surface等のCSS変数と同じ優先順位（data-theme明示 > OS設定）を
+   `dark:`ユーティリティにも適用させるため、バリアント自体をこの条件で再定義する */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:not(:where([data-theme="light"], [data-theme="light"] *)) {
+      @slot;
+    }
+  }
+}
+
 :root {
   --background: #fdfefc;
   --foreground: #171717;
