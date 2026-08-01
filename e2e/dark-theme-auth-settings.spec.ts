@@ -51,7 +51,9 @@ test.describe("PR-7b: 認証・設定画面のダークテーマ対応（未ロ�
   });
 });
 
-test.describe("PR-7b: 認証・設定画面のダークテーマ対応（ログイン後）", () => {
+test.describe("PR-7b: 認証・設定画面のダークテーマ対応（ログイン後・DB昇格とログアウト同期）", () => {
+  // 本テストはsignup UIそのもの（新規アカウント作成）を検証するため、アカウントが
+  // 事前に存在しない状態が前提。他のテストと共有しない専用のメールアドレスを使う
   test.beforeAll(async ({ request }) => {
     await request.delete(`/api/test/cleanup?email=${encodeURIComponent(TEST_EMAIL)}`);
   });
@@ -88,11 +90,32 @@ test.describe("PR-7b: 認証・設定画面のダークテーマ対応（ログ�
     const cookiesAfterLogout = await context.cookies();
     expect(cookiesAfterLogout.find((c) => c.name === "theme")?.value).toBe("dark");
   });
+});
+
+// 以下はフレッシュなログインだけを必要とし、signup UI自体は検証しないため、
+// 上記テストの実行順序・成否に依存しないよう別アカウントを使う。CIの並列実行では
+// 実行順序が保証されないため、各テストの直前で自分自身がアカウントの存在を
+// 保証する（既に存在する場合の409は無視する）
+const SETTINGS_TEST_EMAIL = "test_playwright_dark_theme_authsettings_settings@example.com";
+const SETTINGS_TEST_USER = {
+  nickname: "PR7b設定確認用ユーザー",
+  email: SETTINGS_TEST_EMAIL,
+  password: "Password1234",
+};
+
+test.describe("PR-7b: 認証・設定画面のダークテーマ対応（設定画面）", () => {
+  test.beforeAll(async ({ request }) => {
+    await request.delete(`/api/test/cleanup?email=${encodeURIComponent(SETTINGS_TEST_EMAIL)}`);
+  });
+
+  test.beforeEach(async ({ request }) => {
+    await request.post("/api/auth/signup", { data: SETTINGS_TEST_USER }).catch(() => {});
+  });
 
   test("/settings に「テーマ」カードが表示され、選択がDBに保存されリロード後も維持される", async ({ page }) => {
     await page.goto("/login");
-    await page.fill("#email", TEST_USER.email);
-    await page.fill("#password", TEST_USER.password);
+    await page.fill("#email", SETTINGS_TEST_USER.email);
+    await page.fill("#password", SETTINGS_TEST_USER.password);
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL("/", { timeout: 15000 });
 
@@ -116,8 +139,8 @@ test.describe("PR-7b: 認証・設定画面のダークテーマ対応（ログ�
       await page.emulateMedia({ colorScheme });
       await page.setViewportSize({ width: 1280, height: 900 });
       await page.goto("/login");
-      await page.fill("#email", TEST_USER.email);
-      await page.fill("#password", TEST_USER.password);
+      await page.fill("#email", SETTINGS_TEST_USER.email);
+      await page.fill("#password", SETTINGS_TEST_USER.password);
       await page.click('button[type="submit"]');
       await expect(page).toHaveURL("/", { timeout: 15000 });
 
