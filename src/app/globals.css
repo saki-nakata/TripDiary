@@ -4,6 +4,9 @@
   --background: #fdfefc;
   --foreground: #171717;
   --bubble-scale: 1;
+  --surface: #ffffff;
+  --surface-foreground: #171717;
+  --surface-border: #e2e8f0;
 }
 
 /* エリア別バブルチャートをスマホのみ少し小さめにする（レイアウトのgapも自然に詰まるよう実サイズを縮小） */
@@ -16,16 +19,32 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-surface-border: var(--surface-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --breakpoint-sidebar: 900px;
 }
 
+/* システム設定がダーク、かつ利用者が明示的にライトを選んでいない場合 */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --surface: #18181b;
+    --surface-foreground: #ededed;
+    --surface-border: #3f3f46;
   }
+}
+
+/* 利用者が明示的にダークを選んでいる場合（システム設定がライトでも適用） */
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --surface: #18181b;
+  --surface-foreground: #ededed;
+  --surface-border: #3f3f46;
 }
 
 html {

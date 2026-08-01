@@ -18,6 +18,9 @@ const eslintConfig = defineConfig([
     "coverage/**",
     // k6 run output (generated)
     "performance/k6/results/**",
+    // Playwright HTML reporter / trace viewer output and per-run artifacts (generated)
+    "playwright-report/**",
+    "test-results/**",
   ]),
   // k6スクリプト（Phase 5-B）。globalIgnoresで丸ごと除外せず検査対象に含めるが、
   // k6固有のグローバル（__VU等）とNext固有ルールの誤検知だけをここで無効化する

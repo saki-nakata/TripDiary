@@ -6,6 +6,8 @@ import { GuestSidebarNav } from "@/components/layout/GuestSidebarNav";
 import { GuestMobileNav } from "@/components/layout/GuestMobileNav";
 import { ToastProvider } from "@/contexts/toast-context";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Logo } from "@/components/ui/Logo";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -32,27 +34,28 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-white">
-        <aside className="hidden md:flex flex-col fixed top-0 left-0 h-full bg-white border-r border-[#e2e8f0] z-30 w-60">
+      <div className="min-h-screen bg-background">
+        <aside className="hidden md:flex flex-col fixed top-0 left-0 h-full bg-surface border-r border-surface-border z-30 w-60">
           <Link
             href="/"
             className="flex items-center gap-2 px-4 pt-6 mb-5 font-bold hover:opacity-80 transition-opacity"
           >
             <TwemojiIcon codepoint="2708" alt="✈️" className="h-6 w-6" />
-            <span className="text-[1.35rem] bg-gradient-to-r from-[#1a6b3a] to-[#0f766e] bg-clip-text text-transparent">TripDiary</span>
+            <Logo variant="guest" className="text-[1.35rem]" />
           </Link>
           <GuestSidebarNav />
           <div className="mt-auto px-4 pb-8 flex flex-col gap-3">
+            <ThemeToggle showLabels />
             <Link
               href="/login"
-              className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-[#2d8a52] text-white text-[0.9rem] font-semibold hover:bg-[#1a6b3a] transition-colors"
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-[#267a48] text-white text-[0.9rem] font-semibold hover:bg-[#1a6b3a] transition-colors"
             >
               <span className="text-lg leading-none -ml-1">🔑</span>
               ログイン
             </Link>
             <Link
               href="/signup"
-              className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg border-[1.5px] border-[#1a6b3a] text-[#1a6b3a] text-[0.9rem] font-semibold hover:bg-[#dcfce7] transition-colors"
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg border-[1.5px] border-[#1a6b3a] dark:border-green-400 text-[#1a6b3a] dark:text-green-400 text-[0.9rem] font-semibold hover:bg-[#dcfce7] dark:hover:bg-[#16a34a]/20 transition-colors"
             >
               <span className="text-lg leading-none -ml-1">🌱</span>
               新規登録

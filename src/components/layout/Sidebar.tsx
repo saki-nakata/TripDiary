@@ -6,6 +6,8 @@ import { useState, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Logo } from "@/components/ui/Logo";
 import { useToast } from "@/contexts/toast-context";
 
 async function fetchUnreadCount(): Promise<number> {
@@ -171,7 +173,7 @@ export function Sidebar({ user }: { user: User }) {
   return (
     <>
       {/* Sidebar (desktop / tablet) */}
-      <aside className="hidden md:flex flex-col fixed top-0 left-0 h-full bg-white border-r border-[#e2e8f0] z-30
+      <aside className="hidden md:flex flex-col fixed top-0 left-0 h-full bg-surface border-r border-surface-border z-30
         w-32 sidebar:w-60 transition-all">
         {/* Logo */}
         <Link
@@ -179,16 +181,14 @@ export function Sidebar({ user }: { user: User }) {
           className="flex items-center gap-2 px-3 sidebar:px-5 pt-6 mb-5 font-bold hover:opacity-80 transition-opacity shrink-0 justify-start"
         >
           <TwemojiIcon codepoint="2708" className="h-6 w-6 shrink-0" />
-          <span className="hidden md:inline text-[0.95rem] sidebar:text-[1.35rem] bg-gradient-to-r from-[#1e8449] to-[#0d9488] bg-clip-text text-transparent">
-            TripDiary
-          </span>
+          <Logo variant="authenticated" className="hidden md:inline text-[0.95rem] sidebar:text-[1.35rem]" />
         </Link>
 
         {/* Nav */}
         <nav className="flex-1 px-2 sidebar:px-5 flex flex-col gap-[4px] overflow-y-auto">
           {NAV_ITEMS.map((item, i) => {
             if ("divider" in item) {
-              return <div key={i} className="border-t border-[#e2e8f0] my-2" />;
+              return <div key={i} className="border-t border-surface-border my-2" />;
             }
             if (item.disabled) {
               return (
@@ -212,8 +212,8 @@ export function Sidebar({ user }: { user: User }) {
                 title={item.label}
                 className={`flex flex-col sidebar:flex-row items-center sidebar:justify-start gap-1.5 sidebar:gap-3 px-1 sidebar:px-3 py-1.5 sidebar:py-[7px] rounded-lg text-[0.95rem] transition-colors
                   ${active
-                    ? "bg-[#dcfce7] text-[#16a34a] font-semibold"
-                    : "text-[#1e293b] hover:bg-[#f8fafc]"
+                    ? "bg-[#dcfce7] dark:bg-[#16a34a]/20 text-[#166534] dark:text-[#4ade80] font-semibold"
+                    : "text-surface-foreground hover:bg-[#f8fafc] dark:hover:bg-white/5"
                   }`}
               >
                 {item.key === "dashboard" ? (
@@ -230,15 +230,15 @@ export function Sidebar({ user }: { user: User }) {
 
         {/* Bottom section — プロトタイプ準拠: divider → 通知 → ユーザー */}
         <div className="px-2 sidebar:px-5 mt-auto pb-6">
-          <div className="border-t border-[#e2e8f0] my-2" />
+          <div className="border-t border-surface-border my-2" />
           {/* Notification */}
           <Link
             href="/notification"
             title="通知"
             className={`flex flex-col sidebar:flex-row items-center sidebar:justify-start gap-1.5 sidebar:gap-3 px-1 sidebar:px-3 py-1.5 sidebar:py-[7px] rounded-lg text-[0.95rem] transition-colors
               ${pathname === "/notification"
-                ? "bg-[#dcfce7] text-[#16a34a] font-semibold"
-                : "text-[#1e293b] hover:bg-[#f8fafc]"
+                ? "bg-[#dcfce7] dark:bg-[#16a34a]/20 text-[#166534] dark:text-[#4ade80] font-semibold"
+                : "text-surface-foreground hover:bg-[#f8fafc] dark:hover:bg-white/5"
               }`}
           >
             <span className="relative flex h-[1.4rem] sidebar:h-[1.1rem] w-6 shrink-0 items-center justify-center">
@@ -259,38 +259,41 @@ export function Sidebar({ user }: { user: User }) {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={(e) => { e.stopPropagation(); setDropdownOpen((o) => !o); }}
-              className="w-full flex flex-col sidebar:flex-row items-center sidebar:justify-start gap-1.5 sidebar:gap-[10px] px-1 sidebar:px-2 py-1.5 sidebar:py-[6px] rounded-[10px] hover:bg-[#f8fafc] transition-colors"
+              className="w-full flex flex-col sidebar:flex-row items-center sidebar:justify-start gap-1.5 sidebar:gap-[10px] px-1 sidebar:px-2 py-1.5 sidebar:py-[6px] rounded-[10px] hover:bg-[#f8fafc] dark:hover:bg-white/5 transition-colors"
             >
-              <div className="w-8 h-8 rounded-full bg-[#16a34a]/10 flex items-center justify-center shrink-0 text-sm font-semibold text-[#16a34a]">
+              <div className="w-8 h-8 rounded-full bg-[#16a34a]/10 flex items-center justify-center shrink-0 text-sm font-semibold text-[#166534] dark:text-[#4ade80]">
                 {user.nickname[0]}
               </div>
               <span className="sidebar:hidden text-[0.8rem] leading-none text-center truncate max-w-full">
                 {user.nickname}
               </span>
-              <span className="hidden sidebar:block text-[0.9rem] font-semibold text-[#1e293b] truncate">
+              <span className="hidden sidebar:block text-[0.9rem] font-semibold text-surface-foreground truncate">
                 {user.nickname}
               </span>
             </button>
 
             {dropdownOpen && (
-              <div className="absolute bottom-full left-0 mb-2 w-40 sidebar:w-full bg-white rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-[#e2e8f0] overflow-hidden z-50">
+              <div className="absolute bottom-full left-0 mb-2 w-40 sidebar:w-full bg-surface rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-surface-border overflow-hidden z-50">
                 <Link
                   href="/settings"
-                  className="block px-4 py-[11px] text-[0.9rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
+                  className="block px-4 py-[11px] text-[0.9rem] text-surface-foreground hover:bg-[#f8fafc] dark:hover:bg-white/5 transition-colors"
                   onClick={() => setDropdownOpen(false)}
                 >
                   プロフィール編集
                 </Link>
                 <Link
                   href="/settings/account"
-                  className="block px-4 py-[11px] text-[0.9rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
+                  className="block px-4 py-[11px] text-[0.9rem] text-surface-foreground hover:bg-[#f8fafc] dark:hover:bg-white/5 transition-colors"
                   onClick={() => setDropdownOpen(false)}
                 >
                   アカウント設定
                 </Link>
+                <div className="px-4 py-[11px] border-t border-surface-border">
+                  <ThemeToggle showLabels />
+                </div>
                 <button
                   onClick={() => { setDropdownOpen(false); signOut({ callbackUrl: "/" }); }}
-                  className="w-full text-left px-4 py-[11px] text-[0.9rem] text-red-500 hover:bg-[#fff5f5] border-t border-[#e2e8f0] transition-colors"
+                  className="w-full text-left px-4 py-[11px] text-[0.9rem] text-red-500 hover:bg-[#fff5f5] dark:hover:bg-red-500/10 border-t border-surface-border transition-colors"
                 >
                   ログアウト
                 </button>
@@ -303,19 +306,19 @@ export function Sidebar({ user }: { user: User }) {
       {/* Top bar (mobile): ロゴ（ホームリンクを兼ねる）・検索・通知・アバター
           プロフィールはアバター自体が「自分」への入口を兼ねるため、別アイコンにはせず
           ドロップダウンメニューの先頭に含める（アイコンの二重化を避ける） */}
-      <nav className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#e2e8f0] z-30 flex items-center justify-between px-3">
+      <nav className="md:hidden fixed top-0 left-0 right-0 h-14 bg-surface border-b border-surface-border z-30 flex items-center justify-between px-3">
         <Link href="/" title="ホーム" className="flex items-center gap-1.5 font-bold shrink-0 rounded-lg px-2 py-1 -ml-1">
           <TwemojiIcon codepoint="2708" className="h-5 w-5 shrink-0" />
-          <span className="text-[1.05rem] bg-gradient-to-r from-[#1e8449] to-[#0d9488] bg-clip-text text-transparent">TripDiary</span>
+          <Logo variant="authenticated" className="text-[1.05rem]" />
         </Link>
         <div className="flex items-center gap-1">
-        <Link href="/" title="ホーム" aria-label="ホーム" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname === "/" ? "bg-lime-100" : "text-[#64748b]"}`}>
+        <Link href="/" title="ホーム" aria-label="ホーム" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname === "/" ? "bg-lime-100 dark:bg-[#16a34a]/20" : "text-[#64748b] dark:text-zinc-400"}`}>
           <span className="text-lg leading-none">🏠</span>
         </Link>
-        <Link href="/search" title="検索" aria-label="検索" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname.startsWith("/search") ? "bg-lime-100" : "text-[#64748b]"}`}>
+        <Link href="/search" title="検索" aria-label="検索" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname.startsWith("/search") ? "bg-lime-100 dark:bg-[#16a34a]/20" : "text-[#64748b] dark:text-zinc-400"}`}>
           <TwemojiIcon codepoint="1f50d" className="h-5 w-5" />
         </Link>
-        <Link href="/notification" title="通知" aria-label="通知" className={`relative flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname === "/notification" ? "bg-lime-100" : "text-[#64748b]"}`}>
+        <Link href="/notification" title="通知" aria-label="通知" className={`relative flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname === "/notification" ? "bg-lime-100 dark:bg-[#16a34a]/20" : "text-[#64748b] dark:text-zinc-400"}`}>
           <TwemojiIcon codepoint="1f514" className="h-5 w-5" />
           {unreadCount > 0 && (
             <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-[3px] leading-none">
@@ -328,15 +331,15 @@ export function Sidebar({ user }: { user: User }) {
             onClick={(e) => { e.stopPropagation(); setMobileDropdownOpen((o) => !o); }}
             title={user.nickname}
             aria-label={`${user.nickname}のメニュー`}
-            className="flex items-center justify-center h-9 w-9 rounded-full bg-[#16a34a]/10 text-sm font-semibold text-[#16a34a]"
+            className="flex items-center justify-center h-9 w-9 rounded-full bg-[#16a34a]/10 text-sm font-semibold text-[#166534] dark:text-[#4ade80]"
           >
             {user.nickname[0]}
           </button>
           {mobileDropdownOpen && (
-            <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-[#e2e8f0] overflow-hidden z-50">
+            <div className="absolute top-full right-0 mt-2 w-48 bg-surface rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-surface-border overflow-hidden z-50">
               <Link
                 href={profileHref}
-                className="flex items-center gap-2 px-4 py-[11px] text-[0.9rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
+                className="flex items-center gap-2 px-4 py-[11px] text-[0.9rem] text-surface-foreground hover:bg-[#f8fafc] dark:hover:bg-white/5 transition-colors"
                 onClick={() => setMobileDropdownOpen(false)}
               >
                 <TwemojiIcon codepoint="1f464" className="h-4 w-4" />
@@ -344,21 +347,24 @@ export function Sidebar({ user }: { user: User }) {
               </Link>
               <Link
                 href="/settings"
-                className="block px-4 py-[11px] text-[0.9rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors border-t border-[#e2e8f0]"
+                className="block px-4 py-[11px] text-[0.9rem] text-surface-foreground hover:bg-[#f8fafc] dark:hover:bg-white/5 transition-colors border-t border-surface-border"
                 onClick={() => setMobileDropdownOpen(false)}
               >
                 プロフィール編集
               </Link>
               <Link
                 href="/settings/account"
-                className="block px-4 py-[11px] text-[0.9rem] text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
+                className="block px-4 py-[11px] text-[0.9rem] text-surface-foreground hover:bg-[#f8fafc] dark:hover:bg-white/5 transition-colors"
                 onClick={() => setMobileDropdownOpen(false)}
               >
                 アカウント設定
               </Link>
+              <div className="px-4 py-[11px] border-t border-surface-border">
+                <ThemeToggle showLabels compact />
+              </div>
               <button
                 onClick={() => { setMobileDropdownOpen(false); signOut({ callbackUrl: "/" }); }}
-                className="w-full text-left px-4 py-[11px] text-[0.9rem] text-red-500 hover:bg-[#fff5f5] border-t border-[#e2e8f0] transition-colors"
+                className="w-full text-left px-4 py-[11px] text-[0.9rem] text-red-500 hover:bg-[#fff5f5] dark:hover:bg-red-500/10 border-t border-surface-border transition-colors"
               >
                 ログアウト
               </button>
@@ -371,7 +377,7 @@ export function Sidebar({ user }: { user: User }) {
       {/* Bottom nav (mobile): 新規投稿・プロフィール・マイページ内各タブへの直接リンク（アイコンのみ）。
           アイコンだけでは意味が分かりにくいため、ログイン直後は軽くバウンドさせて気づいてもらい、
           長押しでラベルをポップアップ表示できるようにする */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] z-30 flex">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-surface-border z-30 flex">
         {(() => {
           // NAV_ITEMS.filter() だと NAV_ITEMS 本来の並び順になり、新規投稿を中央に
           // 配置する意図が反映されないため、MOBILE_BOTTOM_KEYS の順序通りに並べ直す
@@ -401,7 +407,7 @@ export function Sidebar({ user }: { user: User }) {
                 onContextMenu={(e) => e.preventDefault()}
                 onClick={(e) => handleIconClick(item.key, e)}
                 className={`relative flex-1 flex items-center justify-center py-3 min-w-[44px] touch-manipulation select-none transition-colors
-                  ${!isCreate && active ? "text-[#16a34a]" : !isCreate ? "text-[#64748b]" : ""}`}
+                  ${!isCreate && active ? "text-[#16a34a]" : !isCreate ? "text-[#64748b] dark:text-zinc-400" : ""}`}
                 // iOS Safari はリンクの長押しで独自の共有/プレビューメニューを表示し、
                 // これは contextmenu イベントの preventDefault では止められない
                 // （-webkit-touch-callout でのみ制御可能）。ここで無効化しないと
@@ -415,7 +421,7 @@ export function Sidebar({ user }: { user: User }) {
                 )}
                 {isCreate ? (
                   // 新規投稿は最重要アクションのため、丸型ボタンで視覚的に強調する
-                  <span className={`flex items-center justify-center h-11 w-11 -mt-1 rounded-full border border-yellow-300 shadow-md ${active ? "bg-lime-100" : ""}`}>
+                  <span className={`flex items-center justify-center h-11 w-11 -mt-1 rounded-full border border-yellow-300 shadow-md ${active ? "bg-lime-100 dark:bg-[#16a34a]/20" : ""}`}>
                     <TwemojiIcon
                       codepoint={item.icon}
                       className={`h-5 w-5 ${justLoggedIn ? "animate-bounce-dot-once" : ""}`}
@@ -427,7 +433,7 @@ export function Sidebar({ user }: { user: User }) {
                   // アクティブ時は緑の丸背景を付けて「今どこにいるか」を示す
                   <span
                     className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${
-                      active ? "bg-lime-100" : ""
+                      active ? "bg-lime-100 dark:bg-[#16a34a]/20" : ""
                     }`}
                   >
                     <TwemojiIcon

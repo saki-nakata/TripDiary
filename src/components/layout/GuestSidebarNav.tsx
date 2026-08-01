@@ -23,8 +23,8 @@ export function GuestSidebarNav() {
           href={item.href}
           className={`flex items-center gap-3 px-3 py-[7px] rounded-lg text-[0.95rem] transition-colors ${
             item.active
-              ? "bg-[#bbf7d0] text-[#1a6b3a] font-semibold"
-              : "text-[#1e293b] hover:bg-[#f8fafc]"
+              ? "bg-[#bbf7d0] dark:bg-[#16a34a]/20 text-[#1a6b3a] dark:text-green-400 font-semibold"
+              : "text-surface-foreground hover:bg-[#f8fafc] dark:hover:bg-white/5"
           }`}
         >
           {item.href === "/" ? (

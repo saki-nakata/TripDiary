@@ -27,17 +27,17 @@ export function ConfirmDialog({
       onClick={onCancel}
     >
       <div
-        className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
+        className="bg-surface rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-base font-bold text-[#1e293b] mb-2">{title}</h2>
+        <h2 className="text-base font-bold text-surface-foreground mb-2">{title}</h2>
         {description && (
-          <p className="text-sm text-[#64748b] mb-6">{description}</p>
+          <p className="text-sm text-[#64748b] dark:text-zinc-400 mb-6">{description}</p>
         )}
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl border border-[#e2e8f0] text-sm font-semibold text-[#64748b] hover:bg-[#f8fafc] transition-colors"
+            className="flex-1 py-2.5 rounded-xl border border-surface-border text-sm font-semibold text-[#64748b] dark:text-zinc-400 hover:bg-[#f8fafc] dark:hover:bg-white/5 transition-colors"
           >
             {cancelLabel}
           </button>
