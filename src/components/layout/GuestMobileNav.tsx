@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ThemeMenuButton } from "@/components/ui/ThemeMenuButton";
+import { Logo } from "@/components/ui/Logo";
 
 // 未ログイン時のモバイルナビ（上部バーのロゴ＝ホーム、下部の検索）。
 // ログイン後と同様に、現在ページはライム背景（bg-lime-100 dark:bg-[#16a34a]/20）でアクティブ表示する。
@@ -21,10 +22,9 @@ export function GuestMobileNav() {
           className="flex items-center gap-1.5 font-bold rounded-lg px-2 py-1 -ml-1"
         >
           <TwemojiIcon codepoint="2708" alt="✈️" className="h-5 w-5" />
-          <span className="text-[1.05rem] bg-gradient-to-r from-[#1a6b3a] to-[#0f766e] bg-clip-text text-transparent">TripDiary</span>
+          <Logo variant="guest" className="text-[1.05rem]" />
         </Link>
         <div className="flex items-center gap-1.5">
-          <ThemeToggle compact />
           <Link
             href="/"
             title="ホーム"
@@ -35,6 +35,7 @@ export function GuestMobileNav() {
           >
             <span className="text-lg leading-none">🏠</span>
           </Link>
+          <ThemeMenuButton />
         </div>
       </nav>
 

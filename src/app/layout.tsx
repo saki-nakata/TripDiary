@@ -27,6 +27,9 @@ export default function RootLayout({
     <html
       lang="ja"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // FOUC対策スクリプトがハイドレーション前にdata-themeを設定するため、
+      // この要素に限りサーバーHTMLとの差分を許容する。
+      suppressHydrationWarning
     >
       <head>
         {/* ハイドレーション前に同期実行し、保存済みテーマを<html>のdata-theme属性へ即座に反映する

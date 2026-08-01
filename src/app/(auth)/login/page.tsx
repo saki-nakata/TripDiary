@@ -9,6 +9,7 @@ import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { Logo } from "@/components/ui/Logo";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -58,7 +59,7 @@ export default function LoginPage() {
               </svg>
               <span className="flex items-center gap-1.5 text-2xl font-bold group-hover:opacity-70 transition-opacity">
                 <TwemojiIcon codepoint="2708" alt="✈️" className="h-6 w-6" />
-                <span className="bg-gradient-to-r from-[#16a34a] to-[#0d9488] bg-clip-text text-transparent">TripDiary</span>
+                <Logo variant="guest" adaptsToColorScheme={false} />
               </span>
             </Link>
             <p className="text-sm text-[#64748b]">旅のスポットを記録・共有しよう</p>

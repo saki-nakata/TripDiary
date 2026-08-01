@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { signupSchema, type SignupInput } from "@/lib/validations/auth";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { Logo } from "@/components/ui/Logo";
 
 export default function SignupPage() {
   const [apiError, setApiError] = useState("");
@@ -55,7 +56,7 @@ export default function SignupPage() {
               </svg>
               <span className="flex items-center gap-1.5 text-2xl font-bold group-hover:opacity-70 transition-opacity">
                 <TwemojiIcon codepoint="2708" alt="✈️" className="h-6 w-6" />
-                <span className="bg-gradient-to-r from-[#16a34a] to-[#0d9488] bg-clip-text text-transparent">TripDiary</span>
+                <Logo variant="guest" adaptsToColorScheme={false} />
               </span>
             </Link>
             <p className="text-sm text-[#64748b]">アカウントを作成して旅を記録しよう</p>

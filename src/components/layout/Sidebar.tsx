@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Logo } from "@/components/ui/Logo";
 import { useToast } from "@/contexts/toast-context";
 
 async function fetchUnreadCount(): Promise<number> {
@@ -180,9 +181,7 @@ export function Sidebar({ user }: { user: User }) {
           className="flex items-center gap-2 px-3 sidebar:px-5 pt-6 mb-5 font-bold hover:opacity-80 transition-opacity shrink-0 justify-start"
         >
           <TwemojiIcon codepoint="2708" className="h-6 w-6 shrink-0" />
-          <span className="hidden md:inline text-[0.95rem] sidebar:text-[1.35rem] bg-gradient-to-r from-[#1e8449] to-[#0d9488] bg-clip-text text-transparent">
-            TripDiary
-          </span>
+          <Logo variant="authenticated" className="hidden md:inline text-[0.95rem] sidebar:text-[1.35rem]" />
         </Link>
 
         {/* Nav */}
@@ -290,8 +289,7 @@ export function Sidebar({ user }: { user: User }) {
                   アカウント設定
                 </Link>
                 <div className="px-4 py-[11px] border-t border-surface-border">
-                  <span className="block text-[0.75rem] text-surface-foreground mb-1.5">配色</span>
-                  <ThemeToggle />
+                  <ThemeToggle showLabels />
                 </div>
                 <button
                   onClick={() => { setDropdownOpen(false); signOut({ callbackUrl: "/" }); }}
@@ -311,7 +309,7 @@ export function Sidebar({ user }: { user: User }) {
       <nav className="md:hidden fixed top-0 left-0 right-0 h-14 bg-surface border-b border-surface-border z-30 flex items-center justify-between px-3">
         <Link href="/" title="ホーム" className="flex items-center gap-1.5 font-bold shrink-0 rounded-lg px-2 py-1 -ml-1">
           <TwemojiIcon codepoint="2708" className="h-5 w-5 shrink-0" />
-          <span className="text-[1.05rem] bg-gradient-to-r from-[#1e8449] to-[#0d9488] bg-clip-text text-transparent">TripDiary</span>
+          <Logo variant="authenticated" className="text-[1.05rem]" />
         </Link>
         <div className="flex items-center gap-1">
         <Link href="/" title="ホーム" aria-label="ホーム" className={`flex items-center justify-center h-9 w-9 rounded-full transition-colors ${pathname === "/" ? "bg-lime-100 dark:bg-[#16a34a]/20" : "text-[#64748b] dark:text-zinc-400"}`}>
@@ -362,8 +360,7 @@ export function Sidebar({ user }: { user: User }) {
                 アカウント設定
               </Link>
               <div className="px-4 py-[11px] border-t border-surface-border">
-                <span className="block text-[0.75rem] text-surface-foreground mb-1.5">配色</span>
-                <ThemeToggle />
+                <ThemeToggle showLabels compact />
               </div>
               <button
                 onClick={() => { setMobileDropdownOpen(false); signOut({ callbackUrl: "/" }); }}

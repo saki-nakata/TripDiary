@@ -7,6 +7,7 @@ import { GuestMobileNav } from "@/components/layout/GuestMobileNav";
 import { ToastProvider } from "@/contexts/toast-context";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Logo } from "@/components/ui/Logo";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -40,11 +41,11 @@ export default async function PublicLayout({ children }: { children: React.React
             className="flex items-center gap-2 px-4 pt-6 mb-5 font-bold hover:opacity-80 transition-opacity"
           >
             <TwemojiIcon codepoint="2708" alt="✈️" className="h-6 w-6" />
-            <span className="text-[1.35rem] bg-gradient-to-r from-[#1a6b3a] to-[#0f766e] bg-clip-text text-transparent">TripDiary</span>
+            <Logo variant="guest" className="text-[1.35rem]" />
           </Link>
           <GuestSidebarNav />
           <div className="mt-auto px-4 pb-8 flex flex-col gap-3">
-            <ThemeToggle className="self-center" />
+            <ThemeToggle showLabels />
             <Link
               href="/login"
               className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-[#267a48] text-white text-[0.9rem] font-semibold hover:bg-[#1a6b3a] transition-colors"
