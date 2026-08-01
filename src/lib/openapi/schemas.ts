@@ -219,6 +219,12 @@ export const messageResponseSchema = z
   })
   .openapi("MessageResponse");
 
+export const themeResponseSchema = z
+  .object({
+    theme: z.enum(["light", "dark", "system"]),
+  })
+  .openapi("ThemeResponse");
+
 const spotPostSchema = z
   .object({
     id: z.string(),

@@ -64,6 +64,16 @@ export async function updateUserEmail(id: string, email: string) {
   await prisma.user.update({ where: { id }, data: { email } });
 }
 
+export async function findUserThemePreference(id: string) {
+  const user = await prisma.user.findUnique({ where: { id }, select: { themePreference: true } });
+  return user?.themePreference ?? null;
+}
+
+// テーマ設定はプロフィール編集用のversion（楽観ロック、GATE-04）と無関係のため増やさない
+export async function updateUserThemePreference(id: string, themePreference: "light" | "dark" | "system") {
+  await prisma.user.update({ where: { id }, data: { themePreference } });
+}
+
 export async function countUserPosts(authorId: string, year?: number) {
   const dateFilter =
     year != null

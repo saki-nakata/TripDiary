@@ -84,17 +84,17 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-3xl mx-auto">
       {/* Avatar */}
       <div className="flex items-center gap-4">
-        <div className="relative w-[100px] h-[100px] rounded-full overflow-hidden bg-zinc-200 shrink-0">
+        <div className="relative w-[100px] h-[100px] rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-700 shrink-0">
           {image ? (
             <Image src={image} alt="アイコン" fill sizes="100px" className="object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-3xl text-zinc-500 font-medium">
+            <div className="w-full h-full flex items-center justify-center text-3xl text-zinc-500 dark:text-zinc-300 font-medium">
               {initialNickname[0]}
             </div>
           )}
         </div>
         <div>
-          <p className="text-sm font-semibold text-zinc-700 mb-1">プロフィール画像</p>
+          <p className="text-sm font-semibold text-surface-foreground mb-1">プロフィール画像</p>
           <input
             ref={fileInputRef}
             type="file"
@@ -105,7 +105,7 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
           />
           <label
             htmlFor="avatar-input"
-            className="cursor-pointer px-4 py-2 rounded-lg border border-zinc-200 text-sm font-medium hover:bg-zinc-50 transition-colors"
+            className="cursor-pointer px-4 py-2 rounded-lg border border-surface-border text-sm font-medium hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
           >
             {uploading ? "アップロード中..." : "画像を変更"}
           </label>
@@ -116,7 +116,7 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
       {/* Nickname */}
       <div>
         <div className="flex justify-between items-baseline mb-1">
-          <label className="text-sm font-semibold text-zinc-700">
+          <label className="text-sm font-semibold text-surface-foreground">
             ニックネーム <span className="text-red-500">*</span>
           </label>
           <span className={`text-xs ${nicknameValue.length > 20 ? "text-red-500" : "text-zinc-400"}`}>
@@ -125,7 +125,7 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
         </div>
         <input
           {...register("nickname")}
-          className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+          className="w-full border border-surface-border rounded-lg px-3 py-2 text-sm bg-surface text-surface-foreground focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
         />
         {errors.nickname && <p className="text-xs text-red-500 mt-1">{errors.nickname.message}</p>}
       </div>
@@ -133,7 +133,7 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
       {/* Bio */}
       <div>
         <div className="flex justify-between items-baseline mb-1">
-          <label className="text-sm font-semibold text-zinc-700">自己紹介</label>
+          <label className="text-sm font-semibold text-surface-foreground">自己紹介</label>
           <span className={`text-xs ${bioValue.length > 200 ? "text-red-500" : "text-zinc-400"}`}>
             {bioValue.length} / 200 文字
           </span>
@@ -142,7 +142,7 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
           {...register("bio")}
           rows={5}
           placeholder="旅の趣味や好きな場所を教えてください"
-          className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+          className="w-full border border-surface-border rounded-lg px-3 py-2 text-sm bg-surface text-surface-foreground placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
         />
         {errors.bio && <p className="text-xs text-red-500 mt-1">{errors.bio.message}</p>}
       </div>
@@ -150,7 +150,7 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
       <div className="flex justify-center gap-6">
         <Link
           href={`/users/${userId}`}
-          className="px-5 py-2.5 rounded-xl border border-zinc-200 text-zinc-600 text-sm font-semibold hover:bg-zinc-50 transition-colors"
+          className="px-5 py-2.5 rounded-xl border border-surface-border text-zinc-600 dark:text-zinc-400 text-sm font-semibold hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
         >
           キャンセル
         </Link>

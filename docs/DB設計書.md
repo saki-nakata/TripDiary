@@ -1,8 +1,8 @@
 # TripDiary DB設計書
 
-**バージョン:** 1.7
+**バージョン:** 1.8
 **作成日:** 2026-06-27
-**更新日:** 2026-07-27
+**更新日:** 2026-08-01
 **作成者:** Nakata Saki
 
 > ✅ **2026-07-11 更新：** `plan_spots`テーブルが実装と乖離していたため修正（複合主キー`(planId, postId)`→単一`id`主キー、`postId`をNULL許容化、自由入力スポット用の`freeTitle`/`freeLocation`/`freeCategory`を追加）。
@@ -10,6 +10,8 @@
 > ✅ **2026-07-13 更新：** 一覧表示のたびに `_count` を都度集計していたのを解消するため、`posts.likeCount`/`posts.commentCount`・`users.followerCount`/`users.followingCount`（非正規化カウンタ、`Int @default(0)`）を追加（マイグレーション`20260712131822_add_denormalized_counters`）。
 >
 > ✅ **2026-07-27 更新（Phase 6-A3）：** `users.isProtected`（`BOOLEAN NOT NULL DEFAULT false`）を追加。確認用アカウント（確認者向けにREADME等で認証情報を公開するアカウント）のパスワード・メールアドレス変更を禁止するためのフラグ（マイグレーション`20260726203038_add_user_is_protected`）。
+>
+> ✅ **2026-08-01 更新（PR-7b、GATE-40グループB+C）：** `users.themePreference`（nullableな`ENUM('light','dark','system')`）を追加（マイグレーション`20260801005559_add_user_theme_preference`）。ロールバック手順: `ALTER TABLE users DROP COLUMN themePreference;`でカラムを削除後、MySQLではenum型は列に紐づくため型自体の別途削除は不要。既存行への影響はなく、追加のみのため前方互換（ロールバック後に再度同じマイグレーションを適用しても問題ない）。
 
 ---
 
@@ -196,6 +198,7 @@ erDiagram
 | createdAt | DATETIME(3) | NOT NULL | now() | 作成日時 |
 | updatedAt | DATETIME(3) | NOT NULL | - | 更新日時 |
 | version | INT | NOT NULL | 0 | 楽観ロック専用カウンタ（GATE-04、2026-07-30追加）。`updateUser`呼び出し時のみ`+1`する。`updatedAt`はフォロー等の非正規化カウンタ更新でも進むため競合検知には使えず、役割を分離した |
+| themePreference | ENUM('light','dark','system') | NULL | - | 表示テーマ設定（PR-7b、2026-08-01追加）。`NULL`は「一度も選択していない」、`'system'`は「利用者が明示的に自動を選択した」ことを表し区別する。ログイン済みユーザーの正となる保存先で、未ログイン時は端末Cookie（`theme`）が正となる。テーマ変更では`version`列（楽観ロック用）を増やさない |
 
 **制約**
 - 主キー：`id`

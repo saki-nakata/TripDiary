@@ -22,9 +22,12 @@ import {
   findUserPasswordHashAndEmail,
   updateUserEmail,
   deleteUserByEmailForTest,
+  findUserThemePreference,
+  updateUserThemePreference,
 } from "@/lib/repositories/user.repository";
 import { isFollowing, findFollowingIdsAmong } from "@/lib/repositories/follow.repository";
 import type { UserUpdateInput } from "@/lib/validations/user";
+import type { ThemeChoice } from "@/components/ui/theme";
 
 export function calcTabiScore({
   postCount,
@@ -243,4 +246,26 @@ export async function changeEmailService(
   }
 
   await updateUserEmail(targetUserId, newEmail);
+}
+
+export async function getThemePreferenceService(userId: string): Promise<ThemeChoice | null> {
+  return findUserThemePreference(userId);
+}
+
+// POST /api/me/theme用: DBに値があればそれを正としてCookieへミラーする値を返す。
+// DBがnull（未選択）なら検証済みCookie値をDBへ昇格する
+export async function syncThemeOnAuthBoundaryService(
+  userId: string,
+  cookieValue: ThemeChoice
+): Promise<ThemeChoice> {
+  const dbValue = await findUserThemePreference(userId);
+  if (dbValue) return dbValue;
+
+  await updateUserThemePreference(userId, cookieValue);
+  return cookieValue;
+}
+
+// PATCH /api/me/theme用: 明示的な変更をDBへ保存する
+export async function updateThemePreferenceService(userId: string, themePreference: ThemeChoice): Promise<void> {
+  await updateUserThemePreference(userId, themePreference);
 }

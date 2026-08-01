@@ -94,12 +94,12 @@ export const CATEGORY_TWEMOJI: Record<string, string> = {
 };
 
 export const CATEGORY_COLORS: Record<string, string> = {
-  観光: "bg-orange-50 text-orange-800",
-  グルメ: "bg-amber-100 text-amber-800",
-  "宿・ホテル": "bg-pink-100 text-pink-800",
-  "季節・イベント": "bg-pink-50 text-pink-700",
-  アクティビティ: "bg-sky-100 text-sky-800",
-  レジャー: "bg-fuchsia-100 text-fuchsia-800",
-  "歴史・文化": "bg-purple-100 text-purple-800",
-  その他: "bg-slate-100 text-slate-600",
+  観光: "bg-orange-50 text-orange-800 dark:bg-orange-950 dark:text-orange-300",
+  グルメ: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+  "宿・ホテル": "bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-300",
+  "季節・イベント": "bg-pink-50 text-pink-700 dark:bg-pink-950 dark:text-pink-300",
+  アクティビティ: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300",
+  レジャー: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-300",
+  "歴史・文化": "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300",
+  その他: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
 };

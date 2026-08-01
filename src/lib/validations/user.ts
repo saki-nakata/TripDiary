@@ -37,3 +37,9 @@ export const emailChangeSchema = z.object({
 });
 
 export type EmailChangeInput = z.infer<typeof emailChangeSchema>;
+
+export const themeUpdateSchema = z.object({
+  theme: z.enum(["light", "dark", "system"]),
+});
+
+export type ThemeUpdateInput = z.infer<typeof themeUpdateSchema>;

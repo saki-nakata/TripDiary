@@ -35,9 +35,9 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
       data-post-id={post.id}
       data-testid="post-card"
       href={`/posts/${post.id}`}
-      className={`${styles.card} group flex flex-col rounded-xl border border-zinc-200 bg-white overflow-hidden`}
+      className={`${styles.card} group flex flex-col rounded-xl border border-surface-border bg-surface overflow-hidden`}
     >
-      <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
+      <div className="relative aspect-[4/3] bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
         {thumbnail ? (
           <CardImage
             src={thumbnail}
@@ -46,14 +46,14 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
             imgClassName="group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-4xl text-zinc-300">
+          <div className="flex h-full items-center justify-center text-4xl text-zinc-300 dark:text-zinc-600">
             <CategoryIcon category={category} />
           </div>
         )}
         {post.category && (
           <span
             className={`absolute top-2 left-2 rounded-full px-2 py-0.5 text-xs font-medium ${
-              CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600"
+              CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
             }`}
           >
             <CategoryIcon category={category} /> {post.category}
@@ -71,7 +71,7 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
         <PostCardTitle title={post.title} />
 
         {compactMobileMeta && (
-          <div className="sm:hidden flex flex-col gap-1 text-[0.82rem] text-zinc-500">
+          <div className="sm:hidden flex flex-col gap-1 text-[0.82rem] text-zinc-500 dark:text-zinc-400">
             <div className="flex items-center gap-1.5 min-w-0">
               {post.author.image ? (
                 <Image
@@ -82,13 +82,13 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
                   className="w-[22px] h-[22px] rounded-full object-cover shrink-0"
                 />
               ) : (
-                <div className="w-[22px] h-[22px] rounded-full bg-zinc-200 flex items-center justify-center text-[10px] text-zinc-500 font-medium shrink-0">
+                <div className="w-[22px] h-[22px] rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-[10px] text-zinc-500 dark:text-zinc-300 font-medium shrink-0">
                   {post.author.nickname[0]}
                 </div>
               )}
               <span className="truncate" title={post.author.nickname}>{post.author.nickname}</span>
             </div>
-            <span className="flex items-center gap-1 w-fit text-[0.78rem] text-[#16a34a] border border-zinc-300 rounded-full px-2 py-0.5 font-medium">
+            <span className="flex items-center gap-1 w-fit text-[0.78rem] text-[#16a34a] dark:text-[#4ade80] border border-zinc-300 dark:border-zinc-600 rounded-full px-2 py-0.5 font-medium">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" /> {post.location}
             </span>
             <span>{formatDateSlash(post.createdAt)}</span>
@@ -101,7 +101,7 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
           </div>
         )}
 
-        <div className={`${compactMobileMeta ? "hidden sm:flex" : "flex"} items-center gap-1.5 text-[0.82rem] text-zinc-500 min-w-0 flex-wrap`}>
+        <div className={`${compactMobileMeta ? "hidden sm:flex" : "flex"} items-center gap-1.5 text-[0.82rem] text-zinc-500 dark:text-zinc-400 min-w-0 flex-wrap`}>
           {post.author.image ? (
             <Image
               src={post.author.image}
@@ -111,17 +111,17 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
               className="w-[22px] h-[22px] rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-[22px] h-[22px] rounded-full bg-zinc-200 flex items-center justify-center text-[10px] text-zinc-500 font-medium shrink-0">
+            <div className="w-[22px] h-[22px] rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-[10px] text-zinc-500 dark:text-zinc-300 font-medium shrink-0">
               {post.author.nickname[0]}
             </div>
           )}
           <span className="truncate max-w-[6.5rem]" title={post.author.nickname}>{post.author.nickname}</span>
           <span className="ml-auto flex items-center gap-1.5 shrink-0">
-            <span className="flex items-center gap-1 text-[0.78rem] text-[#16a34a] border border-zinc-300 rounded-full px-2 py-0.5 font-medium">
+            <span className="flex items-center gap-1 text-[0.78rem] text-[#16a34a] dark:text-[#4ade80] border border-zinc-300 dark:border-zinc-600 rounded-full px-2 py-0.5 font-medium">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" /> {post.location}
             </span>
             {showCost && post.cost != null && post.cost > 0 && (
-              <span className="flex items-center gap-1 text-[0.78rem] text-zinc-500 font-medium">
+              <span className="flex items-center gap-1 text-[0.78rem] text-zinc-500 dark:text-zinc-400 font-medium">
                 <TwemojiIcon codepoint="1f4b4" alt="💴" className="h-3 w-3" /> {post.cost.toLocaleString()}円
               </span>
             )}
@@ -138,7 +138,7 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
               <StarRating value={post.rating} readonly size="sm" />
             </span>
           ) : null}
-          <span className={`ml-auto text-zinc-500 ${compactMobileMeta ? "text-xs" : "text-[0.82rem]"}`}>
+          <span className={`ml-auto text-zinc-500 dark:text-zinc-400 ${compactMobileMeta ? "text-xs" : "text-[0.82rem]"}`}>
             {formatDateSlash(post.createdAt)}
           </span>
         </div>

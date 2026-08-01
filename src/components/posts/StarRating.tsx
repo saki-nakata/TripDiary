@@ -21,7 +21,7 @@ export function StarRating({ value, onChange, readonly = false, size = "md" }: P
           className={`${SIZE[size]} ${readonly ? "cursor-default" : "cursor-pointer hover:scale-110 transition-transform"} leading-none`}
           aria-label={`${star}星`}
         >
-          <span className={star <= value ? "text-yellow-400" : "text-zinc-300"}>★</span>
+          <span className={star <= value ? "text-yellow-400" : "text-zinc-300 dark:text-zinc-500"}>★</span>
         </button>
       ))}
     </div>

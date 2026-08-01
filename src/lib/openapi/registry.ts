@@ -3,7 +3,7 @@ import { OpenAPIRegistry, OpenApiGeneratorV3 } from "@asteasolutions/zod-to-open
 import { z } from "zod";
 import { postSchema, postUpdateSchema } from "@/lib/validations/post";
 import { signupApiSchema, loginSchema } from "@/lib/validations/auth";
-import { userUpdateSchema, passwordChangeApiSchema, emailChangeSchema } from "@/lib/validations/user";
+import { userUpdateSchema, passwordChangeApiSchema, emailChangeSchema, themeUpdateSchema } from "@/lib/validations/user";
 import { planSchema, planUpdateSchema } from "@/lib/validations/plan";
 import {
   errorResponseSchema,
@@ -22,6 +22,7 @@ import {
   followUserListResponseSchema,
   userListResponseSchema,
   messageResponseSchema,
+  themeResponseSchema,
   planResponseSchema,
   planListResponseSchema,
   paginatedPlanListResponseSchema,
@@ -407,6 +408,34 @@ registry.registerPath({
     401: commonErrors[401],
     403: commonErrors[403],
     409: { description: "メールアドレス重複", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/me/theme",
+  summary: "ログイン直後・ログアウト直前のテーマ設定同期（DB優先、DBがnullならCookie値をDBへ昇格）",
+  tags: ["Users"],
+  security: [{ [bearerAuth.name]: [] }],
+  responses: {
+    200: { description: "同期後のテーマ設定", content: { "application/json": { schema: themeResponseSchema } } },
+    401: commonErrors[401],
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/me/theme",
+  summary: "テーマ設定の明示的な変更（本人のみ）",
+  tags: ["Users"],
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    body: { content: { "application/json": { schema: themeUpdateSchema } } },
+  },
+  responses: {
+    200: { description: "変更後のテーマ設定", content: { "application/json": { schema: themeResponseSchema } } },
+    400: commonErrors[400],
+    401: commonErrors[401],
   },
 });
 

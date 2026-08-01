@@ -123,9 +123,13 @@ test.describe("PR-7a: 共有レイアウトのダークテーマ対応（ログ�
   test("表示テーマトグルでダークを選択すると即座に反映され、リロード後も維持される", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: TEST_USER.nickname }).click();
-    await page.getByRole("radio", { name: "表示テーマ: ダーク" }).click();
 
+    // 選択直後の楽観更新（同期）と、デバウンス後のPATCH永続化（非同期）を両方確認する。
+    // リロード前にPATCH完了を待たないと、RootLayoutがDB反映前の古い値を解決してしまう
+    const patchResponse = page.waitForResponse((res) => res.url().includes("/api/me/theme") && res.request().method() === "PATCH");
+    await page.getByRole("radio", { name: "表示テーマ: ダーク" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    expect((await patchResponse).ok()).toBe(true);
 
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
