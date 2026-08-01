@@ -150,6 +150,9 @@ test.describe("PR-7b: 認証・設定画面のダークテーマ対応（設定�
       // より優先されてしまいこのテスト自体のcolorScheme比較にならない。「自動」へ戻し
       // OS設定に追従する状態にしてから撮影する
       await page.getByRole("radio", { name: "表示テーマ: 自動" }).click();
+      // 初回ログイン時だけ表示される案内トーストをベースラインに含めない。
+      // 表示済みなら消滅を待ち、未表示なら即座に通過するため撮影条件を安定化できる。
+      await page.getByText("下のアイコンを長押しすると名前が表示されます").waitFor({ state: "hidden" });
       await expect(page).toHaveScreenshot(`settings-profile-${colorScheme}.png`, { fullPage: false });
 
       await page.goto("/settings/account");

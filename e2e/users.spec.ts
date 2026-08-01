@@ -86,8 +86,10 @@ test.describe.serial("フォロー・マイページ・プロフィール設定�
     await page.goto("/mypage?tab=follow-feed");
 
     // カードグリッドではなく日付グループ（今日/昨日/今週/今月/それ以前）分けのSNS風フィード（FollowFeed.tsx）で
-    // 表示される。今日作成した投稿なので「今日」の見出しの下に、投稿者名・投稿タイトルが表示される
-    await expect(page.getByText("今日", { exact: true })).toBeVisible();
+    // 表示される。Bの投稿カードを含むグループに限定し、他の「今日」見出しと競合しないようにする
+    const postGroup = page.getByText(B_POST_TITLE).locator("xpath=ancestor::section");
+    await expect(postGroup).toHaveCount(1);
+    await expect(postGroup.getByRole("heading", { name: "今日" })).toBeVisible();
     await expect(page.getByText(USER_B.nickname)).toBeVisible();
     await expect(page.getByText(B_POST_TITLE)).toBeVisible();
   });

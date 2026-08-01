@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { formatDateSlash } from "@/lib/date";
+import { useToast } from "@/contexts/toast-context";
 
 export type AuthorComment = {
   id: string;
@@ -33,22 +35,27 @@ export function CommentLoadMoreList({ initialComments, initialNextCursor, initia
   const [cursor, setCursor] = useState(initialNextCursor);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
 
-  async function loadMore() {
+  const loadMore = useCallback(async () => {
     if (!cursor || loading) return;
     setLoading(true);
     try {
       const separator = baseUrl.includes("?") ? "&" : "?";
       const res = await fetch(`${baseUrl}${separator}cursor=${encodeURIComponent(cursor)}`);
-      if (!res.ok) return;
+      if (!res.ok) throw new Error("failed to load comments");
       const data: { comments: AuthorComment[]; nextCursor: string | null; hasMore: boolean } = await res.json();
       setComments((prev) => [...prev, ...data.comments]);
       setCursor(data.nextCursor);
       setHasMore(data.hasMore);
+    } catch {
+      showToast("読み込みに失敗しました", "error");
     } finally {
       setLoading(false);
     }
-  }
+  }, [cursor, loading, baseUrl, showToast]);
+
+  const sentinelRef = useInfiniteScroll({ hasMore, loading, onLoadMore: loadMore });
 
   return (
     <div>
@@ -58,15 +65,8 @@ export function CommentLoadMoreList({ initialComments, initialNextCursor, initia
         ))}
       </div>
       {hasMore && (
-        <div className="flex justify-center mt-4">
-          <button
-            type="button"
-            onClick={loadMore}
-            disabled={loading}
-            className="px-5 py-2.5 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition-colors disabled:opacity-50"
-          >
-            {loading ? "読み込み中..." : "もっと見る"}
-          </button>
+        <div ref={sentinelRef} className="flex justify-center mt-4 py-2">
+          {loading && <span className="text-sm text-zinc-400">読み込み中...</span>}
         </div>
       )}
     </div>

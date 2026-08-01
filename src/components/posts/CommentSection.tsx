@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, type FormEvent } from "react";
+import { useState, useEffect, useRef, useCallback, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useToast } from "@/contexts/toast-context";
 import { useRequireLogin } from "@/hooks/useRequireLogin";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { formatDateSlash } from "@/lib/date";
 import type { Comment } from "@/types/post";
 
@@ -19,6 +20,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [body, setBody] = useState("");
   const { showToast } = useToast();
@@ -37,6 +39,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
 
   async function loadComments(cursor?: string) {
     const mySeq = ++opSeqRef.current;
+    if (cursor) setLoadingMore(true);
     try {
       const url = `/api/posts/${postId}/comments${cursor ? `?cursor=${cursor}` : ""}`;
       const res = await fetch(url);
@@ -51,8 +54,16 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
     } finally {
       // 新しい操作（投稿・削除）に追い越されていても、初回ロードのスピナーは必ず解除する
       setLoading(false);
+      setLoadingMore(false);
     }
   }
+
+  const loadMore = useCallback(() => {
+    if (nextCursor) loadComments(nextCursor);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nextCursor]);
+
+  const sentinelRef = useInfiniteScroll({ hasMore, loading: loadingMore, onLoadMore: loadMore });
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -206,12 +217,9 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
       )}
 
       {hasMore && (
-        <button
-          onClick={() => loadComments(nextCursor ?? undefined)}
-          className="mt-4 text-sm text-green-600 hover:underline"
-        >
-          もっと見る
-        </button>
+        <div ref={sentinelRef} className="flex justify-center mt-4 py-2">
+          {loadingMore && <span className="text-sm text-zinc-400">読み込み中...</span>}
+        </div>
       )}
     </section>
     </>
