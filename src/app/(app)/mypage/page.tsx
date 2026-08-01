@@ -86,13 +86,13 @@ export default async function MyPage({ searchParams }: Props) {
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 -mt-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="flex items-center gap-4 text-2xl font-bold text-[#1e293b]">
+        <h1 className="flex items-center gap-4 text-2xl font-bold text-surface-foreground">
           <span className="flex items-center gap-2">
             <TwemojiIcon codepoint={TAB_INFO[activeTab].icon} className="h-6 w-6" />
             {TAB_INFO[activeTab].label}
           </span>
           {activeTab !== "report" && counts[activeTab] > 0 && (
-            <span className="inline-flex items-center h-7 text-[0.85rem] leading-none font-semibold text-[#64748b] bg-[#e5e7eb] rounded-full px-3">
+            <span className="inline-flex items-center h-7 text-[0.85rem] leading-none font-semibold text-[#64748b] dark:text-zinc-400 bg-[#e5e7eb] dark:bg-zinc-800 rounded-full px-3">
               {counts[activeTab]}
             </span>
           )}
@@ -114,7 +114,7 @@ export default async function MyPage({ searchParams }: Props) {
               <YearFilterBar tab="report" years={reportYears} value={reportYear} />
             </div>
           )}
-          <span className="rounded-md bg-rose-50 text-rose-800 text-xs sm:text-sm px-3 py-1.5 border border-rose-200 border-l-[3px] border-l-rose-500 font-medium shrink-0">
+          <span className="rounded-md bg-rose-50 dark:bg-rose-950 text-rose-800 dark:text-rose-300 text-xs sm:text-sm px-3 py-1.5 border border-rose-200 dark:border-rose-800 border-l-[3px] border-l-rose-500 font-medium shrink-0">
             🔒 この画面は自分のみ表示
           </span>
         </div>
@@ -156,9 +156,9 @@ async function renderReport(userId: string, years: number[], year: number | "all
 
 function PlanListItem({ plan }: { plan: Plan }) {
   return (
-    <div className="group flex items-start justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 hover:bg-zinc-100">
+    <div className="group flex items-start justify-between gap-3 rounded-xl border border-surface-border bg-surface p-4 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-white/5">
       <Link href={`/plans/${plan.id}`} className="min-w-0 flex-1">
-        <p className="flex items-center gap-1.5 truncate text-base font-bold text-zinc-800">
+        <p className="flex items-center gap-1.5 truncate text-base font-bold text-surface-foreground">
           <TwemojiIcon codepoint="1f9ed" alt="🧭" className="h-5 w-5 shrink-0" /> {plan.title}
         </p>
         {(plan.startDate || plan.endDate) && (
@@ -168,10 +168,10 @@ function PlanListItem({ plan }: { plan: Plan }) {
             {plan.endDate ? formatDateSlash(plan.endDate) : "未定"}
           </p>
         )}
-        {plan.memo && <p className="mt-1 truncate text-[13px] text-zinc-500">{plan.memo}</p>}
+        {plan.memo && <p className="mt-1 truncate text-[13px] text-zinc-500 dark:text-zinc-400">{plan.memo}</p>}
       </Link>
       <div className="flex shrink-0 flex-col items-end gap-1">
-        <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-[13px] font-semibold text-zinc-500">
+        <span className="rounded-full bg-zinc-100 dark:bg-zinc-800 px-2.5 py-0.5 text-[13px] font-semibold text-zinc-500 dark:text-zinc-400">
           {plan.spotCount ?? 0}スポット
         </span>
         <div className="opacity-100 xl:opacity-0 transition-opacity xl:group-hover:opacity-100">
@@ -209,7 +209,7 @@ async function renderPlans(userId: string, yearParam?: string) {
       <div className="flex justify-end">
         <Link
           href="/plans/new"
-          className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
+          className="rounded-xl bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800 transition-colors"
         >
           ＋ 新しいプラン
         </Link>

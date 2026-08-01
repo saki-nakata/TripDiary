@@ -100,13 +100,22 @@ export function Sidebar({ user }: { user: User }) {
     // ここは全ページ共通のSidebarのuseEffectのため、無視するとハイドレーション全体が
     // 止まり、アプリ全体でJS操作が効かなくなる（2026-07-19 実機調査で判明）
     try {
+      // このヒントはボトムナビ（md:hidden、768px未満でのみ表示）のアイコン長押し案内のため、
+      // それ以外の幅では意味がない。フラグの消費自体はモバイル以外でも行う
+      // （同じログイン中に画面幅を変えて再マウントした際、古いヒントを出さないため）
       if (sessionStorage.getItem("justLoggedIn")) {
         sessionStorage.removeItem("justLoggedIn");
-        // sessionStorage はサーバー側で読めずSSR時点で判定できないため、
-        // マウント後にクライアント側でのみ判定してstateに反映する必要がある
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setJustLoggedIn(true);
-        showToast("下のアイコンを長押しすると名前が表示されます", "info", 2500);
+        // Tailwindの`md:hidden`は`min-width: 768px`でdisplay:noneにする実装のため、
+        // 対応するJS側の判定は`md`と同じ`min-width: 768px`の反転にする。`max-width: 767px`
+        // では、ブラウザが内部的に持つ端数のviewport幅により767px指定でも一致しないことがある。
+        // `min-width: 768px`を直接反転すればCSSとJSの境界に隙間が生じない。
+        if (!window.matchMedia("(min-width: 768px)").matches) {
+          // sessionStorage はサーバー側で読めずSSR時点で判定できないため、
+          // マウント後にクライアント側でのみ判定してstateに反映する必要がある
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setJustLoggedIn(true);
+          showToast("下のアイコンを長押しすると名前が表示されます", "info", 2500);
+        }
       }
     } catch {
       // ストレージアクセス不可の環境では単に演出をスキップする
@@ -299,8 +308,8 @@ export function Sidebar({ user }: { user: User }) {
                 >
                   アカウント設定
                 </Link>
-                <div className="px-4 py-[11px] border-t border-surface-border">
-                  <ThemeToggle showLabels />
+                <div className="px-2 sidebar:px-4 py-[11px] border-t border-surface-border">
+                  <ThemeToggle showLabels narrowBelowSidebar />
                 </div>
                 <button
                   onClick={() => { setDropdownOpen(false); handleSignOut(); }}

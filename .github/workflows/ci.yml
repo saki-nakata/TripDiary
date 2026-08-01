@@ -97,6 +97,12 @@ jobs:
       ENABLE_TEST_ENDPOINTS: "true"
       TEST_CLEANUP_SECRET: ci-dummy-test-cleanup-secret-not-for-production
       DISABLE_RATE_LIMIT_FOR_TESTS: "true"
+      # dark-theme-post-forms.spec.tsが画像アップロードAPIをモックしつつ、投稿作成APIの
+      # 所有権検証（uploads/{userId}/...形式のS3 URLのみ許可）とNext Imageの許可ホストを
+      # 満たすために必要なダミー値。アップロードAPI自体はブラウザ側でモックするため、
+      # 実際のAWS認証情報・S3バケットは不要
+      AWS_REGION: ap-northeast-1
+      AWS_S3_BUCKET_NAME: tripdiary-e2e-dummy-bucket
       # 多くのspecがUIログインをbeforeEachで行うため、コストを下げてハッシュ計算量を
       # 減らし実行時間を短縮する（Phase 5-D2、詳細は実装計画書）。6-A2で@node-rs/bcrypt
       # へ置き換え済みのためメインスレッドはブロックしないが、コストに応じたCPU時間

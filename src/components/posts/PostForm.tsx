@@ -57,13 +57,13 @@ function SortableImageThumb({
       <img
         src={url}
         alt={`写真 ${index + 1}`}
-        className="w-20 h-20 object-cover rounded-lg border border-zinc-200"
+        className="w-20 h-20 object-cover rounded-lg border border-surface-border"
       />
       <button
         type="button"
         onPointerDown={(e) => e.stopPropagation()}
         onClick={() => onRemove(url)}
-        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white shadow rounded-full flex items-center justify-center opacity-100 xl:opacity-0 xl:group-hover:opacity-100 transition-opacity"
+        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-surface shadow rounded-full flex items-center justify-center opacity-100 xl:opacity-0 xl:group-hover:opacity-100 transition-opacity"
       >
         <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
       </button>
@@ -269,7 +269,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
         {/* スポット名 */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label className="text-base font-bold text-zinc-700">
+            <label className="text-base font-bold text-surface-foreground">
               スポット名 <span className="text-red-500">*</span>
             </label>
             <span className={`text-xs ${titleValue.length > 40 ? "text-red-500" : "text-zinc-400"}`}>
@@ -280,7 +280,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
             {...register("title")}
             maxLength={40}
             placeholder="例：金閣寺"
-            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.title ? "border-red-400" : "border-zinc-200"}`}
+            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.title ? "border-red-400" : "border-surface-border"}`}
           />
           {errors.title && <p className="text-xs text-red-500">{errors.title.message}</p>}
         </div>
@@ -288,7 +288,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
         {/* 感想・メモ */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label className="text-base font-bold text-zinc-700">
+            <label className="text-base font-bold text-surface-foreground">
               感想・メモ <span className="text-red-500">*</span>
             </label>
             <span className={`text-xs ${bodyValue.length > 2000 ? "text-red-500" : "text-zinc-400"}`}>
@@ -300,7 +300,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
             maxLength={2000}
             rows={5}
             placeholder="旅の思い出を書いてみましょう..."
-            className={`w-full rounded-lg border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.body ? "border-red-400" : "border-zinc-200"}`}
+            className={`w-full rounded-lg border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.body ? "border-red-400" : "border-surface-border"}`}
           />
           {errors.body && <p className="text-xs text-red-500">{errors.body.message}</p>}
         </div>
@@ -308,7 +308,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
         {/* 写真 */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-base font-bold text-zinc-700">写真</label>
+            <label className="text-base font-bold text-surface-foreground">写真</label>
             {imageUrls.length > 1 && (
               <p className="hidden sm:block text-xs text-zinc-400">（ドラッグ&ドロップで並び順を変更できます）</p>
             )}
@@ -327,7 +327,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
                     />
                   ))}
                   {uploadingCount > 0 && (
-                    <div className="w-20 h-20 rounded-lg border border-zinc-200 bg-zinc-50 flex items-center justify-center text-xs text-zinc-400">
+                    <div className="w-20 h-20 rounded-lg border border-surface-border bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-xs text-zinc-400">
                       uploading…
                     </div>
                   )}
@@ -338,8 +338,8 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
           <label
             className={`w-full h-14 rounded-xl border border-dashed flex items-center justify-center text-sm cursor-pointer transition-colors ${
               isDragging
-                ? "border-green-500 bg-green-50 text-green-600"
-                : "border-zinc-300 bg-zinc-50 text-zinc-400 hover:bg-zinc-100"
+                ? "border-green-500 bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400"
+                : "border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700"
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -370,7 +370,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
         {/* 訪問日・エリア */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <label className="text-base font-bold text-zinc-700">
+            <label className="text-base font-bold text-surface-foreground">
               訪問日 <span className="text-red-500">*</span>
             </label>
             <Controller
@@ -389,12 +389,12 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
             {errors.visitedAt && <p className="text-xs text-red-500">{errors.visitedAt.message}</p>}
           </div>
           <div className="space-y-1">
-            <label className="text-base font-bold text-zinc-700">
+            <label className="text-base font-bold text-surface-foreground">
               エリア <span className="text-red-500">*</span>
             </label>
             <select
               {...register("location")}
-              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${errors.location ? "border-red-400" : "border-zinc-200"}`}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-surface text-surface-foreground ${errors.location ? "border-red-400" : "border-surface-border"}`}
             >
               <option value="">選択してください</option>
               {LOCATIONS.map((p) => (
@@ -408,12 +408,12 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
         {/* カテゴリ・評価 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <label className="text-base font-bold text-zinc-700">
+            <label className="text-base font-bold text-surface-foreground">
               カテゴリ <span className="text-red-500">*</span>
             </label>
             <select
               {...register("category")}
-              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${errors.category ? "border-red-400" : "border-zinc-200"}`}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-surface text-surface-foreground ${errors.category ? "border-red-400" : "border-surface-border"}`}
             >
               <option value="">選択してください</option>
               {CATEGORIES.map((c) => (
@@ -423,7 +423,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
             {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
           </div>
           <div className="space-y-1">
-            <label className="text-base font-bold text-zinc-700">評価</label>
+            <label className="text-base font-bold text-surface-foreground">評価</label>
             <div className="pl-2">
               <Controller
                 name="rating"
@@ -437,21 +437,21 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
         </div>
 
         {/* 費用内訳 */}
-        <div className="space-y-2 border border-amber-200 rounded-xl p-4">
+        <div className="space-y-2 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
           <div className="flex items-center gap-2">
-            <label className="block text-base font-bold text-zinc-700">費用内訳</label>
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium px-2 py-0.5">
+            <label className="block text-base font-bold text-surface-foreground">費用内訳</label>
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-xs font-medium px-2 py-0.5">
               🔒 自分のみ表示
             </span>
           </div>
           <div className="flex items-center justify-between pr-4 mb-1">
-            <p className="text-sm font-semibold text-zinc-700">
+            <p className="text-sm font-semibold text-surface-foreground">
               合計：{totalCost > 0 ? `¥${totalCost.toLocaleString()}` : "—"}
             </p>
             <button
               type="button"
               onClick={addCostItem}
-              className="py-2 px-4 rounded-lg border border-dashed border-zinc-300 text-sm font-semibold text-zinc-500 hover:bg-zinc-50 transition-colors"
+              className="py-2 px-4 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-600 text-sm font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
             >
               ＋ 項目を追加
             </button>
@@ -464,14 +464,14 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
                 value={formatAmount(item.amount)}
                 onChange={(e) => updateCostItem(i, "amount", parseAmount(e.target.value))}
                 placeholder="金額"
-                className="w-28 rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-28 rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               />
               <input
                 value={item.label}
                 onChange={(e) => updateCostItem(i, "label", e.target.value)}
                 placeholder="内容（例：交通費）"
                 maxLength={50}
-                className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="flex-1 rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               />
               <button
                 type="button"
@@ -514,14 +514,14 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex-1 rounded-xl border border-zinc-400 py-3 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:border-zinc-500 hover:text-zinc-800 transition-colors"
+            className="flex-1 rounded-xl border border-zinc-400 dark:border-zinc-600 py-3 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 hover:border-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
           >
             キャンセル
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 rounded-xl bg-green-700 py-3 text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? "送信中..." : isEdit ? "更新する" : "投稿する"}
           </button>
