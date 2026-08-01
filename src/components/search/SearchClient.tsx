@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useInfiniteQuery, useQuery, keepPreviousData } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { PostCard } from "@/components/posts/PostCard";
 import { BackButton } from "@/components/posts/BackButton";
 import { FollowButton } from "@/components/users/FollowButton";
@@ -144,6 +145,7 @@ function PostSearchTab({
       if (pageParam) params.set("cursor", pageParam);
 
       const res = await fetch(`/api/posts/explore?${params.toString()}`);
+      if (!res.ok) throw new Error("failed to search posts");
       return (await res.json()) as PostsResponse;
     },
     initialPageParam: "",
@@ -152,6 +154,12 @@ function PostSearchTab({
   });
 
   const posts = query.data?.pages.flatMap((page) => page.posts) ?? [];
+
+  const sentinelRef = useInfiniteScroll({
+    hasMore: !!query.hasNextPage && sort !== "popular",
+    loading: query.isFetchingNextPage,
+    onLoadMore: () => query.fetchNextPage(),
+  });
 
   return (
     <div className="space-y-5">
@@ -210,7 +218,9 @@ function PostSearchTab({
         </div>
       )}
 
-      {posts.length === 0 && !query.isLoading ? (
+      {query.isError ? (
+        <EmptyState codepoint="26a0" message="検索結果の読み込みに失敗しました" />
+      ) : posts.length === 0 && !query.isLoading ? (
         <EmptyState codepoint="1f3d4" message="該当するスポットがありません" />
       ) : sort === "popular" ? (
         <div className="space-y-2">
@@ -316,15 +326,8 @@ function PostSearchTab({
       )}
 
       {query.hasNextPage && sort !== "popular" && (
-        <div className="flex justify-center">
-          <button
-            onClick={() => query.fetchNextPage()}
-            disabled={query.isFetchingNextPage}
-            data-testid="search-more-button"
-            className="px-5 py-2 rounded-xl border border-zinc-200 text-sm font-medium hover:bg-zinc-50 transition-colors disabled:opacity-50"
-          >
-            {query.isFetchingNextPage ? "読み込み中..." : "もっと見る"}
-          </button>
+        <div ref={sentinelRef} data-testid="search-more-sentinel" className="flex justify-center py-4">
+          {query.isFetchingNextPage && <span className="text-sm text-zinc-400">読み込み中...</span>}
         </div>
       )}
     </div>
@@ -334,10 +337,11 @@ function PostSearchTab({
 function AreaSearchTab({ q, initialLocation }: { q: string; initialLocation?: string | null }) {
   const [selected, setSelected] = useState<string | null>(initialLocation ?? null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["search-areas"],
     queryFn: async () => {
       const res = await fetch("/api/posts/portal");
+      if (!res.ok) throw new Error("failed to load areas");
       const data = await res.json();
       return (data.locations ?? []) as AreaItem[];
     },
@@ -351,6 +355,10 @@ function AreaSearchTab({ q, initialLocation }: { q: string; initialLocation?: st
         ))}
       </div>
     );
+  }
+
+  if (isError) {
+    return <EmptyState codepoint="26a0" message="エリアの読み込みに失敗しました" />;
   }
 
   const areasByLocation = new Map(data?.map((a) => [a.location, a]) ?? []);
@@ -402,6 +410,7 @@ function UserSearchTab({ q, viewerId }: { q: string; viewerId?: string }) {
       if (pageParam) params.set("cursor", pageParam);
 
       const res = await fetch(`/api/users/search?${params.toString()}`);
+      if (!res.ok) throw new Error("failed to search users");
       return (await res.json()) as UsersResponse;
     },
     initialPageParam: "",
@@ -431,7 +440,9 @@ function UserSearchTab({ q, viewerId }: { q: string; viewerId?: string }) {
 
   return (
     <div className="space-y-5">
-      {users.length === 0 && !query.isLoading && (
+      {query.isError ? (
+        <EmptyState codepoint="26a0" message="ユーザー検索に失敗しました" />
+      ) : users.length === 0 && !query.isLoading && (
         <EmptyState codepoint="1f464" message="ユーザーが見つかりません" />
       )}
 

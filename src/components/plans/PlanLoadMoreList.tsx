@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useToast } from "@/contexts/toast-context";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { PlanActions } from "@/components/plans/PlanActions";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { formatDateSlash } from "@/lib/date";
@@ -16,8 +17,8 @@ type Props = {
   baseUrl: string;
 };
 
-// マイページ「旅行プラン」タブの進行中／完了済み一覧で共通利用する「もっと見る」導線（GATE-22種類B）。
-// Server Componentが取得した初回ページを受け取り、クリックのたびにcursorで継続取得してリストへ追記する
+// マイページ「旅行プラン」タブの進行中／完了済み一覧で共通利用する無限スクロール導線（GATE-22種類B）。
+// Server Componentが取得した初回ページを受け取り、末尾のsentinelが表示範囲に入るたびにcursorで継続取得してリストへ追記する
 export function PlanLoadMoreList({ initialPlans, initialNextCursor, initialHasMore, baseUrl }: Props) {
   const [plans, setPlans] = useState(initialPlans);
   const [cursor, setCursor] = useState(initialNextCursor);
@@ -25,7 +26,7 @@ export function PlanLoadMoreList({ initialPlans, initialNextCursor, initialHasMo
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
-  async function loadMore() {
+  const loadMore = useCallback(async () => {
     if (!cursor || loading) return;
     setLoading(true);
     try {
@@ -44,7 +45,10 @@ export function PlanLoadMoreList({ initialPlans, initialNextCursor, initialHasMo
     } finally {
       setLoading(false);
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cursor, loading, baseUrl]);
+
+  const sentinelRef = useInfiniteScroll({ hasMore, loading, onLoadMore: loadMore });
 
   return (
     <div>
@@ -54,15 +58,8 @@ export function PlanLoadMoreList({ initialPlans, initialNextCursor, initialHasMo
         ))}
       </div>
       {hasMore && (
-        <div className="flex justify-center mt-4">
-          <button
-            type="button"
-            onClick={loadMore}
-            disabled={loading}
-            className="px-5 py-2.5 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition-colors disabled:opacity-50"
-          >
-            {loading ? "読み込み中..." : "もっと見る"}
-          </button>
+        <div ref={sentinelRef} className="flex justify-center mt-4 py-2">
+          {loading && <span className="text-sm text-zinc-400">読み込み中...</span>}
         </div>
       )}
     </div>

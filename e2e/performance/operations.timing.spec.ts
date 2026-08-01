@@ -77,17 +77,17 @@ test.describe("操作応答時間", () => {
     assertPerf({ elapsedMs: elapsed }, 1000, "検索入力〜結果表示");
   });
 
-  test("もっと見るページング: クリック → 追加カード表示（< 2000ms）", async ({ page }) => {
+  test("無限スクロール: sentinelを表示 → 追加カード表示（< 2000ms）", async ({ page }) => {
     await page.goto("/search");
     await page.locator('[data-testid="post-card"]').first().waitFor({ timeout: 10000 });
     const initialCount = await page.locator('[data-testid="post-card"]').count();
 
-    const moreButton = page.locator('[data-testid="search-more-button"]');
+    const sentinel = page.locator('[data-testid="search-more-sentinel"]');
     // シード済みDB（3,000件超）前提のため、次ページが無い状況は想定しない
-    await moreButton.waitFor({ timeout: 10000 });
+    await sentinel.waitFor({ timeout: 10000 });
 
     const start = Date.now();
-    await moreButton.click();
+    await sentinel.scrollIntoViewIfNeeded();
     await page.waitForFunction(
       (count: number) => document.querySelectorAll('[data-testid="post-card"]').length > count,
       initialCount,
@@ -96,6 +96,6 @@ test.describe("操作応答時間", () => {
     const elapsed = Date.now() - start;
 
     saveTimingReport("infinite-scroll", elapsed, 2000);
-    assertPerf({ elapsedMs: elapsed }, 2000, "もっと見る〜追加カード表示");
+    assertPerf({ elapsedMs: elapsed }, 2000, "無限スクロール〜追加カード表示");
   });
 });

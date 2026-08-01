@@ -17,6 +17,8 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { useToast } from "@/contexts/toast-context";
 import { CATEGORIES, CATEGORY_ICONS, LOCATIONS } from "@/lib/constants";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { CategoryIcon } from "@/components/ui/category-icon";
@@ -178,6 +180,7 @@ function SortableSelectedItem({
 }
 
 export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) {
+  const { showToast } = useToast();
   const [selected, setSelected] = useState<SelectedSpot[]>(initialSelected);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -277,10 +280,12 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
       setSearching(true);
       try {
         const res = await fetch(`/api/posts/explore?q=${encodeURIComponent(value)}&limit=10`);
-        if (res.ok) {
-          const data = await res.json();
-          setSearchResults(data.posts ?? []);
-        }
+        if (!res.ok) throw new Error("failed to search posts");
+        const data = await res.json();
+        setSearchResults(data.posts ?? []);
+      } catch {
+        setSearchResults([]);
+        showToast("検索に失敗しました", "error");
       } finally {
         setSearching(false);
       }
@@ -300,12 +305,13 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
         ? `/api/posts/explore?limit=10&cursor=${encodeURIComponent(cursor)}`
         : `/api/posts/explore?limit=10`;
       const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        setOthersList((prev) => (cursor ? [...prev, ...(data.posts ?? [])] : (data.posts ?? [])));
-        setOthersCursor(data.nextCursor ?? null);
-        setOthersHasMore(!!data.hasMore);
-      }
+      if (!res.ok) throw new Error("failed to load posts");
+      const data = await res.json();
+      setOthersList((prev) => (cursor ? [...prev, ...(data.posts ?? [])] : (data.posts ?? [])));
+      setOthersCursor(data.nextCursor ?? null);
+      setOthersHasMore(!!data.hasMore);
+    } catch {
+      showToast("スポットの読み込みに失敗しました", "error");
     } finally {
       setOthersLoading(false);
       setOthersLoaded(true);
@@ -323,6 +329,18 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
   const wishlistIds = new Set(wishlistPosts.map((p) => p.id));
   const wishlistCandidates = wishlistPosts.filter((p) => !selectedIds.has(p.id));
   const otherCandidates = othersList.filter((p) => !selectedIds.has(p.id) && !wishlistIds.has(p.id));
+
+  const wishlistSentinelRef = useInfiniteScroll({
+    hasMore: wishlistVisibleCount < wishlistCandidates.length,
+    loading: false,
+    onLoadMore: () => setWishlistVisibleCount((c) => Math.min(c + WISHLIST_LOAD_MORE_COUNT, wishlistCandidates.length)),
+  });
+
+  const othersSentinelRef = useInfiniteScroll({
+    hasMore: showOthers && othersHasMore,
+    loading: othersLoading,
+    onLoadMore: () => loadOthers(othersCursor ?? undefined),
+  });
 
   return (
     <div className="space-y-4">
@@ -417,15 +435,9 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
             ))}
           </ul>
           {wishlistVisibleCount < wishlistCandidates.length && (
-            <button
-              type="button"
-              onClick={() =>
-                setWishlistVisibleCount((c) => Math.min(c + WISHLIST_LOAD_MORE_COUNT, wishlistCandidates.length))
-              }
-              className="w-full rounded-lg border border-dashed border-zinc-300 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-50 transition-colors"
-            >
-              もっと見る（残り{wishlistCandidates.length - wishlistVisibleCount}件）
-            </button>
+            <div ref={wishlistSentinelRef} className="py-1 text-center text-xs text-zinc-400">
+              残り{wishlistCandidates.length - wishlistVisibleCount}件
+            </div>
           )}
         </div>
       )}
@@ -454,14 +466,9 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
               ))}
             </ul>
             {othersHasMore && (
-              <button
-                type="button"
-                onClick={() => loadOthers(othersCursor ?? undefined)}
-                disabled={othersLoading}
-                className="w-full rounded-lg border border-dashed border-zinc-300 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-50 transition-colors disabled:opacity-50"
-              >
-                {othersLoading ? "読み込み中…" : "もっと見る"}
-              </button>
+              <div ref={othersSentinelRef} className="py-1 text-center text-xs text-zinc-400">
+                {othersLoading && "読み込み中…"}
+              </div>
             )}
           </div>
         )}

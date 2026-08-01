@@ -1,16 +1,37 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import { ToastProvider } from "@/contexts/toast-context";
 import { LoadMoreList } from "@/components/posts/LoadMoreList";
 import type { Post } from "@/types/post";
+
+// IntersectionObserver をテスト環境向けに簡易実装し、observe直後に isIntersecting: true を発火させる
+class MockIntersectionObserver implements IntersectionObserver {
+  readonly root = null;
+  readonly rootMargin = "";
+  readonly scrollMargin = "";
+  readonly thresholds: ReadonlyArray<number> = [];
+  private callback: IntersectionObserverCallback;
+
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+  }
+  observe(target: Element) {
+    this.callback([{ isIntersecting: true, intersectionRatio: 1, target } as IntersectionObserverEntry], this);
+  }
+  unobserve() {}
+  disconnect() {}
+  takeRecords(): IntersectionObserverEntry[] {
+    return [];
+  }
+}
 
 vi.mock("@/components/posts/PostCard", () => ({
   PostCard: ({ post }: { post: Post }) => <div>{post.title}</div>,
 }));
 
 function renderWithToast(component: React.ReactNode) {
-  render(<ToastProvider>{component}</ToastProvider>);
+  return render(<ToastProvider>{component}</ToastProvider>);
 }
 
 function makePost(id: string, title: string): Post {
@@ -38,12 +59,19 @@ function makePost(id: string, title: string): Post {
 }
 
 describe("LoadMoreList（GATE-22種類A: 継続取得の共通UI導線）", () => {
+  beforeEach(() => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it("hasMoreがfalse_もっと見るボタンが表示されない", () => {
+  it("hasMoreがfalse_継続取得のfetchが発生しない", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
     renderWithToast(
       <LoadMoreList
         initialPosts={[makePost("post-1", "投稿A")]}
@@ -54,10 +82,10 @@ describe("LoadMoreList（GATE-22種類A: 継続取得の共通UI導線）", () =
       />
     );
 
-    expect(screen.queryByRole("button", { name: "もっと見る" })).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("もっと見るをクリック_追加取得した投稿が末尾に追記されカーソルとhasMoreが更新される", async () => {
+  it("sentinelが表示範囲に入る_追加取得した投稿が末尾に追記されカーソルとhasMoreが更新される", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -78,12 +106,9 @@ describe("LoadMoreList（GATE-22種類A: 継続取得の共通UI導線）", () =
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "もっと見る" }));
-
     await waitFor(() => expect(screen.getByText("投稿B")).toBeInTheDocument());
     expect(screen.getByText("投稿A")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/users/author-1/posts?cursor=post-1");
-    expect(screen.queryByRole("button", { name: "もっと見る" })).not.toBeInTheDocument();
   });
 
   it("baseUrlに既存のクエリがある場合_区切り文字に&を使ってcursorを付与する", async () => {
@@ -103,8 +128,6 @@ describe("LoadMoreList（GATE-22種類A: 継続取得の共通UI導線）", () =
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "もっと見る" }));
-
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith("/api/users/author-1/posts?year=2026&cursor=post-1")
     );
@@ -114,7 +137,7 @@ describe("LoadMoreList（GATE-22種類A: 継続取得の共通UI導線）", () =
     const fetchMock = vi.fn().mockResolvedValue({ ok: false });
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToast(
+    const { unmount } = renderWithToast(
       <LoadMoreList
         initialPosts={[makePost("post-1", "投稿A")]}
         initialNextCursor="post-1"
@@ -124,9 +147,8 @@ describe("LoadMoreList（GATE-22種類A: 継続取得の共通UI導線）", () =
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "もっと見る" }));
-
     await waitFor(() => expect(screen.getByText("読み込みに失敗しました")).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: "もっと見る" })).toBeInTheDocument();
+    // hasMoreが変わらず失敗し続けるため、sentinelが再試行し続ける前に明示的にアンマウントする
+    unmount();
   });
 });

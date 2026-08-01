@@ -3,8 +3,10 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { formatDateSlash } from "@/lib/date";
+import { useToast } from "@/contexts/toast-context";
 
 type Notification = {
   id: string;
@@ -136,18 +138,32 @@ export function NotificationList() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   useEffect(() => {
-    fetch("/api/notifications")
-      .then((r) => r.json())
-      .then((d: { notifications?: Notification[]; nextCursor?: string | null; hasMore?: boolean }) => {
+    let active = true;
+    async function loadInitial() {
+      try {
+        const res = await fetch("/api/notifications");
+        if (!res.ok) throw new Error("failed to load notifications");
+        const d: { notifications?: Notification[]; nextCursor?: string | null; hasMore?: boolean } = await res.json();
+        if (!active) return;
         setNotifications(d.notifications ?? []);
         setCursor(d.nextCursor ?? null);
         setHasMore(d.hasMore ?? false);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+      } catch {
+        if (!active) return;
+        setLoadError(true);
+        showToast("通知の読み込みに失敗しました", "error");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    void loadInitial();
+    return () => { active = false; };
+  }, [showToast]);
 
   // 通知一覧の継続取得（GATE-22種類A）。マイページ/プロフィールのLoadMoreListと同様、
   // 末尾のidをcursorとして次のページを追加取得する
@@ -156,15 +172,19 @@ export function NotificationList() {
     setLoadingMore(true);
     try {
       const res = await fetch(`/api/notifications?cursor=${encodeURIComponent(cursor)}`);
-      if (!res.ok) return;
+      if (!res.ok) throw new Error("failed to load notifications");
       const data: { notifications: Notification[]; nextCursor: string | null; hasMore: boolean } = await res.json();
       setNotifications((prev) => [...prev, ...data.notifications]);
       setCursor(data.nextCursor);
       setHasMore(data.hasMore);
+    } catch {
+      showToast("通知の読み込みに失敗しました", "error");
     } finally {
       setLoadingMore(false);
     }
-  }, [cursor, loadingMore]);
+  }, [cursor, loadingMore, showToast]);
+
+  const sentinelRef = useInfiniteScroll({ hasMore, loading: loadingMore, onLoadMore: loadMore });
 
   const handleRead = useCallback(async (id: string) => {
     setNotifications((prev) =>
@@ -197,7 +217,7 @@ export function NotificationList() {
     return (
       <div className="rounded-xl border border-[#e2e8f0] flex flex-col items-center py-16 text-[#94a3b8]">
         <TwemojiIcon codepoint="1f514" className="h-12 w-12 mb-3" />
-        <p>まだ通知はありません</p>
+        <p>{loadError ? "通知の読み込みに失敗しました" : "まだ通知はありません"}</p>
       </div>
     );
   }
@@ -210,15 +230,8 @@ export function NotificationList() {
         ))}
       </div>
       {hasMore && (
-        <div className="flex justify-center mt-6">
-          <button
-            type="button"
-            onClick={loadMore}
-            disabled={loadingMore}
-            className="px-5 py-2.5 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition-colors disabled:opacity-50"
-          >
-            {loadingMore ? "読み込み中..." : "もっと見る"}
-          </button>
+        <div ref={sentinelRef} className="flex justify-center mt-6 py-2">
+          {loadingMore && <span className="text-sm text-zinc-400">読み込み中...</span>}
         </div>
       )}
     </div>

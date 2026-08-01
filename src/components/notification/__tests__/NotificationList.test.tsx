@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NotificationList } from "@/components/notification/NotificationList";
+import { ToastProvider } from "@/contexts/toast-context";
 
 const NOTIFICATIONS = [
   {
@@ -32,7 +33,7 @@ function renderWithClient() {
   const queryClient = new QueryClient();
   render(
     <QueryClientProvider client={queryClient}>
-      <NotificationList />
+      <ToastProvider><NotificationList /></ToastProvider>
     </QueryClientProvider>
   );
   return queryClient;
@@ -96,12 +97,14 @@ describe("NotificationList", () => {
     renderWithClient();
 
     await waitFor(() => expect(screen.getByText(/いいねしました/)).toBeInTheDocument());
-    // 既読PATCH（失敗）が呼ばれ、ロールバック処理まで完了するのを待つ
+    // 既読PATCHの失敗後、楽観的に消した未読ドットがDOM上で復元されることを確認する
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    const notificationLink = screen.getByText(/いいねしました/).closest("a");
+    await waitFor(() => expect(notificationLink?.querySelector(".bg-red-500")).not.toBeNull());
   });
 
-  // ─── 継続取得（GATE-22種類A） ───
-  it("hasMoreがfalse_もっと見るボタンが表示されない", async () => {
+  // ─── 継続取得（GATE-22種類A、無限スクロール） ───
+  it("hasMoreがfalse_継続取得のfetchが発生しない", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,
       json: async () => ({ notifications: NOTIFICATIONS, nextCursor: null, hasMore: false }),
@@ -111,10 +114,18 @@ describe("NotificationList", () => {
     renderWithClient();
 
     await waitFor(() => expect(screen.getByText(/いいねしました/)).toBeInTheDocument());
-    expect(screen.queryByRole("button", { name: "もっと見る" })).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("もっと見るをクリック_追加取得した通知が末尾に追記されcursorを付与して呼び出す", async () => {
+  it("初回取得が失敗した場合は空状態と区別してエラーを表示する", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+
+    renderWithClient();
+
+    await waitFor(() => expect(screen.getAllByText("通知の読み込みに失敗しました").length).toBeGreaterThan(0));
+  });
+
+  it("sentinelが表示範囲に入る_追加取得した通知が末尾に追記されcursorを付与して呼び出す", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -131,12 +142,8 @@ describe("NotificationList", () => {
 
     renderWithClient();
 
-    await waitFor(() => expect(screen.getByRole("button", { name: "もっと見る" })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: "もっと見る" }));
-
     await waitFor(() => expect(screen.getByText(/はなこ さんがあなたをフォローしました/)).toBeInTheDocument());
     expect(screen.getByText(/いいねしました/)).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/notifications?cursor=n1");
-    expect(screen.queryByRole("button", { name: "もっと見る" })).not.toBeInTheDocument();
   });
 });

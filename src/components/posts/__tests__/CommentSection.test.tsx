@@ -67,6 +67,24 @@ describe("CommentSection", () => {
     expect(screen.queryByText("まだコメントはありません。最初のコメントを投稿しましょう！")).not.toBeInTheDocument();
   });
 
+  it("コメント投稿が失敗した場合は楽観的に追加したコメントを取り消し、入力内容を復元する", async () => {
+    const fetchMock = vi.fn((_: string, init?: RequestInit) => {
+      if (init?.method === "POST") return Promise.resolve({ ok: false });
+      return Promise.resolve({ ok: true, json: async () => ({ comments: [], nextCursor: null, hasMore: false }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderCommentSection();
+
+    const textarea = await screen.findByTestId("comment-textarea");
+    fireEvent.change(textarea, { target: { value: "失敗するコメント" } });
+    fireEvent.click(screen.getByRole("button", { name: "コメントを投稿" }));
+
+    await waitFor(() => expect(screen.getByText("コメントの投稿に失敗しました")).toBeInTheDocument());
+    expect(screen.queryByTestId("comment-item")).not.toBeInTheDocument();
+    expect(textarea).toHaveValue("失敗するコメント");
+  });
+
   // ─── 未ログイン時の表示 ───
   it("未ログイン時_ログインするリンクが表示されコメント欄が表示されない", async () => {
     vi.stubGlobal(

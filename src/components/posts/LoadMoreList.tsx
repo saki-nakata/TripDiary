@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useToast } from "@/contexts/toast-context";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { PostCard } from "@/components/posts/PostCard";
 import { SavedMapSection } from "@/components/posts/SavedMapSection";
 import { FollowFeed } from "@/components/posts/FollowFeed";
@@ -20,8 +21,8 @@ type Props = {
 };
 
 // マイページ・プロフィールの各一覧（自分の投稿・行きたい・訪問済み・フォロー中の投稿）で共通利用する
-// 「もっと見る」導線（GATE-22種類A）。Server Componentが取得した初回ページを受け取り、
-// クリックのたびにcursorで継続取得してリストへ追記する
+// 無限スクロール導線（GATE-22種類A）。Server Componentが取得した初回ページを受け取り、
+// 末尾のsentinelが表示範囲に入るたびにcursorで継続取得してリストへ追記する
 export function LoadMoreList({ initialPosts, initialNextCursor, initialHasMore, baseUrl, variant, viewerId }: Props) {
   const [posts, setPosts] = useState(initialPosts);
   const [cursor, setCursor] = useState(initialNextCursor);
@@ -29,7 +30,7 @@ export function LoadMoreList({ initialPosts, initialNextCursor, initialHasMore, 
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
-  async function loadMore() {
+  const loadMore = useCallback(async () => {
     if (!cursor || loading) return;
     setLoading(true);
     try {
@@ -48,7 +49,10 @@ export function LoadMoreList({ initialPosts, initialNextCursor, initialHasMore, 
     } finally {
       setLoading(false);
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cursor, loading, baseUrl]);
+
+  const sentinelRef = useInfiniteScroll({ hasMore, loading, onLoadMore: loadMore });
 
   return (
     <div>
@@ -62,15 +66,8 @@ export function LoadMoreList({ initialPosts, initialNextCursor, initialHasMore, 
       {(variant === "wishlist" || variant === "visited") && <SavedMapSection posts={posts} kind={variant} />}
       {variant === "follow-feed" && <FollowFeed posts={posts} />}
       {hasMore && (
-        <div className="flex justify-center mt-6">
-          <button
-            type="button"
-            onClick={loadMore}
-            disabled={loading}
-            className="px-5 py-2.5 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition-colors disabled:opacity-50"
-          >
-            {loading ? "読み込み中..." : "もっと見る"}
-          </button>
+        <div ref={sentinelRef} className="flex justify-center mt-6 py-2">
+          {loading && <span className="text-sm text-zinc-400">読み込み中...</span>}
         </div>
       )}
     </div>
