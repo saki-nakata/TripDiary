@@ -15,6 +15,13 @@ const TEST_USER = {
   email: TEST_EMAIL,
   password: "Password1234",
 };
+const RESPONSIVE_TEST_EMAIL = "test_playwright_dark_theme_plans_responsive@example.com";
+const RESPONSIVE_TEST_USER = {
+  // baselineに表示される名称は既存の確認用利用者と揃え、識別子だけを分離する。
+  nickname: "PR7d確認用ユーザー",
+  email: RESPONSIVE_TEST_EMAIL,
+  password: "Password1234",
+};
 const STATIC_PLAN_TITLE = "ダークモード確認用プラン";
 const WISHLIST_POST_TITLE = `PR7d行きたいスポット_${Date.now()}`;
 const REPORT_POST_TITLE = `PR7dレポート確認用投稿_${Date.now()}`;
@@ -47,6 +54,8 @@ test.describe("PR-7d: 旅行プランのダークテーマ対応", () => {
 
       // DB保存しない（送信しない）ため、一意性のためのDate.now()は使わず固定文字列で入力する
       await page.fill('input[name="title"]', STATIC_PLAN_TITLE);
+      // スクリーンショットに入力カーソルの点滅を含めない
+      await page.locator('input[name="title"]').blur();
 
       const addBudgetButton = page.getByRole("button", { name: "＋ 項目を追加" });
       await expect(addBudgetButton).toBeVisible();
@@ -300,15 +309,14 @@ test.describe("PR-7d: 旅行プランのダークテーマ対応", () => {
 // 検証していなかったため、SpotPicker・PlanForm・PlanActions・CompletedPlansAccordionの
 // レスポンシブ分岐を320/375/768pxのダークモードで追加検証する。
 test.describe("PR-7d: モバイル・タブレット幅でのダークテーマ対応", () => {
-  test.beforeAll(async ({ request }) => {
-    await request.delete(`/api/test/cleanup?email=${encodeURIComponent(TEST_EMAIL)}`);
-    await request.post("/api/auth/signup", { data: TEST_USER });
-  });
-
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, request }) => {
+    // 各幅のスクリーンショットを独立させる。前のケースが作成した完了済みプランや
+    // ログイン直後トーストの状態を引き継ぐと、並列・再試行時にbaselineが揺れる。
+    await request.delete(`/api/test/cleanup?email=${encodeURIComponent(RESPONSIVE_TEST_EMAIL)}`);
+    await request.post("/api/auth/signup", { data: RESPONSIVE_TEST_USER });
     await page.goto("/login");
-    await page.fill("#email", TEST_USER.email);
-    await page.fill("#password", TEST_USER.password);
+    await page.fill("#email", RESPONSIVE_TEST_USER.email);
+    await page.fill("#password", RESPONSIVE_TEST_USER.password);
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL("/", { timeout: 15000 });
   });
@@ -340,6 +348,8 @@ test.describe("PR-7d: モバイル・タブレット幅でのダークテーマ�
       const submitButton = page.getByRole("button", { name: "作成する" });
       expect(await getContrastRatio(submitButton)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
 
+      // モバイルのログイン直後ヒントは一時表示のため、visual baselineには含めない。
+      await expect(page.getByText("下のアイコンを長押しすると名前が表示されます")).toBeHidden();
       await expect(page).toHaveScreenshot(`plan-form-spotpicker-${width}-dark.png`, { fullPage: false });
     });
   }
@@ -400,6 +410,7 @@ test.describe("PR-7d: モバイル・タブレット幅でのダークテーマ�
       await expect(editButton).toBeVisible();
       await expect(deleteButton).toBeVisible();
 
+      await expect(page.getByText("下のアイコンを長押しすると名前が表示されます")).toBeHidden();
       await expect(page).toHaveScreenshot(`mypage-plans-actions-${width}-dark.png`, { fullPage: false });
     });
   }
