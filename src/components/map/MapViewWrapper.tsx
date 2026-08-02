@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const MapViewDynamic = dynamic(
   () => import("@/components/map/MapView").then((m) => m.MapView),
-  { ssr: false, loading: () => <div className="h-64 w-full rounded-xl bg-zinc-100 animate-pulse" /> }
+  { ssr: false, loading: () => <div className="h-64 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" /> }
 );
 
 type Props = {

@@ -112,11 +112,11 @@ export function LocationPicker({ lat, lng, onChange, label }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex items-end justify-between">
-        {label ? <label className="block text-base font-bold text-zinc-700">{label}</label> : <span />}
+        {label ? <label className="block text-base font-bold text-surface-foreground">{label}</label> : <span />}
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="relative z-10 -mb-3 bg-sky-50 text-xs font-medium text-sky-700 hover:text-sky-900 hover:bg-sky-100 border border-sky-200 rounded-full px-2.5 py-1 transition-colors"
+          className="relative z-10 -mb-3 bg-sky-50 dark:bg-sky-950 text-xs font-medium text-sky-700 dark:text-sky-400 hover:text-sky-900 dark:hover:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900 border border-sky-200 dark:border-sky-800 rounded-full px-2.5 py-1 transition-colors"
         >
           🗺️地図拡大表示🔍
         </button>
@@ -127,16 +127,16 @@ export function LocationPicker({ lat, lng, onChange, label }: Props) {
         lat={lat}
         lng={lng}
         onClick={handleMapClick}
-        className="h-64 w-full rounded-xl border border-sky-200 z-0"
+        className="h-64 w-full rounded-xl border border-sky-200 dark:border-sky-800 z-0"
       />
 
       {lat != null && lng != null && (
-        <div className="flex items-center gap-2 text-sm text-zinc-600">
+        <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
           <span>📍 {loadingAddress ? "取得中…" : displayAddress}</span>
           <button
             type="button"
             onClick={handleReset}
-            className="ml-1 text-zinc-400 hover:text-zinc-600"
+            className="ml-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
             aria-label="位置情報をリセット"
           >
             <TwemojiIcon codepoint="274c" alt="リセット" className="h-2.5 w-2.5" />
@@ -153,7 +153,7 @@ export function LocationPicker({ lat, lng, onChange, label }: Props) {
             <button
               type="button"
               onClick={() => setExpanded(false)}
-              className="absolute -top-10 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md hover:opacity-70 transition-opacity"
+              className="absolute -top-10 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-surface shadow-md hover:opacity-70 transition-opacity"
               aria-label="閉じる"
             >
               <span className="text-lg leading-none text-red-500">✕</span>
