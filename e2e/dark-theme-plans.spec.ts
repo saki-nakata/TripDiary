@@ -54,8 +54,6 @@ test.describe("PR-7d: 旅行プランのダークテーマ対応", () => {
 
       // DB保存しない（送信しない）ため、一意性のためのDate.now()は使わず固定文字列で入力する
       await page.fill('input[name="title"]', STATIC_PLAN_TITLE);
-      // スクリーンショットに入力カーソルの点滅を含めない
-      await page.locator('input[name="title"]').blur();
 
       const addBudgetButton = page.getByRole("button", { name: "＋ 項目を追加" });
       await expect(addBudgetButton).toBeVisible();
@@ -73,7 +71,11 @@ test.describe("PR-7d: 旅行プランのダークテーマ対応", () => {
       await expect(cancelButton).toBeVisible();
       expect(await getContrastRatio(cancelButton)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
 
-      await expect(page).toHaveScreenshot(`plan-form-new-${colorScheme}.png`, { fullPage: false });
+      // フォーカス枠は基準画像どおりに維持しつつ、ブラウザ管理の点滅カーソルだけを隠す。
+      await expect(page).toHaveScreenshot(`plan-form-new-${colorScheme}.png`, {
+        caret: "hide",
+        fullPage: false,
+      });
     });
   }
 
