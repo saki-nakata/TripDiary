@@ -31,7 +31,7 @@ export function CompletedPlansAccordion({
   return (
     <details
       ref={ref}
-      className="group max-w-5xl rounded-xl border border-zinc-200"
+      className="group max-w-5xl rounded-xl border border-surface-border"
       onToggle={(e) => {
         try {
           sessionStorage.setItem(STORAGE_KEY, (e.target as HTMLDetailsElement).open ? "1" : "0");
@@ -40,11 +40,11 @@ export function CompletedPlansAccordion({
         }
       }}
     >
-      <summary className="flex list-none cursor-pointer items-center justify-between p-3 text-sm font-bold text-zinc-600 [&::-webkit-details-marker]:hidden">
+      <summary className="flex list-none cursor-pointer items-center justify-between p-3 text-sm font-bold text-zinc-600 dark:text-zinc-400 [&::-webkit-details-marker]:hidden">
         <span>✅ 完了済みの旅行プラン（{count}件）</span>
         <span className="text-zinc-400 transition-transform group-open:rotate-180">▼</span>
       </summary>
-      <div className="space-y-3 border-t border-zinc-200 p-3">
+      <div className="space-y-3 border-t border-surface-border p-3">
         {yearFilter}
         <div className="space-y-2">{children}</div>
       </div>

@@ -43,18 +43,18 @@ function SpotListItem({ post, onAdd }: { post: PlanSpotPost; onAdd: (post: PlanS
       <button
         type="button"
         onClick={() => onAdd(post)}
-        className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 p-2 text-left hover:bg-zinc-50"
+        className="flex w-full items-center gap-3 rounded-lg border border-surface-border p-2 text-left hover:bg-zinc-50 dark:hover:bg-white/5"
       >
         {post.images[0] ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={post.images[0].url} alt="" className="h-10 w-10 rounded object-cover" />
         ) : (
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-zinc-100 text-lg">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-800 text-lg">
             <CategoryIcon category={post.category ?? "その他"} />
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-zinc-800">{post.title}</p>
+          <p className="truncate text-sm font-medium text-surface-foreground">{post.title}</p>
           <div className="flex items-center justify-between gap-2">
             <p className="min-w-0 flex items-center gap-1 truncate text-xs text-zinc-400">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-2.5 w-2.5" /> {post.location}
@@ -66,7 +66,7 @@ function SpotListItem({ post, onAdd }: { post: PlanSpotPost; onAdd: (post: PlanS
             </p>
             <span
               aria-label="追加"
-              className="sm:hidden flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 text-xs font-bold leading-none text-green-600"
+              className="sm:hidden flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 dark:border-green-400 text-xs font-bold leading-none text-green-600 dark:text-green-400"
             >
               ＋
             </span>
@@ -74,7 +74,7 @@ function SpotListItem({ post, onAdd }: { post: PlanSpotPost; onAdd: (post: PlanS
         </div>
         <span
           aria-label="追加"
-          className="hidden sm:flex mr-3 md:mr-1 xl:mr-3 h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 text-xs font-bold leading-none text-green-600"
+          className="hidden sm:flex mr-3 md:mr-1 xl:mr-3 h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 dark:border-green-400 text-xs font-bold leading-none text-green-600 dark:text-green-400"
         >
           ＋
         </span>
@@ -108,7 +108,7 @@ function SortableSelectedItem({
     <li
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 sm:gap-3 md:gap-1 xl:gap-3 rounded-lg border border-zinc-200 bg-white p-2 ${isDragging ? "opacity-50 shadow-md" : ""}`}
+      className={`flex items-center gap-2 sm:gap-3 md:gap-1 xl:gap-3 rounded-lg border border-surface-border bg-surface p-2 ${isDragging ? "opacity-50 shadow-md" : ""}`}
     >
       <div className="flex items-center gap-[0.2rem] sm:gap-3">
         {draggable && (
@@ -118,7 +118,7 @@ function SortableSelectedItem({
             {...listeners}
             aria-label="ドラッグして並び替え"
             title="ドラッグして並び替え"
-            className="-ml-1 sm:ml-0 shrink-0 cursor-grab touch-none rounded p-1 text-zinc-400 hover:text-zinc-600 active:cursor-grabbing"
+            className="-ml-1 sm:ml-0 shrink-0 cursor-grab touch-none rounded p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 active:cursor-grabbing"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="9" cy="6" r="1.5" />
@@ -130,7 +130,7 @@ function SortableSelectedItem({
             </svg>
           </button>
         )}
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-700 text-xs font-bold text-white">
           {index + 1}
         </span>
       </div>
@@ -138,12 +138,12 @@ function SortableSelectedItem({
         // eslint-disable-next-line @next/next/no-img-element
         <img src={image.url} alt="" className="h-10 w-10 rounded object-cover" />
       ) : (
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-zinc-100 text-lg">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-800 text-lg">
           <CategoryIcon category={category ?? "その他"} />
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-zinc-800">{title}</p>
+        <p className="truncate text-sm font-medium text-surface-foreground">{title}</p>
         <div className="flex items-center justify-between gap-2">
           <p className="min-w-0 flex items-center gap-1 truncate text-xs text-zinc-400">
             {location && (
@@ -161,7 +161,7 @@ function SortableSelectedItem({
             type="button"
             onClick={() => onRemove(spot.id)}
             aria-label="削除"
-            className="sm:hidden flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-red-300 text-red-400 hover:text-red-600"
+            className="sm:hidden flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-red-300 dark:border-red-700 text-red-400 hover:text-red-600 dark:hover:text-red-400"
           >
             <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
           </button>
@@ -171,7 +171,7 @@ function SortableSelectedItem({
         type="button"
         onClick={() => onRemove(spot.id)}
         aria-label="削除"
-        className="hidden sm:flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-red-300 text-red-400 hover:text-red-600"
+        className="hidden sm:flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-red-300 dark:border-red-700 text-red-400 hover:text-red-600 dark:hover:text-red-400"
       >
         <TwemojiIcon codepoint="274c" alt="削除" className="h-3 w-3" />
       </button>
@@ -347,7 +347,7 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
       {/* 選択済みスポット */}
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between">
-          <p className="text-sm font-bold text-zinc-700">
+          <p className="text-sm font-bold text-surface-foreground">
             選択済みスポット{selected.length > 0 ? `（${selected.length}件）` : ""}
           </p>
           {selected.length >= 2 && (
@@ -375,9 +375,9 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
         )}
       </div>
 
-      {/* スポットをキーワード検索（全ユーザーの投稿対象、常時展開） */}
-      <div className="space-y-2 rounded-lg border border-zinc-200 p-3">
-        <p className="flex items-center gap-1.5 text-sm font-bold text-zinc-700">
+      {/* スポットをキーワード検索(全ユーザーの投稿対象、常時展開) */}
+      <div className="space-y-2 rounded-lg border border-surface-border p-3">
+        <p className="flex items-center gap-1.5 text-sm font-bold text-surface-foreground">
           <TwemojiIcon codepoint="1f50d" alt="🔍" className="h-4 w-4" /> スポットを検索
         </p>
         <div className="relative">
@@ -386,14 +386,14 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             placeholder="スポット名・キーワードで検索"
-            className="w-full rounded-lg border border-zinc-200 px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full rounded-lg border border-surface-border bg-surface text-surface-foreground px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           />
           {query && (
             <button
               type="button"
               onClick={clearSearch}
               aria-label="検索語をクリア"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-red-400 hover:text-red-600 transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
             >
               <TwemojiIcon codepoint="274c" alt="クリア" className="h-2 w-2" />
             </button>
@@ -416,14 +416,14 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
       {wishlistCandidates.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="flex items-center gap-1.5 text-sm font-bold text-zinc-700">
+            <p className="flex items-center gap-1.5 text-sm font-bold text-surface-foreground">
               <TwemojiIcon codepoint="1f516" alt="🔖" className="h-4 w-4" /> 行きたいリスト（{wishlistCandidates.length}件）
             </p>
             {wishlistVisibleCount > WISHLIST_PREVIEW_COUNT && (
               <button
                 type="button"
                 onClick={() => setWishlistVisibleCount(WISHLIST_PREVIEW_COUNT)}
-                className="shrink-0 rounded-lg border border-dashed border-zinc-300 px-3 py-1 text-xs font-semibold text-zinc-500 hover:bg-zinc-50 transition-colors"
+                className="shrink-0 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-600 px-3 py-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
               >
                 表示を減らす
               </button>
@@ -443,11 +443,11 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
       )}
 
       {/* その他のスポット（全ユーザーの投稿を新着順に一覧表示。プロトタイプ準拠） */}
-      <div className="rounded-lg border border-zinc-200">
+      <div className="rounded-lg border border-surface-border">
         <button
           type="button"
           onClick={toggleOthers}
-          className="flex w-full items-center justify-between p-3 text-sm font-bold text-zinc-700"
+          className="flex w-full items-center justify-between p-3 text-sm font-bold text-surface-foreground"
         >
           <span className="flex items-center gap-1.5">
             <TwemojiIcon codepoint="1f5fa" alt="🗺️" className="h-4 w-4" /> その他のスポット{othersLoaded ? `（${otherCandidates.length}件）` : ""}
@@ -455,7 +455,7 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
           <span>{showOthers ? "▲" : "▼"}</span>
         </button>
         {showOthers && (
-          <div className="space-y-2 border-t border-zinc-200 p-3">
+          <div className="space-y-2 border-t border-surface-border p-3">
             {othersLoading && othersList.length === 0 && <p className="text-xs text-zinc-400">読み込み中…</p>}
             {othersLoaded && otherCandidates.length === 0 && (
               <p className="text-xs text-zinc-400">追加できるスポットがありません</p>
@@ -475,26 +475,26 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
       </div>
 
       {/* 新規追加（投稿が存在しないスポット向け） */}
-      <div className="space-y-2 rounded-lg border border-zinc-200 p-3">
+      <div className="space-y-2 rounded-lg border border-surface-border p-3">
         <div className="flex flex-wrap items-center justify-between gap-2 pr-2">
           <div className="flex flex-wrap items-baseline gap-2">
-            <p className="mr-2 flex items-center gap-1.5 text-sm font-bold text-zinc-700">
+            <p className="mr-2 flex items-center gap-1.5 text-sm font-bold text-surface-foreground">
               <TwemojiIcon codepoint="270f" alt="✏️" className="h-4 w-4" /> 新規スポット追加
             </p>
-            <p className="text-xs text-zinc-500">まだ投稿がないスポットも、プランに追加できます</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">まだ投稿がないスポットも、プランに追加できます</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={clearFreeSpot}
-              className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-500 hover:bg-zinc-50 transition-colors"
+              className="rounded-lg border border-surface-border px-3 py-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
             >
               クリア
             </button>
             <button
               type="button"
               onClick={addFreeSpot}
-              className="rounded-lg border border-green-200 bg-green-50 px-4 py-1.5 text-xs font-semibold text-green-800 hover:bg-green-100 transition-colors"
+              className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 px-4 py-1.5 text-xs font-semibold text-green-800 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900 transition-colors"
             >
               追加
             </button>
@@ -502,7 +502,7 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
         </div>
         <div className="space-y-1">
           <div className="flex items-start justify-between">
-            <label className="text-sm font-semibold text-zinc-700">
+            <label className="text-sm font-semibold text-surface-foreground">
               スポット名 <span className="text-red-500">*</span>
             </label>
             <span className={`mt-1 mr-4 text-xs ${freeTitle.length > 60 ? "text-red-500" : "text-zinc-400"}`}>
@@ -518,14 +518,14 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
             }}
             placeholder="例：〇〇公園"
             maxLength={60}
-            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${freeErrors.title ? "border-red-400" : "border-zinc-200"}`}
+            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${freeErrors.title ? "border-red-400" : "border-surface-border"}`}
           />
           {freeErrors.title && <p className="text-xs text-red-500">{freeErrors.title}</p>}
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex flex-1 flex-col gap-1">
             <div className="flex items-center gap-2">
-              <label className="shrink-0 text-xs font-semibold text-zinc-700">
+              <label className="shrink-0 text-xs font-semibold text-surface-foreground">
                 エリア <span className="text-red-500">*</span>
               </label>
               <select
@@ -534,26 +534,26 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
                   setFreeLocation(e.target.value);
                   if (e.target.value) setFreeErrors((prev) => ({ ...prev, location: undefined }));
                 }}
-                className={`w-full rounded-lg border bg-white px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${freeLocation ? "text-zinc-800" : "text-zinc-400"} ${freeErrors.location ? "border-red-400" : "border-zinc-200"}`}
+                className={`w-full rounded-lg border bg-surface px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${freeLocation ? "text-surface-foreground" : "text-zinc-400"} ${freeErrors.location ? "border-red-400" : "border-surface-border"}`}
               >
                 <option value=""></option>
                 {LOCATIONS.map((l) => (
-                  <option key={l} value={l} className="text-zinc-800">{l}</option>
+                  <option key={l} value={l} className="text-surface-foreground">{l}</option>
                 ))}
               </select>
             </div>
             {freeErrors.location && <p className="text-xs text-red-500">{freeErrors.location}</p>}
           </div>
           <div className="flex flex-1 items-center gap-2">
-            <label className="shrink-0 text-xs font-semibold text-zinc-700">カテゴリ</label>
+            <label className="shrink-0 text-xs font-semibold text-surface-foreground">カテゴリ</label>
             <select
               value={freeCategory}
               onChange={(e) => setFreeCategory(e.target.value)}
-              className={`w-full rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${freeCategory ? "text-zinc-800" : "text-zinc-400"}`}
+              className={`w-full rounded-lg border border-surface-border bg-surface px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${freeCategory ? "text-surface-foreground" : "text-zinc-400"}`}
             >
               <option value="" className="text-zinc-400">未選択でもOK</option>
               {CATEGORIES.map((c) => (
-                <option key={c} value={c} className="text-zinc-800">{CATEGORY_ICONS[c]} {c}</option>
+                <option key={c} value={c} className="text-surface-foreground">{CATEGORY_ICONS[c]} {c}</option>
               ))}
             </select>
           </div>

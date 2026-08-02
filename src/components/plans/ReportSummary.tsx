@@ -47,7 +47,7 @@ function StatCard({
     <Tag
       type={onClick ? "button" : undefined}
       onClick={onClick}
-      className={`animate-fade-in flex flex-col items-center rounded-2xl border border-transparent bg-gradient-to-br ${gradient} p-3 sm:p-4 text-center text-white shadow-sm transition-all ${onClick ? "cursor-pointer hover:-translate-y-1 hover:border-zinc-300 hover:shadow-md" : ""}`}
+      className={`animate-fade-in flex flex-col items-center rounded-2xl border border-transparent bg-gradient-to-br ${gradient} p-3 sm:p-4 text-center text-white shadow-sm transition-all ${onClick ? "cursor-pointer hover:-translate-y-1 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-md" : ""}`}
       style={{ animationDelay: `${delay}s` }}
     >
       <TwemojiIcon codepoint={codepoint} className="h-6 w-6" />
@@ -118,7 +118,7 @@ function PostCountLineChart({
             />
           ))}
         </div>
-        <div className="flex h-32 w-9 shrink-0 flex-col justify-between py-[6px] text-right text-sm text-zinc-500">
+        <div className="flex h-32 w-9 shrink-0 flex-col justify-between py-[6px] text-right text-sm text-zinc-500 dark:text-zinc-400">
           {yTicks.map((t, i) => (
             <span key={i}>{t}{unit}</span>
           ))}
@@ -129,7 +129,7 @@ function PostCountLineChart({
           {points.map((p) => (
             <span
               key={p.d.key}
-              className={`absolute whitespace-nowrap text-sm text-zinc-500 ${
+              className={`absolute whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400 ${
                 rotateLabelsOnMobile
                   ? "origin-top -rotate-45 sm:rotate-0 -translate-x-1/2 sm:-translate-x-1/2 -ml-1.5 sm:ml-0"
                   : "-translate-x-1/2"
@@ -216,13 +216,13 @@ function TopRatedHighlights({ posts }: { posts: StatsResponse["topRatedPosts"] }
         <Link
           key={post.id}
           href={`/posts/${post.id}`}
-          className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition-colors hover:border-zinc-300"
+          className="group flex flex-col overflow-hidden rounded-xl border border-surface-border bg-surface transition-colors hover:border-zinc-300 dark:hover:border-zinc-600"
         >
-          <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+          <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
             {post.thumbnail ? (
               <CardImage src={post.thumbnail} alt={post.title} sizes="(max-width: 640px) 100vw, 33vw" containerRatio={4 / 3} />
             ) : (
-              <div className="flex h-full items-center justify-center text-4xl text-zinc-300">
+              <div className="flex h-full items-center justify-center text-4xl text-zinc-300 dark:text-zinc-600">
                 <TwemojiIcon codepoint="1f4f7" alt="📷" className="h-10 w-10" />
               </div>
             )}
@@ -235,13 +235,13 @@ function TopRatedHighlights({ posts }: { posts: StatsResponse["topRatedPosts"] }
             </span>
           </div>
           <div className="flex flex-1 flex-col gap-1.5 p-3">
-            <p className="line-clamp-1 text-sm font-bold text-zinc-800">{post.title}</p>
-            <div className="flex items-center justify-between text-xs text-zinc-500">
+            <p className="line-clamp-1 text-sm font-bold text-surface-foreground">{post.title}</p>
+            <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
               <div className="flex min-w-0 items-center gap-2.5">
-                <span className="flex shrink-0 items-center gap-1 truncate text-[0.7rem] font-medium text-green-600">
+                <span className="flex shrink-0 items-center gap-1 truncate text-[0.7rem] font-medium text-green-600 dark:text-green-400">
                   <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" /> {post.location}
                 </span>
-                <span className="flex items-center gap-1 truncate text-[0.7rem] font-medium text-zinc-500">
+                <span className="flex items-center gap-1 truncate text-[0.7rem] font-medium text-zinc-500 dark:text-zinc-400">
                   <CategoryIcon category={post.category ?? "その他"} /> {post.category ?? "その他"}
                 </span>
               </div>
@@ -284,7 +284,7 @@ function ActivityHeatmap({ data }: { data: { key: string | number; label: string
             <div key={d.key} className="flex flex-col items-center gap-1">
               <div
                 className={`flex aspect-square w-full items-center justify-center rounded-md text-[0.78rem] font-semibold ${
-                  d.count === 0 ? "bg-zinc-100 text-zinc-300" : t > 0.75 ? "text-white" : "text-zinc-800"
+                  d.count === 0 ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-300 dark:text-zinc-600" : t > 0.75 ? "text-white" : "text-zinc-800"
                 }`}
                 style={d.count > 0 ? { background: gradient } : undefined}
                 title={`${d.label}：${d.count}件`}
@@ -292,12 +292,12 @@ function ActivityHeatmap({ data }: { data: { key: string | number; label: string
               >
                 {d.count > 0 ? `${d.count}件` : ""}
               </div>
-              <span className="text-[0.7rem] text-zinc-500">{d.label}</span>
+              <span className="text-[0.7rem] text-zinc-500 dark:text-zinc-400">{d.label}</span>
             </div>
           );
         })}
       </div>
-      <div className="flex items-center justify-center gap-2 text-xs text-zinc-500">
+      <div className="flex items-center justify-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
         <span>少ない</span>
         <span
           className="h-2.5 w-24 rounded-full"
@@ -324,7 +324,7 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
   const yearLabel = year === "all" ? "全期間" : `${year}年`;
 
   if (stats.totalPosts === 0) {
-    return <p className="-mt-3 py-16 text-center text-sm text-zinc-400">{yearLabel}の旅の記録がありません。</p>;
+    return <p className="-mt-3 py-16 text-center text-sm text-zinc-500 dark:text-zinc-400">{yearLabel}の旅の記録がありません。</p>;
   }
 
   const maxCategoryCount = Math.max(1, ...stats.categoryBreakdown.map((c) => c.count));
@@ -344,7 +344,7 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
 
   return (
     <div className="-mt-3 space-y-6">
-      <p className="flex items-center gap-1.5 text-lg font-bold text-zinc-800">
+      <p className="flex items-center gap-1.5 text-lg font-bold text-surface-foreground">
         <TwemojiIcon codepoint="1f3c6" alt="🏆" className="h-5 w-5" /> {yearLabel}の旅まとめ
       </p>
 
@@ -367,8 +367,8 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
 
       {/* エリア別バブルチャート（訪問回数が多いエリアほど大きな円で表示） */}
       {stats.locationBreakdown.length > 0 && (
-        <div id="area-breakdown" className="scroll-mt-4 rounded-xl border border-zinc-200 bg-white p-4">
-          <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-zinc-800">
+        <div id="area-breakdown" className="scroll-mt-4 rounded-xl border border-surface-border bg-surface p-4">
+          <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-surface-foreground">
             <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-4 w-4" /> {yearLabel}のエリア別投稿数
           </p>
           <LocationBubbleChart key={stats.year} data={stats.locationBreakdown} />
@@ -377,8 +377,8 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
 
       {/* 高評価スポットTOP3。棒グラフではなく画像ハイライトカードで見せる（評価分布の置き換え） */}
       {stats.topRatedPosts.length > 0 && (
-        <div id="top-rated" className="scroll-mt-4 rounded-xl border border-zinc-200 bg-white p-4">
-          <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-zinc-800">
+        <div id="top-rated" className="scroll-mt-4 rounded-xl border border-surface-border bg-surface p-4">
+          <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-surface-foreground">
             <TwemojiIcon codepoint="2b50" alt="⭐" className="h-4 w-4" /> {yearLabel}の高評価スポットTOP3
           </p>
           <TopRatedHighlights posts={stats.topRatedPosts} />
@@ -387,21 +387,21 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
 
       {/* カテゴリ別バーグラフ */}
       {stats.categoryBreakdown.length > 0 && (
-        <div id="category-breakdown" className="scroll-mt-4 rounded-xl border border-zinc-200 bg-white p-4">
-          <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-zinc-800">
+        <div id="category-breakdown" className="scroll-mt-4 rounded-xl border border-surface-border bg-surface p-4">
+          <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-surface-foreground">
             <TwemojiIcon codepoint="1f3f7" alt="🏷️" className="h-4 w-4" /> {yearLabel}のカテゴリ別投稿数
           </p>
           <div className="space-y-3">
             {stats.categoryBreakdown.map((c) => (
               <div key={c.category} className="flex items-center gap-1.5 sm:gap-2.5">
-                <span className="w-24 shrink-0 truncate text-xs text-zinc-700">{c.category}</span>
-                <div className="h-3.5 flex-1 rounded-full bg-zinc-100">
+                <span className="w-24 shrink-0 truncate text-xs text-zinc-700 dark:text-zinc-400">{c.category}</span>
+                <div className="h-3.5 flex-1 rounded-full bg-zinc-100 dark:bg-zinc-800">
                   <div
                     className="h-3.5 rounded-full bg-gradient-to-r from-[#7c3aed] via-[#9333ea] via-85% to-[#ff6ec7] transition-[width] duration-700"
                     style={{ width: `${(c.count / maxCategoryCount) * 100}%` }}
                   />
                 </div>
-                <span className="w-9 sm:w-12 shrink-0 text-right text-sm text-zinc-500">{c.count}件</span>
+                <span className="w-9 sm:w-12 shrink-0 text-right text-sm text-zinc-500 dark:text-zinc-400">{c.count}件</span>
               </div>
             ))}
           </div>
@@ -410,8 +410,8 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
 
       {/* 月別ヒートマップ（投稿数）。全期間は年をまたいだ月別＝季節性、単年は当年の月別 */}
       {activityHeatmapData.some((d) => d.count > 0) && (
-        <div id="activity-heatmap" className="scroll-mt-4 rounded-xl border border-zinc-200 bg-white p-4">
-          <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-zinc-800">
+        <div id="activity-heatmap" className="scroll-mt-4 rounded-xl border border-surface-border bg-surface p-4">
+          <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-surface-foreground">
             <TwemojiIcon codepoint="1f4da" alt="📚" className="h-4 w-4" />
             {year === "all" ? "全期間の月別投稿数（季節性）" : `${year}年の月別投稿数`}
           </p>
@@ -422,8 +422,8 @@ export function ReportSummary({ years, initialYear, initialStats }: Props) {
       {/* 年別投稿数の推移（折れ線）。全期間のみ表示。月別ヒートマップ（季節性）とは軸が異なるため重複しない。
           単年は月別ヒートマップが同じ役割を果たすため折れ線は出さない */}
       {year === "all" && stats.yearlyPostCount.length > 0 && (
-        <div id="post-trend" className="scroll-mt-4 rounded-xl border border-zinc-200 bg-white p-4">
-          <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-zinc-800">
+        <div id="post-trend" className="scroll-mt-4 rounded-xl border border-surface-border bg-surface p-4">
+          <p className="mb-3 flex items-center gap-1.5 text-lg font-bold text-surface-foreground">
             <TwemojiIcon codepoint="1f4d6" alt="📖" className="h-4 w-4" /> 全期間の年別投稿数の推移
           </p>
           <PostCountLineChart
