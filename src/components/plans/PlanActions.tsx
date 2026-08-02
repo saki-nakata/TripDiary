@@ -57,7 +57,7 @@ export function PlanActions({ planId, completed, version, variant = "full" }: Pr
           onClick={() => router.push(`/plans/${planId}/edit`)}
           aria-label="編集"
           title="編集"
-          className="rounded-lg border border-zinc-100 md:border-zinc-200 xl:border-transparent xl:group-hover:border-zinc-200 xl:hover:border-zinc-100 p-2 text-zinc-500 hover:bg-green-100 hover:text-zinc-700 transition-colors"
+          className="rounded-lg border border-zinc-100 dark:border-zinc-800 md:border-zinc-200 md:dark:border-zinc-700 xl:border-transparent xl:group-hover:border-zinc-200 xl:group-hover:dark:border-zinc-700 xl:hover:border-zinc-100 xl:hover:dark:border-zinc-800 p-2 text-zinc-500 dark:text-zinc-400 hover:bg-green-100 dark:hover:bg-green-950 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
         >
           <TwemojiIcon codepoint="270f" className="h-4 w-4" />
         </button>
@@ -65,7 +65,7 @@ export function PlanActions({ planId, completed, version, variant = "full" }: Pr
           onClick={() => setShowDeleteModal(true)}
           aria-label="削除"
           title="削除"
-          className="rounded-lg border border-zinc-100 md:border-zinc-200 xl:border-transparent xl:group-hover:border-zinc-200 xl:hover:border-zinc-100 p-2 text-zinc-500 hover:bg-red-50 hover:text-red-500 transition-colors"
+          className="rounded-lg border border-zinc-100 dark:border-zinc-800 md:border-zinc-200 md:dark:border-zinc-700 xl:border-transparent xl:group-hover:border-zinc-200 xl:group-hover:dark:border-zinc-700 xl:hover:border-zinc-100 xl:hover:dark:border-zinc-800 p-2 text-zinc-500 dark:text-zinc-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-500 dark:hover:text-red-400 transition-colors"
         >
           <TwemojiIcon codepoint="1f5d1" className="h-4 w-4" />
         </button>
@@ -87,8 +87,8 @@ export function PlanActions({ planId, completed, version, variant = "full" }: Pr
       <label
         className={`-mt-3 flex items-center gap-2 rounded px-4 py-2 text-sm font-semibold transition-colors cursor-pointer select-none ${
           completed
-            ? "-translate-x-1 sm:-translate-x-1 bg-blue-100 text-blue-700 hover:bg-blue-200"
-            : "-translate-x-4 sm:-translate-x-4 border border-blue-500 text-blue-700 hover:bg-blue-50"
+            ? "-translate-x-1 sm:-translate-x-1 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900"
+            : "-translate-x-4 sm:-translate-x-4 border border-blue-500 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950"
         }`}
       >
         <input
@@ -104,13 +104,13 @@ export function PlanActions({ planId, completed, version, variant = "full" }: Pr
       <div className="mt-0.5 flex gap-2">
         <button
           onClick={() => router.push(`/plans/${planId}/edit`)}
-          className="px-3 py-1.5 text-sm border border-zinc-200 rounded-lg transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+          className="px-3 py-1.5 text-sm border border-surface-border rounded-lg transition-colors hover:border-green-300 dark:hover:border-green-700 hover:bg-green-50 dark:hover:bg-green-950 hover:text-green-700 dark:hover:text-green-400"
         >
           編集
         </button>
         <button
           onClick={() => setShowDeleteModal(true)}
-          className="px-3 py-1.5 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50"
+          className="px-3 py-1.5 text-sm border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-950"
         >
           削除
         </button>

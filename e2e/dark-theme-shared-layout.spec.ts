@@ -12,6 +12,17 @@ const TEST_USER = {
   password: "Password1234",
 };
 
+// 投稿一覧はmainをマスクしているが、投稿数で変わるページ全体の高さは右端の
+// スクロールバーにも現れる。スクロールバーは共有レイアウトの比較対象ではないため、
+// 撮影時だけ隠して、DB上の投稿量によるvisual baselineの揺れを除外する。
+async function expectSharedLayoutScreenshot(
+  page: import("@playwright/test").Page,
+  name: string,
+) {
+  await page.addStyleTag({ content: "html, body { overflow: hidden !important; }" });
+  await expect(page).toHaveScreenshot(name, { fullPage: false, mask: [page.locator("main")] });
+}
+
 test.describe("PR-7a: 共有レイアウトのダークテーマ対応（未ログイン・デスクトップ）", () => {
   for (const colorScheme of ["light", "dark"] as const) {
     test(`未ログイン・デスクトップ幅（${colorScheme}）`, async ({ page }) => {
@@ -33,7 +44,7 @@ test.describe("PR-7a: 共有レイアウトのダークテーマ対応（未ロ�
       expect(await getContrastRatio(autoToggle)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
 
       // フィード本文は他のE2Eが並列に作成するデータで変動するため、共有レイアウトの視覚回帰からは除外する。
-      await expect(page).toHaveScreenshot(`guest-desktop-${colorScheme}.png`, { fullPage: false, mask: [page.locator("main")] });
+      await expectSharedLayoutScreenshot(page, `guest-desktop-${colorScheme}.png`);
     });
 
     test(`未ログイン・モバイル幅（${colorScheme}）`, async ({ page }) => {
@@ -51,7 +62,7 @@ test.describe("PR-7a: 共有レイアウトのダークテーマ対応（未ロ�
       expect(await getContrastRatio(searchLabel)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
       expect(await getContrastRatio(loginLabel)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
 
-      await expect(page).toHaveScreenshot(`guest-mobile-${colorScheme}.png`, { fullPage: false, mask: [page.locator("main")] });
+      await expectSharedLayoutScreenshot(page, `guest-mobile-${colorScheme}.png`);
     });
   }
 });
@@ -91,7 +102,7 @@ test.describe("PR-7a: 共有レイアウトのダークテーマ対応（ログ�
       await expect(darkToggle).toBeVisible();
       expect(await getContrastRatio(darkToggle)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
 
-      await expect(page).toHaveScreenshot(`authed-desktop-dropdown-${colorScheme}.png`, { fullPage: false, mask: [page.locator("main")] });
+      await expectSharedLayoutScreenshot(page, `authed-desktop-dropdown-${colorScheme}.png`);
     });
   }
 
@@ -137,7 +148,7 @@ test.describe("PR-7a: 共有レイアウトのダークテーマ対応（ログ�
       await expect(darkToggle).toBeVisible();
       expect(await getContrastRatio(darkToggle)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
 
-      await expect(page).toHaveScreenshot(`authed-mobile-dropdown-${colorScheme}.png`, { fullPage: false, mask: [page.locator("main")] });
+      await expectSharedLayoutScreenshot(page, `authed-mobile-dropdown-${colorScheme}.png`);
     });
   }
 

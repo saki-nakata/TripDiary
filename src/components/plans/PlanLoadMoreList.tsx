@@ -68,9 +68,9 @@ export function PlanLoadMoreList({ initialPlans, initialNextCursor, initialHasMo
 
 function PlanListItem({ plan }: { plan: Plan }) {
   return (
-    <div className="group flex items-start justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 hover:bg-zinc-100">
+    <div className="group flex items-start justify-between gap-3 rounded-xl border border-surface-border bg-surface p-4 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-white/5">
       <Link href={`/plans/${plan.id}`} className="min-w-0 flex-1">
-        <p className="flex items-center gap-1.5 truncate text-base font-bold text-zinc-800">
+        <p className="flex items-center gap-1.5 truncate text-base font-bold text-surface-foreground">
           <TwemojiIcon codepoint="1f9ed" alt="🧭" className="h-5 w-5 shrink-0" /> {plan.title}
         </p>
         {(plan.startDate || plan.endDate) && (
@@ -79,10 +79,10 @@ function PlanListItem({ plan }: { plan: Plan }) {
             {plan.startDate ? formatDateSlash(plan.startDate) : "未定"} 〜 {plan.endDate ? formatDateSlash(plan.endDate) : "未定"}
           </p>
         )}
-        {plan.memo && <p className="mt-1 truncate text-[13px] text-zinc-500">{plan.memo}</p>}
+        {plan.memo && <p className="mt-1 truncate text-[13px] text-zinc-500 dark:text-zinc-400">{plan.memo}</p>}
       </Link>
       <div className="flex shrink-0 flex-col items-end gap-1">
-        <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-[13px] font-semibold text-zinc-500">{plan.spotCount ?? 0}スポット</span>
+        <span className="rounded-full bg-zinc-100 dark:bg-zinc-800 px-2.5 py-0.5 text-[13px] font-semibold text-zinc-500 dark:text-zinc-400">{plan.spotCount ?? 0}スポット</span>
         <div className="opacity-100 xl:opacity-0 transition-opacity xl:group-hover:opacity-100">
           <PlanActions planId={plan.id} completed={plan.completed} version={plan.version} variant="icons" />
         </div>

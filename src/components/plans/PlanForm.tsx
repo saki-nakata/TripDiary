@@ -126,7 +126,7 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
       {/* タイトル */}
       <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <label className="text-base font-bold text-zinc-700">
+          <label className="text-base font-bold text-surface-foreground">
             タイトル <span className="text-red-500">*</span>
           </label>
           <span className={`text-xs ${titleValue.length > 60 ? "text-red-500" : "text-zinc-400"}`}>
@@ -137,7 +137,7 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
           {...register("title")}
           maxLength={60}
           placeholder="例：京都・奈良 2泊3日"
-          className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.title ? "border-red-400" : "border-zinc-200"}`}
+          className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.title ? "border-red-400" : "border-surface-border"}`}
         />
         {errors.title && <p className="text-xs text-red-500">{errors.title.message}</p>}
       </div>
@@ -145,7 +145,7 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
       {/* 日程 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
-          <label className="text-base font-bold text-zinc-700">出発日</label>
+          <label className="text-base font-bold text-surface-foreground">出発日</label>
           <Controller
             name="startDate"
             control={control}
@@ -155,7 +155,7 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
           />
         </div>
         <div className="space-y-1">
-          <label className="text-base font-bold text-zinc-700">帰着日</label>
+          <label className="text-base font-bold text-surface-foreground">帰着日</label>
           <Controller
             name="endDate"
             control={control}
@@ -169,15 +169,15 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
 
       {/* 予算内訳 */}
       <div className="space-y-1">
-        <label className="block text-base font-bold text-zinc-700">予算</label>
+        <label className="block text-base font-bold text-surface-foreground">予算</label>
         <div className="mb-1 flex items-center justify-between pr-4">
-          <p className="text-sm font-semibold text-zinc-700">
+          <p className="text-sm font-semibold text-surface-foreground">
             合計：{totalBudget > 0 ? `¥${totalBudget.toLocaleString()}` : "—"}
           </p>
           <button
             type="button"
             onClick={addBudgetItem}
-            className="rounded-lg border border-dashed border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-500 hover:bg-zinc-50 transition-colors"
+            className="rounded-lg border border-dashed border-zinc-300 dark:border-zinc-600 px-4 py-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
           >
             ＋ 項目を追加
           </button>
@@ -190,14 +190,14 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
               value={formatAmount(item.amount)}
               onChange={(e) => updateBudgetItem(i, "amount", parseAmount(e.target.value))}
               placeholder="金額"
-              className="w-28 rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-28 rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             />
             <input
               value={item.label}
               onChange={(e) => updateBudgetItem(i, "label", e.target.value)}
               placeholder="内容（例：交通費）"
               maxLength={50}
-              className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="flex-1 rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             />
             <button
               type="button"
@@ -212,18 +212,18 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
 
       {/* メモ */}
       <div className="space-y-1">
-        <label className="text-base font-bold text-zinc-700">メモ</label>
+        <label className="text-base font-bold text-surface-foreground">メモ</label>
         <textarea
           {...register("memo")}
           rows={4}
           placeholder="旅の目的やメモ"
-          className="w-full resize-none rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full resize-none rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
         />
       </div>
 
       {/* スポット */}
       <div className="space-y-2">
-        <label className="text-base font-bold text-zinc-700">スポット</label>
+        <label className="text-base font-bold text-surface-foreground">スポット</label>
         <SpotPicker initialSelected={initialSelectedSpots} wishlistPosts={wishlistPosts} onChange={setSpots} />
       </div>
 
@@ -233,8 +233,8 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
           <button
             type="button"
             onClick={() => setCompleted(false)}
-            className={`w-28 sm:w-auto sm:flex-1 rounded-full border px-4 py-2 text-sm font-semibold text-blue-700 transition-colors ${
-              !completed ? "border-blue-500 bg-blue-50" : "border-zinc-200 hover:bg-zinc-50"
+            className={`w-28 sm:w-auto sm:flex-1 rounded-full border px-4 py-2 text-sm font-semibold text-blue-700 dark:text-blue-400 transition-colors ${
+              !completed ? "border-blue-500 bg-blue-50 dark:bg-blue-950" : "border-surface-border hover:bg-zinc-50 dark:hover:bg-white/5"
             }`}
           >
             未完了
@@ -242,8 +242,8 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
           <button
             type="button"
             onClick={() => setCompleted(true)}
-            className={`w-28 sm:w-auto sm:flex-1 rounded-full border px-4 py-2 text-sm font-semibold text-red-700 transition-colors ${
-              completed ? "border-red-500 bg-red-50" : "border-zinc-200 hover:bg-zinc-50"
+            className={`w-28 sm:w-auto sm:flex-1 rounded-full border px-4 py-2 text-sm font-semibold text-red-700 dark:text-red-400 transition-colors ${
+              completed ? "border-red-500 bg-red-50 dark:bg-red-950" : "border-surface-border hover:bg-zinc-50 dark:hover:bg-white/5"
             }`}
           >
             完了済み
@@ -256,14 +256,14 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex-1 rounded-xl border border-zinc-400 py-3 text-sm font-medium text-zinc-600 hover:border-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 transition-colors"
+          className="flex-1 rounded-xl border border-zinc-400 dark:border-zinc-600 py-3 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:border-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
         >
           キャンセル
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+          className="flex-1 rounded-xl bg-green-700 py-3 text-sm font-semibold text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
         >
           {isSubmitting ? "送信中..." : isEdit ? "更新する" : "作成する"}
         </button>

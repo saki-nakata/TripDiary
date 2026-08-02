@@ -132,6 +132,16 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+      # webServerがE2E開始時に`pnpm build`を実行するため、Next.jsの増分ビルドキャッシュだけを復元する。
+      # `.next`全体を再利用するとビルド生成物と環境変数・ソースの不整合を招くため、キャッシュ対象は
+      # Next.js自身が有効性を判定する`.next/cache`に限定する。
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml', 'package.json', 'next.config.ts', 'src/**') }}
+          restore-keys: |
+            ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}-
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma migrate deploy
       # Playwrightのブラウザ本体は大きく、毎回の再取得を避ける。
