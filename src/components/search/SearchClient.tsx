@@ -457,7 +457,7 @@ function UserSearchTab({ q, viewerId }: { q: string; viewerId?: string }) {
                 {u.image ? (
                   <Image src={u.image} alt={u.nickname} fill sizes="48px" className="object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                  <div className="w-full h-full flex items-center justify-center text-sm text-zinc-700 dark:text-zinc-300 font-medium">
                     {u.nickname[0]}
                   </div>
                 )}
