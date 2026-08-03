@@ -121,7 +121,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
   return (
     <>
     <section className="mt-8">
-      <h2 className="text-base font-semibold text-zinc-800 mb-4">💬 コメント</h2>
+      <h2 className="text-base font-semibold text-surface-foreground mb-4">💬 コメント</h2>
 
       {currentUserId ? (
         <form onSubmit={handleSubmit} className="mb-6">
@@ -133,12 +133,12 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
             rows={3}
             disabled={submitting}
             data-testid="comment-textarea"
-            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-zinc-50 disabled:text-zinc-400"
+            className="w-full rounded-lg border border-surface-border bg-surface text-surface-foreground px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-700 disabled:bg-zinc-50 dark:disabled:bg-zinc-800 disabled:text-zinc-400"
           />
           {/* モバイルは文字数カウント＋投稿ボタンを先に表示し、コメント件数を次の行に分離する */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
             {comments.length > 0 && (
-              <span className="order-2 sm:order-1 text-base font-semibold text-zinc-600">{comments.length}件</span>
+              <span className="order-2 sm:order-1 text-base font-semibold text-zinc-600 dark:text-zinc-400">{comments.length}件</span>
             )}
             <div className="order-1 sm:order-2 flex items-center justify-end gap-3">
               <span className={`text-xs ${body.length > 2000 ? "text-red-500" : "text-zinc-400"}`}>
@@ -148,7 +148,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
                 type="submit"
                 disabled={!body.trim() || submitting}
                 data-testid="comment-submit"
-                className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-lg bg-green-700 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? "送信中..." : "コメントを投稿"}
               </button>
@@ -156,8 +156,8 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
           </div>
         </form>
       ) : (
-        <p className="mb-6 text-sm text-zinc-500">
-          <Link href="/login" className="text-green-600 hover:underline font-medium">
+        <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
+          <Link href="/login" className="text-green-600 dark:text-green-400 hover:underline font-medium">
             ログインする
           </Link>
           とコメントできます
@@ -175,7 +175,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
               currentUserId === comment.author.id || currentUserId === postAuthorId;
             return (
               <li key={comment.id} className="flex gap-3" data-testid="comment-item">
-                <div className="relative w-9 h-9 rounded-full overflow-hidden bg-zinc-200 shrink-0">
+                <div className="relative w-9 h-9 rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-700 shrink-0">
                   {comment.author.image ? (
                     <Image
                       src={comment.author.image}
@@ -185,24 +185,24 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
                       className="object-cover"
                     />
                   ) : (
-                    <span className="w-full h-full flex items-center justify-center text-xs font-medium text-zinc-500">
+                    <span className="w-full h-full flex items-center justify-center text-xs font-medium text-zinc-500 dark:text-zinc-400">
                       {comment.author.nickname[0]}
                     </span>
                   )}
                 </div>
                 <div className="flex-1">
-                  <span className="text-sm font-bold text-zinc-800">{comment.author.nickname}</span>
-                  <p className="mt-1 text-sm text-zinc-700 whitespace-pre-wrap">{comment.body}</p>
+                  <span className="text-sm font-bold text-surface-foreground">{comment.author.nickname}</span>
+                  <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{comment.body}</p>
                   <div className="flex items-center mt-1">
                     <span className="text-xs text-zinc-400">
                       {formatDateSlash(comment.createdAt)}
                     </span>
                     {canDelete && (
                       <>
-                        <span className="mx-2 text-zinc-200 text-xs">|</span>
+                        <span className="mx-2 text-zinc-200 dark:text-zinc-700 text-xs">|</span>
                         <button
                           onClick={() => handleDelete(comment.id)}
-                          className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                          className="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors"
                         >
                           削除
                         </button>

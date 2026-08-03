@@ -90,7 +90,7 @@ export function DateField({ value, onChange, max, error, testId }: Props) {
         type="button"
         data-testid={testId}
         onClick={() => (open ? setOpen(false) : openCalendar())}
-        className={`w-full flex items-center justify-between rounded-lg border px-3 py-2 text-sm bg-surface text-left focus:outline-none focus:ring-2 focus:ring-green-500 ${
+        className={`w-full flex items-center justify-between rounded-lg border px-3 py-2 text-sm bg-surface text-left focus:outline-none focus:ring-2 focus:ring-green-700 ${
           error ? "border-red-400" : "border-surface-border"
         }`}
       >

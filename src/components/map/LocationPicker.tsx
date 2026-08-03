@@ -6,6 +6,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
+import { fetchJson } from "@/lib/fetchJson";
 
 const defaultIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -61,11 +62,10 @@ function PinMap({
 }
 
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ja`
+  const data = await fetchJson<{ display_name?: string }>(
+    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ja`,
+    "住所の取得に失敗しました"
   );
-  if (!res.ok) throw new Error();
-  const data = await res.json();
   return data.display_name ?? `${lat}, ${lng}`;
 }
 
@@ -81,6 +81,9 @@ export function LocationPicker({ lat, lng, onChange, label }: Props) {
     queryFn: () => reverseGeocode(lat!, lng!),
     enabled: lat != null && lng != null,
     retry: false,
+    // 失敗時は座標そのものへ自然にフォールバック表示する既存の設計のため、
+    // エラートーストは出さない（isErrorで下のfallbackAddressへ切り替えるだけで十分）
+    meta: { silentError: true },
   });
   const fallbackAddress = lat != null && lng != null ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : null;
   const displayAddress = isError ? fallbackAddress : address;

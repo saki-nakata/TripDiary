@@ -47,8 +47,8 @@ export function WishlistButton({ postId, initialWishlisted, isLoggedIn, isAuthor
       disabled={loading}
       className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
         wishlisted
-          ? "bg-blue-50 text-blue-500 hover:bg-blue-100"
-          : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+          ? "bg-blue-50 dark:bg-blue-950 text-blue-500 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900"
+          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
       }`}
       title={wishlisted ? "行きたいを解除" : "行きたいに追加"}
     >

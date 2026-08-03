@@ -38,7 +38,7 @@ export function PlanMapView({ spots, className }: Props) {
       bounds={spots.length > 1 ? bounds : undefined}
       boundsOptions={{ padding: [32, 32] }}
       zoom={14}
-      className={className ?? "h-80 w-full rounded-xl border border-sky-200 z-0"}
+      className={className ?? "h-80 w-full rounded-xl border border-sky-200 dark:border-sky-800 z-0"}
       scrollWheelZoom
     >
       <TileLayer

@@ -19,8 +19,11 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}", "performance/**/*.test.ts"],
     // Repositoryテストは実DBに対して全件deleteManyでクリーンアップするため、
     // 複数テストファイルを並列実行すると共有テーブルの競合でFK制約違反等が発生する。
-    // ファイル間は直列実行する（ファイル内のテストはこれまで通り高速）。
+    // 実DBを共有するためworker数は1に固定する。一方、各テストファイルはモックを
+    // 独立して定義しているため、モジュール隔離（既定値）は維持する。
     fileParallelism: false,
+    pool: "forks",
+    maxWorkers: 1,
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

@@ -55,12 +55,12 @@ export function UserLoadMoreList({ initialUsers, initialNextCursor, initialHasMo
     <div>
       <div className="space-y-2">
         {users.map((user) => (
-          <div key={user.id} className="flex items-center gap-3 p-3 rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors">
+          <div key={user.id} className="flex items-center gap-3 p-3 rounded-xl border border-surface-border hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors">
             <Link href={`/users/${user.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-200 shrink-0">
-                {user.image ? <Image src={user.image} alt={user.nickname} fill sizes="40px" className="object-cover" /> : <div className="w-full h-full flex items-center justify-center text-sm text-zinc-500 font-medium">{user.nickname[0]}</div>}
+              <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-700 shrink-0">
+                {user.image ? <Image src={user.image} alt={user.nickname} fill sizes="40px" className="object-cover" /> : <div className="w-full h-full flex items-center justify-center text-sm text-zinc-500 dark:text-zinc-400 font-medium">{user.nickname[0]}</div>}
               </div>
-              <div className="min-w-0"><p className="text-sm font-medium text-zinc-900 truncate">{user.nickname}</p>{user.bio && <p className="text-xs text-zinc-500 truncate">{user.bio}</p>}</div>
+              <div className="min-w-0"><p className="text-sm font-medium text-surface-foreground truncate">{user.nickname}</p>{user.bio && <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{user.bio}</p>}</div>
             </Link>
             {viewerId && viewerId !== user.id && <FollowButton userId={user.id} initialFollowing={user.followedByCurrentUser} isLoggedIn size="sm" />}
           </div>

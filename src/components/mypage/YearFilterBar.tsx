@@ -29,7 +29,7 @@ export function YearFilterBar({ tab, years, value }: Props) {
       <select
         value={value}
         onChange={handleChange}
-        className="rounded-lg border border-surface-border bg-surface text-surface-foreground px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-green-500"
+        className="rounded-lg border border-surface-border bg-surface text-surface-foreground px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-green-700"
       >
         <option value="all">全期間</option>
         {years.map((y) => (

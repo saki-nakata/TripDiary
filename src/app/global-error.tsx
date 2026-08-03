@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { captureClientException } from "@/lib/monitoring-client";
+import { applyTheme } from "@/components/ui/theme";
+import { parseThemeCookie, THEME_COOKIE_NAME } from "@/lib/theme-cookie";
 
 export default function GlobalError({
   error,
@@ -19,15 +21,23 @@ export default function GlobalError({
     captureClientException(error, { source: "global-error" });
   }, [error]);
 
+  useEffect(() => {
+    // このページはルートレイアウトを経由しない独自の<html>のため、RootLayoutが
+    // サーバー側で設定するdata-theme属性が付かない。アプリ内で手動選択したテーマ
+    // （Cookie）をクライアント側で読み直し、prefers-color-schemeだけに頼らず反映する
+    const match = document.cookie.match(new RegExp(`(?:^|; )${THEME_COOKIE_NAME}=([^;]*)`));
+    applyTheme(parseThemeCookie(match ? decodeURIComponent(match[1]) : undefined));
+  }, []);
+
   return (
     <html lang="ja">
       <body>
         <div className="animate-fade-in flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
-          <div className="flex h-28 w-28 items-center justify-center rounded-full bg-red-100">
+          <div className="flex h-28 w-28 items-center justify-center rounded-full bg-red-100 dark:bg-red-950">
             <TwemojiIcon codepoint="26a0" className="h-14 w-14" />
           </div>
-          <h2 className="text-2xl font-semibold text-zinc-800">重大な問題が発生しました</h2>
-          <p className="max-w-sm text-base leading-relaxed text-zinc-500">
+          <h2 className="text-2xl font-semibold text-surface-foreground">重大な問題が発生しました</h2>
+          <p className="max-w-sm text-base leading-relaxed text-zinc-500 dark:text-zinc-400">
             アプリの続行ができませんでした。
             <br />
             お手数ですが、再度お試しください。

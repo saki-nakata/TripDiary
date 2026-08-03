@@ -105,7 +105,7 @@ function FollowFeedCard({ post, now }: { post: Post; now: Date }) {
         {post.category && (
           <span
             className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-xs font-medium ${
-              CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600"
+              CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
             }`}
           >
             <CategoryIcon category={category} /> {post.category}

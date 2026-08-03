@@ -289,6 +289,8 @@ test.describe("PR-7e: 検索・タグページの状態別ダークテーマ対�
   test("ユーザータブ: カードのhover状態がダークモードで読める", async ({ page }) => {
     await page.goto("/search?tab=user");
 
+    const searchInput = page.getByTestId("search-input");
+    await searchInput.fill(SEARCH_TARGET_USER.nickname);
     const userCard = page.getByText(SEARCH_TARGET_USER.nickname, { exact: true }).first();
     const userRow = page.locator("a", { hasText: SEARCH_TARGET_USER.nickname }).first();
     await expect(userCard).toBeVisible();

@@ -7,7 +7,7 @@ export function BackButton() {
   return (
     <button
       onClick={() => router.back()}
-      className="inline-flex items-center gap-1 text-sm text-[#7ba7c4] border border-zinc-200 rounded-full px-2.5 py-1 transition-colors hover:bg-zinc-100 hover:border-zinc-300 hover:text-[#5a8aab]"
+      className="inline-flex items-center gap-1 text-sm text-[#7ba7c4] dark:text-[#5a8aab] border border-surface-border rounded-full px-2.5 py-1 transition-colors hover:bg-zinc-100 dark:hover:bg-white/5 hover:border-zinc-300 dark:hover:border-zinc-600 hover:text-[#5a8aab] dark:hover:text-[#7ba7c4]"
     >
       <span className="text-base leading-none">‹</span>
       <span>戻る</span>

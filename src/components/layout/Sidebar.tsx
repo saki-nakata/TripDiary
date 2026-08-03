@@ -9,20 +9,23 @@ import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Logo } from "@/components/ui/Logo";
 import { useToast } from "@/contexts/toast-context";
+import { fetchJson } from "@/lib/fetchJson";
 
 async function fetchUnreadCount(): Promise<number> {
-  const res = await fetch("/api/notifications/unread-count");
-  if (!res.ok) return 0;
-  const data = await res.json();
+  const data = await fetchJson<{ count?: number }>("/api/notifications/unread-count", "未読件数の取得に失敗しました");
   return data.count ?? 0;
 }
 
 function useUnreadCount() {
+  // 3分おきのバックグラウンドポーリングのため、失敗時にトーストを出すと
+  // 一時的な通信不調のたびに繰り返し表示されてしまう（meta.silentErrorで抑制）。
+  // 失敗時はreact-queryの既定動作どおり直前の値を保持し、0へ誤って戻さない
   const { data } = useQuery({
     queryKey: ["unread-count"],
     queryFn: fetchUnreadCount,
     staleTime: 60_000,
     refetchInterval: 180_000,
+    meta: { silentError: true },
   });
 
   return { count: data ?? 0 };

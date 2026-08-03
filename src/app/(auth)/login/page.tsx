@@ -98,7 +98,7 @@ export default function LoginPage() {
                 {...register("email")}
                 placeholder="example@email.com"
                 autoComplete="email"
-                className={`w-full rounded-xl border px-4 py-2.5 text-sm text-surface-foreground placeholder:text-[#94a3b8] dark:placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-surface ${errors.email ? "border-red-400 focus:border-red-400" : "border-surface-border focus:border-[#16a34a]"}`}
+                className={`w-full rounded-xl border px-4 py-2.5 text-sm text-surface-foreground placeholder:text-[#94a3b8] dark:placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-green-700 bg-surface ${errors.email ? "border-red-400 focus:border-red-400" : "border-surface-border focus:border-[#16a34a]"}`}
               />
               {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
             </div>
@@ -114,7 +114,7 @@ export default function LoginPage() {
                   {...register("password")}
                   placeholder="パスワードを入力"
                   autoComplete="current-password"
-                  className={`peer w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-surface-foreground placeholder:text-[#94a3b8] dark:placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-[#16a34a]/20 bg-surface ${errors.password ? "border-red-400 focus:border-red-400" : "border-surface-border focus:border-[#16a34a]"}`}
+                  className={`peer w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-surface-foreground placeholder:text-[#94a3b8] dark:placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-green-700 bg-surface ${errors.password ? "border-red-400 focus:border-red-400" : "border-surface-border focus:border-[#16a34a]"}`}
                 />
                 <button
                     type="button"

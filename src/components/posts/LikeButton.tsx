@@ -56,8 +56,8 @@ export function LikeButton({ postId, initialLiked, initialCount, isLoggedIn, dis
       title={disabled ? "自分の投稿にはいいねできません" : liked ? "いいねを解除" : "いいね"}
       className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
         showLiked
-          ? "bg-red-50 text-red-500 hover:bg-red-100"
-          : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+          ? "bg-red-50 dark:bg-red-950 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900"
+          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
       } ${disabled ? (showLiked ? "cursor-not-allowed" : "opacity-50 cursor-not-allowed") : ""}`}
     >
       <TwemojiIcon
