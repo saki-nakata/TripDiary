@@ -57,7 +57,7 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
         {/* pt-4: スマホ用の余白。md〜lg（768〜1279px、iPad Pro縦向き含む）は
             コンテナのパディングが p-8 でも -mt-4 と相殺すると余白が足りず重なる
             ため pt-9 に広げ、本当にPC幅と言える xl（1280px）で解除する */}
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1e293b] pt-5 md:pt-3 lg:pt-1 xl:pt-0">
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-surface-foreground pt-5 md:pt-3 lg:pt-1 xl:pt-0">
           <TwemojiIcon codepoint="1f50d" className="h-6 w-6" /> 検索
         </h1>
 
@@ -68,7 +68,7 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
             onChange={(e) => setQ(e.target.value)}
             placeholder="スポット名・エリア・ユーザー名で検索…"
             data-testid="search-input"
-            className="w-full h-9 sm:h-11 pl-10 pr-9 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+            className="w-full h-9 sm:h-11 pl-10 pr-9 border border-surface-border bg-surface text-surface-foreground rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
           />
           {q && (
             <button
@@ -82,13 +82,13 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
           )}
         </div>
 
-        <div className="flex gap-1 border-b border-zinc-200">
+        <div className="flex gap-1 border-b border-surface-border">
           {TABS.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`relative flex-1 sm:flex-none flex flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 text-[0.8rem] sm:text-[0.95rem] font-medium transition-colors whitespace-nowrap ${
-                tab === t.key ? "text-[#16a34a]" : "text-zinc-500 hover:text-zinc-700"
+                tab === t.key ? "text-[#16a34a] dark:text-[#4ade80]" : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
               }`}
             >
               <span className="text-base sm:text-[0.95rem]">{t.icon}</span>
@@ -168,8 +168,8 @@ function PostSearchTab({
           onClick={() => setCategory("")}
           className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[0.7rem] sm:text-sm font-medium transition-colors border ${
             category === ""
-              ? "bg-blue-400 text-white border-blue-400"
-              : "bg-white text-zinc-500 border-zinc-200 hover:border-blue-400 hover:text-blue-500"
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-surface text-zinc-500 dark:text-zinc-400 border-surface-border hover:border-blue-400 hover:text-blue-500 dark:hover:text-blue-400"
           }`}
         >
           全て
@@ -180,8 +180,8 @@ function PostSearchTab({
             onClick={() => setCategory(c)}
             className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[0.65rem] sm:text-sm font-medium transition-colors border whitespace-nowrap ${
               category === c
-                ? "bg-blue-400 text-white border-blue-400"
-                : "bg-white text-zinc-500 border-zinc-200 hover:border-blue-400 hover:text-blue-500"
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-surface text-zinc-500 dark:text-zinc-400 border-surface-border hover:border-blue-400 hover:text-blue-500 dark:hover:text-blue-400"
             }`}
           >
             <CategoryIcon category={c} /> <span>{c}</span>
@@ -190,19 +190,19 @@ function PostSearchTab({
       </div>
 
       {locationLabel && (
-        <p className="text-sm text-zinc-500">
-          📍 <strong className="text-zinc-800">{locationLabel}{category}</strong>の投稿 {posts.length}
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          📍 <strong className="text-surface-foreground">{locationLabel}{category}</strong>の投稿 {posts.length}
           {query.hasNextPage ? "+" : ""}件
         </p>
       )}
 
       {showSort && (
         <div className="flex items-center justify-center sm:justify-start gap-2">
-          <span className="sm:hidden text-sm text-zinc-500">並び順：</span>
+          <span className="sm:hidden text-sm text-zinc-500 dark:text-zinc-400">並び順：</span>
           <button
             onClick={() => setSort("latest")}
             className={`px-3 py-1.5 rounded-full text-[0.8rem] sm:text-sm font-medium transition-colors ${
-              sort === "latest" ? "bg-[#16a34a] text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              sort === "latest" ? "bg-[#15803d] text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
             }`}
           >
             新着順
@@ -210,7 +210,7 @@ function PostSearchTab({
           <button
             onClick={() => setSort("popular")}
             className={`px-3 py-1.5 rounded-full text-[0.8rem] sm:text-sm font-medium transition-colors ${
-              sort === "popular" ? "bg-[#16a34a] text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              sort === "popular" ? "bg-[#15803d] text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
             }`}
           >
             人気順
@@ -230,7 +230,7 @@ function PostSearchTab({
               <Link
                 key={post.id}
                 href={`/posts/${post.id}`}
-                className="flex items-center gap-3 p-3 rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-xl border border-surface-border hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
               >
                 <span
                   className={`w-8 text-center font-bold text-zinc-400 ${
@@ -239,7 +239,7 @@ function PostSearchTab({
                 >
                   {i < 3 ? MEDALS[i] : i + 1}
                 </span>
-                <div className="relative w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-zinc-100 -ml-3 sm:ml-0">
+                <div className="relative w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800 -ml-3 sm:ml-0">
                   {thumbnail ? (
                     <Image
                       src={thumbnail}
@@ -249,21 +249,21 @@ function PostSearchTab({
                       sizes="48px"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-lg text-zinc-300">
+                    <div className="flex h-full items-center justify-center text-lg text-zinc-300 dark:text-zinc-500">
                       <CategoryIcon category={post.category ?? "その他"} />
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   {/* モバイル: タイトル→エリア+カテゴリ→ユーザー名+日付 の3行（②③はハート+カウントと横並び） */}
-                  <p className="sm:hidden text-sm font-semibold text-zinc-900 truncate">{post.title}</p>
-                  <p className="sm:hidden flex items-center gap-2 text-xs text-zinc-500">
+                  <p className="sm:hidden text-sm font-semibold text-surface-foreground truncate">{post.title}</p>
+                  <p className="sm:hidden flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
                     <span className="flex-1 min-w-0 flex items-center gap-2">
                       <span className="truncate">📍 {post.location}</span>
                       {post.category && (
                         <span
                           className={`shrink-0 rounded-full px-1.5 py-0.5 text-[0.65rem] font-medium ${
-                            CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600"
+                            CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
                           }`}
                         >
                           <CategoryIcon category={post.category} /> {post.category}
@@ -275,7 +275,7 @@ function PostSearchTab({
                       <span className="text-sm text-zinc-400">{post._count.likes}</span>
                     </span>
                   </p>
-                  <p className="sm:hidden mt-0.5 flex items-center gap-2 text-xs text-zinc-500">
+                  <p className="sm:hidden mt-0.5 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
                     <span className="shrink-0 inline-flex items-center gap-0.5 truncate">
                       <TwemojiIcon codepoint="1f464" alt="👤" className="h-3 w-3" />
                       {post.author.nickname}
@@ -287,13 +287,13 @@ function PostSearchTab({
                   </p>
 
                   {/* PC/タブレット: タイトル / エリア+カテゴリ+ユーザー名+日付 の2行 */}
-                  <p className="hidden sm:block text-sm font-semibold text-zinc-900 truncate">{post.title}</p>
-                  <p className="hidden sm:flex items-center gap-3 text-xs text-zinc-500">
+                  <p className="hidden sm:block text-sm font-semibold text-surface-foreground truncate">{post.title}</p>
+                  <p className="hidden sm:flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
                     <span className="truncate">📍 {post.location}</span>
                     {post.category && (
                       <span
                         className={`shrink-0 rounded-full px-1.5 py-0.5 text-[0.65rem] font-medium ${
-                          CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600"
+                          CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
                         }`}
                       >
                         <CategoryIcon category={post.category} /> {post.category}
@@ -351,7 +351,7 @@ function AreaSearchTab({ q, initialLocation }: { q: string; initialLocation?: st
     return (
       <div className="flex flex-wrap gap-2">
         {Array.from({ length: 12 }).map((_, i) => (
-          <span key={i} className="w-16 h-9 rounded-full bg-zinc-100 animate-pulse" />
+          <span key={i} className="w-16 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
         ))}
       </div>
     );
@@ -379,7 +379,7 @@ function AreaSearchTab({ q, initialLocation }: { q: string; initialLocation?: st
             className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[0.72rem] sm:text-sm font-medium border transition-colors ${
               selected === area.location
                 ? "bg-yellow-400 text-zinc-900 border-yellow-400"
-                : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:border-yellow-400 hover:text-yellow-700"
+                : "bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-surface-border hover:border-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-400"
             }`}
           >
             {area.location}
@@ -389,7 +389,7 @@ function AreaSearchTab({ q, initialLocation }: { q: string; initialLocation?: st
 
       {selectedArea && (
         <>
-          <hr className="border-t border-dashed border-zinc-200" />
+          <hr className="border-t border-dashed border-surface-border" />
           <PostSearchTab
             location={selectedArea.location}
             q={q}
@@ -450,26 +450,26 @@ function UserSearchTab({ q, viewerId }: { q: string; viewerId?: string }) {
         {users.map((u) => (
           <div
             key={u.id}
-            className="flex items-center gap-3 py-3 pl-3 pr-2 sm:py-3 sm:pl-5 sm:pr-3 rounded-xl border border-zinc-200 transition-colors hover:border-zinc-300 hover:bg-zinc-100"
+            className="flex items-center gap-3 py-3 pl-3 pr-2 sm:py-3 sm:pl-5 sm:pr-3 rounded-xl border border-surface-border transition-colors hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-white/5"
           >
             <Link href={`/users/${u.id}`} className="flex items-center gap-3 sm:gap-5 flex-1 min-w-0">
-              <div className="relative w-12 h-12 rounded-full overflow-hidden bg-zinc-200 shrink-0">
+              <div className="relative w-12 h-12 rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-700 shrink-0">
                 {u.image ? (
                   <Image src={u.image} alt={u.nickname} fill sizes="48px" className="object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm text-zinc-500 font-medium">
+                  <div className="w-full h-full flex items-center justify-center text-sm text-zinc-700 dark:text-zinc-300 font-medium">
                     {u.nickname[0]}
                   </div>
                 )}
               </div>
               <div className="min-w-0 flex-1 sm:space-y-1">
                 <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
-                  <p className="text-sm font-medium text-zinc-900 truncate">{u.nickname}</p>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 text-[11px] font-semibold px-2 py-0.5 shrink-0">
+                  <p className="text-sm font-medium text-surface-foreground truncate">{u.nickname}</p>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 text-[11px] font-semibold px-2 py-0.5 shrink-0">
                     ✈️ {u.tabiScore}pts
                   </span>
                 </div>
-                {u.bio && <p className="text-xs text-zinc-500 truncate">{u.bio}</p>}
+                {u.bio && <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{u.bio}</p>}
                 <p className="text-xs text-zinc-400 mt-0.5 sm:mt-0">
                   {u._count.posts}件の投稿 ・ フォロワー {u._count.followers}人
                 </p>

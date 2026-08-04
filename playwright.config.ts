@@ -7,7 +7,17 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   // 既定のアサーション5秒は、CI高負荷時のSSR/描画遅延で超過しがち。全specへ一律に余裕を持たせる
   // （通過テストの所要時間には影響せず、待つのは遅延・失敗時のみ）。
-  expect: { timeout: 10_000 },
+  expect: {
+    timeout: 10_000,
+    // ローカル（公式Playwright Dockerイメージ等）で生成したbaselineと実CI
+    // （ubuntu-latest + playwright install-deps）のフォントレンダリングは、
+    // OS側パッケージが完全一致しないため数十〜百数十px程度のアンチエイリアシング
+    // レベルの差が残ることがある（PR-7e、2026-08-04）。実際に検出された差分は
+    // 全画面比較で最大0.01%程度のため、10倍の余裕を持たせて0.1%まで許容する。
+    // 実際のバグ（配色変更漏れ等）は通常この閾値を大きく超えるため、検出力への
+    // 影響は小さい。
+    toHaveScreenshot: { maxDiffPixelRatio: 0.001 },
+  },
   reporter: [
     ["html", { outputFolder: "playwright-report", open: "never" }],
     ["json", { outputFile: "playwright-report/results.json" }],

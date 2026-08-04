@@ -43,11 +43,11 @@ export function MapView({ lat, lng, label, heading, className }: Props) {
   return (
     <>
       <div className="flex items-end justify-between">
-        {heading ? <p className="text-base font-semibold text-zinc-700">{heading}</p> : <span />}
+        {heading ? <p className="text-base font-semibold text-surface-foreground">{heading}</p> : <span />}
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="relative z-10 -mb-3 bg-sky-50 text-xs font-medium text-sky-700 hover:text-sky-900 hover:bg-sky-100 border border-sky-200 rounded-full px-2.5 py-1 transition-colors"
+          className="relative z-10 -mb-3 bg-sky-50 dark:bg-sky-950 text-xs font-medium text-sky-700 dark:text-sky-400 hover:text-sky-900 dark:hover:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900 border border-sky-200 dark:border-sky-800 rounded-full px-2.5 py-1 transition-colors"
         >
           🗺️地図拡大表示🔍
         </button>
@@ -55,7 +55,7 @@ export function MapView({ lat, lng, label, heading, className }: Props) {
       <MapContainer
         center={[lat, lng]}
         zoom={14}
-        className={className ?? "h-64 w-full rounded-xl border border-sky-200"}
+        className={className ?? "h-64 w-full rounded-xl border border-sky-200 dark:border-sky-800"}
         scrollWheelZoom
       >
         <TileLayer
@@ -76,7 +76,7 @@ export function MapView({ lat, lng, label, heading, className }: Props) {
             <button
               type="button"
               onClick={() => setExpanded(false)}
-              className="absolute -top-10 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md hover:opacity-70 transition-opacity"
+              className="absolute -top-10 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-surface shadow-md hover:opacity-70 transition-opacity"
               aria-label="閉じる"
             >
               <span className="text-lg leading-none text-red-500">✕</span>

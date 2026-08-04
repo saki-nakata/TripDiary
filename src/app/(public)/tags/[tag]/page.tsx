@@ -28,15 +28,15 @@ export default async function TagPage({ params }: Props) {
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 -mt-4">
-      <Link href="/search?tab=area" className="text-sm text-zinc-500 hover:text-zinc-700">
+      <Link href="/search?tab=area" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300">
         ← エリア一覧に戻る
       </Link>
 
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1e293b]">
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-surface-foreground">
           <TwemojiIcon codepoint="1f4cd" className="h-6 w-6" /> {location}
         </h1>
-        <span className="text-sm text-zinc-500">{posts.length}件の投稿</span>
+        <span className="text-sm text-zinc-500 dark:text-zinc-400">{posts.length}件の投稿</span>
       </div>
 
       {/* エリア切り替えバー */}
@@ -47,8 +47,8 @@ export default async function TagPage({ params }: Props) {
             href={`/tags/${encodeURIComponent(l.location)}`}
             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
               l.location === location
-                ? "bg-[#16a34a] text-white border-[#16a34a]"
-                : "bg-white text-zinc-500 border-zinc-200 hover:border-[#16a34a] hover:text-[#16a34a]"
+                ? "bg-[#15803d] text-white border-[#15803d]"
+                : "bg-surface text-zinc-500 dark:text-zinc-400 border-surface-border hover:border-[#16a34a] dark:hover:border-[#4ade80] hover:text-[#16a34a] dark:hover:text-[#4ade80]"
             }`}
           >
             {l.location}
