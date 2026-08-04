@@ -44,7 +44,7 @@ function PasswordInput({
         value={value}
         disabled={disabled}
         onChange={(e) => onChange?.(e.target.value)}
-        className={`w-full border rounded-lg px-3 py-2 pr-11 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30 ${disabled || dimmed ? "bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-400" : "bg-surface text-surface-foreground"} ${error ? "border-red-400" : "border-surface-border"}`}
+        className={`w-full border rounded-lg px-3 py-2 pr-11 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-700 ${disabled || dimmed ? "bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-400" : "bg-surface text-surface-foreground"} ${error ? "border-red-400" : "border-surface-border"}`}
       />
       {hasValue && (
         <button
@@ -213,7 +213,7 @@ export function AccountForms({ userId, initialEmail }: Props) {
             autoComplete="email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
-            className={`w-full border rounded-lg px-3 py-2 text-sm bg-surface text-surface-foreground focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30 ${emailErrors.email ? "border-red-400" : "border-surface-border"}`}
+            className={`w-full border rounded-lg px-3 py-2 text-sm bg-surface text-surface-foreground focus:outline-none focus:ring-2 focus:ring-green-700 ${emailErrors.email ? "border-red-400" : "border-surface-border"}`}
           />
           {emailErrors.email && <p className="text-xs text-red-500 mt-1">{emailErrors.email}</p>}
         </div>

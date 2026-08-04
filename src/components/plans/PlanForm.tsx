@@ -137,7 +137,7 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
           {...register("title")}
           maxLength={60}
           placeholder="例：京都・奈良 2泊3日"
-          className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.title ? "border-red-400" : "border-surface-border"}`}
+          className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-700 ${errors.title ? "border-red-400" : "border-surface-border"}`}
         />
         {errors.title && <p className="text-xs text-red-500">{errors.title.message}</p>}
       </div>
@@ -190,14 +190,14 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
               value={formatAmount(item.amount)}
               onChange={(e) => updateBudgetItem(i, "amount", parseAmount(e.target.value))}
               placeholder="金額"
-              className="w-28 rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-28 rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-700"
             />
             <input
               value={item.label}
               onChange={(e) => updateBudgetItem(i, "label", e.target.value)}
               placeholder="内容（例：交通費）"
               maxLength={50}
-              className="flex-1 rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="flex-1 rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-700"
             />
             <button
               type="button"
@@ -217,7 +217,7 @@ export function PlanForm({ initialData, wishlistPosts }: Props) {
           {...register("memo")}
           rows={4}
           placeholder="旅の目的やメモ"
-          className="w-full resize-none rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full resize-none rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-700"
         />
       </div>
 

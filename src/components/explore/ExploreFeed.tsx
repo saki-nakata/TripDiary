@@ -7,6 +7,7 @@ import { AreaSection } from "@/components/explore/AreaSection";
 import { CategorySection } from "@/components/explore/CategorySection";
 import { TopRatedSection } from "@/components/explore/TopRatedSection";
 import { HighlightedPostScroller } from "@/components/posts/HighlightedPostScroller";
+import { fetchJson } from "@/lib/fetchJson";
 import type { Post } from "@/types/post";
 
 type AreaItem = { location: string; count: number; thumbnailUrl: string | null };
@@ -20,10 +21,8 @@ export type PortalFeedData = {
   topRated: Post[];
 };
 
-async function fetchPortalFeed(): Promise<PortalFeedData> {
-  const res = await fetch("/api/posts/portal");
-  if (!res.ok) throw new Error("フィードの取得に失敗しました");
-  return res.json();
+function fetchPortalFeed(): Promise<PortalFeedData> {
+  return fetchJson("/api/posts/portal", "フィードの取得に失敗しました");
 }
 
 export function ExploreFeed({ initialData, viewerId }: { initialData: PortalFeedData; viewerId?: string }) {

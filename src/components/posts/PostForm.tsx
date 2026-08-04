@@ -280,7 +280,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
             {...register("title")}
             maxLength={40}
             placeholder="例：金閣寺"
-            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.title ? "border-red-400" : "border-surface-border"}`}
+            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-700 ${errors.title ? "border-red-400" : "border-surface-border"}`}
           />
           {errors.title && <p className="text-xs text-red-500">{errors.title.message}</p>}
         </div>
@@ -300,7 +300,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
             maxLength={2000}
             rows={5}
             placeholder="旅の思い出を書いてみましょう..."
-            className={`w-full rounded-lg border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.body ? "border-red-400" : "border-surface-border"}`}
+            className={`w-full rounded-lg border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-700 ${errors.body ? "border-red-400" : "border-surface-border"}`}
           />
           {errors.body && <p className="text-xs text-red-500">{errors.body.message}</p>}
         </div>
@@ -394,7 +394,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
             </label>
             <select
               {...register("location")}
-              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-surface text-surface-foreground ${errors.location ? "border-red-400" : "border-surface-border"}`}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-700 bg-surface text-surface-foreground ${errors.location ? "border-red-400" : "border-surface-border"}`}
             >
               <option value="">選択してください</option>
               {LOCATIONS.map((p) => (
@@ -413,7 +413,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
             </label>
             <select
               {...register("category")}
-              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-surface text-surface-foreground ${errors.category ? "border-red-400" : "border-surface-border"}`}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-700 bg-surface text-surface-foreground ${errors.category ? "border-red-400" : "border-surface-border"}`}
             >
               <option value="">選択してください</option>
               {CATEGORIES.map((c) => (
@@ -464,14 +464,14 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
                 value={formatAmount(item.amount)}
                 onChange={(e) => updateCostItem(i, "amount", parseAmount(e.target.value))}
                 placeholder="金額"
-                className="w-28 rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-28 rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-700"
               />
               <input
                 value={item.label}
                 onChange={(e) => updateCostItem(i, "label", e.target.value)}
                 placeholder="内容（例：交通費）"
                 maxLength={50}
-                className="flex-1 rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="flex-1 rounded-lg border border-surface-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-700"
               />
               <button
                 type="button"

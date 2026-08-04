@@ -55,8 +55,8 @@ export function FollowButton({ userId, initialFollowing, isLoggedIn, size = "md"
           : "flex-row items-center gap-1.5 px-5 py-2 text-sm"
       } ${
         following
-          ? "bg-green-50 text-green-600 hover:bg-green-100"
-          : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+          ? "bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900"
+          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
       }`}
     >
       {following ? (

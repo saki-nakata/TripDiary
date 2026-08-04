@@ -62,13 +62,13 @@ export default async function PostDetailPage({ params }: Props) {
             {post.category && (
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-medium text-xs ${
-                  CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600"
+                  CATEGORY_COLORS[post.category] ?? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
                 }`}
               >
                 <CategoryIcon category={post.category} /> {post.category}
               </span>
             )}
-            <span className="inline-flex items-center gap-1 text-[#16a34a] text-sm font-medium">
+            <span className="inline-flex items-center gap-1 text-[#16a34a] dark:text-[#4ade80] text-sm font-medium">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3.5 w-3.5" /> {post.location}
             </span>
             <span className="inline-flex items-center gap-1 text-zinc-400 text-sm ml-auto">
@@ -77,29 +77,29 @@ export default async function PostDetailPage({ params }: Props) {
               {visitedDate}
             </span>
           </div>
-          <h1 className="text-3xl font-bold text-zinc-900 leading-snug">{post.title}</h1>
+          <h1 className="text-3xl font-bold text-surface-foreground leading-snug">{post.title}</h1>
           <div className="flex items-center gap-3 flex-wrap">
             <Link
               href={`/users/${post.author.id}`}
               className="flex items-center gap-2 hover:opacity-80"
             >
-              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-zinc-200 shrink-0">
+              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-700 shrink-0">
                 {post.author.image ? (
                   <Image src={post.author.image} alt={post.author.nickname} fill sizes="32px" className="object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs text-zinc-500 font-medium">
+                  <div className="w-full h-full flex items-center justify-center text-xs text-zinc-500 dark:text-zinc-400 font-medium">
                     {post.author.nickname[0]}
                   </div>
                 )}
               </div>
-              <span className="text-sm font-medium text-zinc-700">{post.author.nickname}</span>
+              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{post.author.nickname}</span>
             </Link>
             <StarRating value={post.rating ?? 0} readonly size="sm" />
             {isAuthor && (
               <div className="ml-auto flex gap-2">
                 <Link
                   href={`/posts/${post.id}/edit`}
-                  className="px-3 py-1 text-sm border border-zinc-200 rounded-lg transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+                  className="px-3 py-1 text-sm border border-surface-border rounded-lg transition-colors hover:border-green-300 dark:hover:border-green-700 hover:bg-green-50 dark:hover:bg-green-950 hover:text-green-700 dark:hover:text-green-400"
                 >
                   編集
                 </Link>
@@ -140,22 +140,22 @@ export default async function PostDetailPage({ params }: Props) {
         </div>
 
         {/* Body */}
-        <p data-testid="post-body" className="text-[0.975rem] text-zinc-700 leading-[1.85] whitespace-pre-wrap">{post.body}</p>
+        <p data-testid="post-body" className="text-[0.975rem] text-surface-foreground leading-[1.85] whitespace-pre-wrap">{post.body}</p>
 
         {/* 費用内訳（自分の投稿のみ） */}
         {isAuthor && post.cost != null && post.cost > 0 && (
-          <div className="border border-amber-200 rounded-xl p-4">
+          <div className="border border-amber-200 dark:border-amber-800 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <p className="flex items-center gap-1.5 text-base font-semibold text-zinc-800">
+              <p className="flex items-center gap-1.5 text-base font-semibold text-surface-foreground">
                 <TwemojiIcon codepoint="1f4b4" alt="💴" className="h-4 w-4" /> 費用内訳
               </p>
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-400 text-xs font-medium px-2 py-0.5">
                 <TwemojiIcon codepoint="1f512" alt="🔒" className="h-3 w-3" /> 自分のみ表示
               </span>
             </div>
-            <p className="text-sm font-semibold text-zinc-700">合計：¥{post.cost.toLocaleString()}</p>
+            <p className="text-sm font-semibold text-surface-foreground">合計：¥{post.cost.toLocaleString()}</p>
             {post.costBreakdown && post.costBreakdown.length > 0 && (
-              <div className="flex flex-col gap-1 mt-2 text-sm text-zinc-500">
+              <div className="flex flex-col gap-1 mt-2 text-sm text-zinc-500 dark:text-zinc-400">
                 {post.costBreakdown.map((item: CostBreakdownItem, i: number) => (
                   <span key={i}>
                     {item.label} {item.amount.toLocaleString()}円
@@ -173,7 +173,7 @@ export default async function PostDetailPage({ params }: Props) {
               lat={post.lat}
               lng={post.lng}
               label={post.title}
-              className="h-[280px] w-full rounded-xl border border-sky-200 z-0"
+              className="h-[280px] w-full rounded-xl border border-sky-200 dark:border-sky-800 z-0"
             />
           </div>
         )}
@@ -181,7 +181,7 @@ export default async function PostDetailPage({ params }: Props) {
         {/* Related */}
         {related.length > 0 && (
           <div>
-            <p className="flex items-center gap-1.5 text-base font-semibold text-zinc-800 mb-3">
+            <p className="flex items-center gap-1.5 text-base font-semibold text-surface-foreground mb-3">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-4 w-4" /> {post.location}の関連スポット
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-3 xl:grid-cols-4 gap-4">

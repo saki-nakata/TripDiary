@@ -386,7 +386,7 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             placeholder="スポット名・キーワードで検索"
-            className="w-full rounded-lg border border-surface-border bg-surface text-surface-foreground px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full rounded-lg border border-surface-border bg-surface text-surface-foreground px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-green-700"
           />
           {query && (
             <button
@@ -518,7 +518,7 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
             }}
             placeholder="例：〇〇公園"
             maxLength={60}
-            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${freeErrors.title ? "border-red-400" : "border-surface-border"}`}
+            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-700 ${freeErrors.title ? "border-red-400" : "border-surface-border"}`}
           />
           {freeErrors.title && <p className="text-xs text-red-500">{freeErrors.title}</p>}
         </div>
@@ -534,7 +534,7 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
                   setFreeLocation(e.target.value);
                   if (e.target.value) setFreeErrors((prev) => ({ ...prev, location: undefined }));
                 }}
-                className={`w-full rounded-lg border bg-surface px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${freeLocation ? "text-surface-foreground" : "text-zinc-400"} ${freeErrors.location ? "border-red-400" : "border-surface-border"}`}
+                className={`w-full rounded-lg border bg-surface px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-700 ${freeLocation ? "text-surface-foreground" : "text-zinc-400"} ${freeErrors.location ? "border-red-400" : "border-surface-border"}`}
               >
                 <option value=""></option>
                 {LOCATIONS.map((l) => (
@@ -549,7 +549,7 @@ export function SpotPicker({ initialSelected, wishlistPosts, onChange }: Props) 
             <select
               value={freeCategory}
               onChange={(e) => setFreeCategory(e.target.value)}
-              className={`w-full rounded-lg border border-surface-border bg-surface px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${freeCategory ? "text-surface-foreground" : "text-zinc-400"}`}
+              className={`w-full rounded-lg border border-surface-border bg-surface px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-700 ${freeCategory ? "text-surface-foreground" : "text-zinc-400"}`}
             >
               <option value="" className="text-zinc-400">未選択でもOK</option>
               {CATEGORIES.map((c) => (

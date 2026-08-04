@@ -14,6 +14,7 @@ import { CATEGORIES, LOCATIONS, CATEGORY_COLORS } from "@/lib/constants";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 import { formatDateSlash } from "@/lib/date";
+import { fetchJson } from "@/lib/fetchJson";
 import type { PostsResponse } from "@/types/post";
 
 type AreaItem = { location: string; count: number; thumbnailUrl: string | null };
@@ -68,7 +69,7 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
             onChange={(e) => setQ(e.target.value)}
             placeholder="スポット名・エリア・ユーザー名で検索…"
             data-testid="search-input"
-            className="w-full h-9 sm:h-11 pl-10 pr-9 border border-surface-border bg-surface text-surface-foreground rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+            className="w-full h-9 sm:h-11 pl-10 pr-9 border border-surface-border bg-surface text-surface-foreground rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-700"
           />
           {q && (
             <button
@@ -144,9 +145,7 @@ function PostSearchTab({
       if (q) params.set("q", q);
       if (pageParam) params.set("cursor", pageParam);
 
-      const res = await fetch(`/api/posts/explore?${params.toString()}`);
-      if (!res.ok) throw new Error("failed to search posts");
-      return (await res.json()) as PostsResponse;
+      return fetchJson<PostsResponse>(`/api/posts/explore?${params.toString()}`, "検索結果の読み込みに失敗しました");
     },
     initialPageParam: "",
     getNextPageParam: (lastPage) => (lastPage.hasMore ? (lastPage.nextCursor ?? undefined) : undefined),
@@ -340,10 +339,8 @@ function AreaSearchTab({ q, initialLocation }: { q: string; initialLocation?: st
   const { data, isLoading, isError } = useQuery({
     queryKey: ["search-areas"],
     queryFn: async () => {
-      const res = await fetch("/api/posts/portal");
-      if (!res.ok) throw new Error("failed to load areas");
-      const data = await res.json();
-      return (data.locations ?? []) as AreaItem[];
+      const data = await fetchJson<{ locations?: AreaItem[] }>("/api/posts/portal", "エリアの読み込みに失敗しました");
+      return data.locations ?? [];
     },
   });
 
@@ -409,9 +406,7 @@ function UserSearchTab({ q, viewerId }: { q: string; viewerId?: string }) {
       const params = new URLSearchParams({ q, limit: "20" });
       if (pageParam) params.set("cursor", pageParam);
 
-      const res = await fetch(`/api/users/search?${params.toString()}`);
-      if (!res.ok) throw new Error("failed to search users");
-      return (await res.json()) as UsersResponse;
+      return fetchJson<UsersResponse>(`/api/users/search?${params.toString()}`, "ユーザー検索に失敗しました");
     },
     initialPageParam: "",
     getNextPageParam: (lastPage) => (lastPage.hasMore ? (lastPage.nextCursor ?? undefined) : undefined),
@@ -470,7 +465,7 @@ function UserSearchTab({ q, viewerId }: { q: string; viewerId?: string }) {
                   </span>
                 </div>
                 {u.bio && <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{u.bio}</p>}
-                <p className="text-xs text-zinc-400 mt-0.5 sm:mt-0">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5 sm:mt-0">
                   {u._count.posts}件の投稿 ・ フォロワー {u._count.followers}人
                 </p>
               </div>

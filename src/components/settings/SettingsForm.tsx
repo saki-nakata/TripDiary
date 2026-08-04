@@ -125,7 +125,7 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
         </div>
         <input
           {...register("nickname")}
-          className="w-full border border-surface-border rounded-lg px-3 py-2 text-sm bg-surface text-surface-foreground focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+          className="w-full border border-surface-border rounded-lg px-3 py-2 text-sm bg-surface text-surface-foreground focus:outline-none focus:ring-2 focus:ring-green-700"
         />
         {errors.nickname && <p className="text-xs text-red-500 mt-1">{errors.nickname.message}</p>}
       </div>
@@ -142,7 +142,7 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
           {...register("bio")}
           rows={5}
           placeholder="旅の趣味や好きな場所を教えてください"
-          className="w-full border border-surface-border rounded-lg px-3 py-2 text-sm bg-surface text-surface-foreground placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+          className="w-full border border-surface-border rounded-lg px-3 py-2 text-sm bg-surface text-surface-foreground placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-700"
         />
         {errors.bio && <p className="text-xs text-red-500 mt-1">{errors.bio.message}</p>}
       </div>

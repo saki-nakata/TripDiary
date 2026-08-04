@@ -289,6 +289,8 @@ test.describe("PR-7e: 検索・タグページの状態別ダークテーマ対�
   test("ユーザータブ: カードのhover状態がダークモードで読める", async ({ page }) => {
     await page.goto("/search?tab=user");
 
+    const searchInput = page.getByTestId("search-input");
+    await searchInput.fill(SEARCH_TARGET_USER.nickname);
     const userCard = page.getByText(SEARCH_TARGET_USER.nickname, { exact: true }).first();
     const userRow = page.locator("a", { hasText: SEARCH_TARGET_USER.nickname }).first();
     await expect(userCard).toBeVisible();
@@ -412,11 +414,15 @@ test.describe("PR-7e: 地図コンポーネントのダークテーマ対応", (
     await expect(modal).toBeVisible();
     // モーダルの枠・閉じるボタンは撮影対象に含めつつ、外部地図タイル
     // （.leaflet-container、実ネットワーク経由でサブピクセル差分が残り得る）と、
-    // 半透明の背景オーバーレイ（bg-black/60）越しに透けて見える背後の投稿カード
-    // （タイトルにDate.now()を含み実行のたびに変わる）を視覚回帰の対象から除く
+    // 半透明の背景オーバーレイ（bg-black/60）越しに透けて見える2種類の動的な文字列を
+    // 視覚回帰の対象から除く: ①投稿詳細ページ自体のh1見出し（タイトルにDate.now()を
+    // 含み実行のたびに変わる）と、②同ページ下部「関連スポット」に表示される
+    // [data-testid="post-card"]（DBに存在する他の投稿に応じて内容が変わる）。
+    // [data-testid="post-card"]だけでは①が、h1だけでは②がそれぞれ漏れて
+    // 視覚回帰が不安定になるため両方マスクする
     await page.waitForTimeout(300);
     await expect(modal).toHaveScreenshot("map-view-modal-dark.png", {
-      mask: [modal.locator(".leaflet-container"), page.locator('[data-testid="post-card"]')],
+      mask: [modal.locator(".leaflet-container"), page.locator("h1"), page.locator('[data-testid="post-card"]')],
     });
 
     await closeButton.click();

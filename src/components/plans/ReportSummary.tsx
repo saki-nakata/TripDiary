@@ -226,10 +226,10 @@ function TopRatedHighlights({ posts }: { posts: StatsResponse["topRatedPosts"] }
                 <TwemojiIcon codepoint="1f4f7" alt="📷" className="h-10 w-10" />
               </div>
             )}
-            <span className="absolute left-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-xl shadow-sm">
+            <span className="absolute left-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 dark:bg-zinc-900/90 text-xl shadow-sm">
               {RANK_MEDALS[i] ?? `${i + 1}`}
             </span>
-            <span className="absolute right-2 top-2 flex items-center gap-0.5 rounded-full bg-white/90 px-2 py-0.5 text-xs font-semibold text-amber-500 shadow-sm">
+            <span className="absolute right-2 top-2 flex items-center gap-0.5 rounded-full bg-white/90 dark:bg-zinc-900/90 px-2 py-0.5 text-xs font-semibold text-amber-500 shadow-sm">
               {post.rating}
               <TwemojiIcon codepoint="2b50" alt="★" className="h-3 w-3" />
             </span>
