@@ -245,8 +245,11 @@ test.describe("PR-7e: 検索・タグページの状態別ダークテーマ対�
 
     // 人気順ランキング行（border-zinc-200・bg-zinc-100サムネイル・text-zinc-900タイトルの対象）。
     // 上位20件の並び順はCI共有DBの状態に左右されるため、自分の投稿がその中に入っているかは
-    // 前提にせず、先頭のランキング行（誰の投稿でもよい）でスタイルだけを検証する
-    const rankingRow = page.locator('a[href^="/posts/"]').first();
+    // 前提にせず、先頭のランキング行（誰の投稿でもよい）でスタイルだけを検証する。
+    // サイドバー・モバイルナビの「新規投稿」リンク（href="/posts/new"）も`^/posts/`に
+    // マッチしてしまい.first()が誤ってそちらを拾うため、mainへスコープする
+    // （同じ問題をa[href^="/users/"]で検出・修正済みのユーザータブ検証と同種のパターン）
+    const rankingRow = page.locator('main a[href^="/posts/"]').first();
     await expect(rankingRow).toBeVisible();
     expect(await getContrastRatio(rankingRow)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
     await rankingRow.hover();
