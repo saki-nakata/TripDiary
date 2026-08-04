@@ -23,7 +23,13 @@ async function signInAndCreatePost(page: import("@playwright/test").Page) {
     data: {
       title: "PR7f ダークテーマ確認投稿",
       body: "通知・プロフィール・投稿詳細のダークテーマ確認用投稿です。",
-      location: "東京都",
+      // 「東京都」は他specも多用しており、共有テストDB上の同locationの投稿数が
+      // 実行順・タイミングで変動する。投稿詳細ページの「関連スポット」欄（同一
+      // locationの他投稿、最大4件）がこの投稿数に応じて表示件数・レイアウトの
+      // 高さが変わり、post-detail-*.pngの撮影が非決定的になっていた
+      // （dark-theme-explore-search.spec.tsのmap-view-modal-darkと同根の問題）。
+      // 他specと衝突しない専用locationにして関連スポットを常に0件にする
+      location: "東京都PR7f投稿詳細確認専用エリア",
       category: "観光",
       visitedAt: "2026-01-01",
       lat: 35.681236,
@@ -212,6 +218,10 @@ test.describe.serial("PR-7f: 実データの操作・一覧・旅行レポート
         await viewer.page.getByTestId("comment-textarea").fill("PR-7fのコメント表示確認です。");
         await viewer.page.getByTestId("comment-submit").click();
         await expect(viewer.page.getByTestId("comment-item")).toContainText("PR-7fのコメント表示確認です。");
+        // コメント表示は楽観的更新で先に反映されるため、投稿ミューテーション完了前に
+        // 送信ボタンが「送信中...」のまま撮影されることがある。ボタンのテキストが
+        // 通常表示へ戻る（=CommentSection.tsxのsubmitting状態がfalseに戻る）まで待つ
+        await expect(viewer.page.getByTestId("comment-submit")).toHaveText("コメントを投稿");
         await expect(viewer.page.locator("#comments")).toHaveScreenshot(`post-detail-actions-comments-${colorScheme}.png`);
       } finally {
         await viewer.context.close();
