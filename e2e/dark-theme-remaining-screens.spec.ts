@@ -82,8 +82,13 @@ test.describe("PR-7f: 残存画面のライト/ダーク比較", () => {
       await expect(heading).toBeVisible();
       expect(await getContrastRatio(heading)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
       await expect(page.locator(".leaflet-container")).toBeVisible();
+      // 地図タイル（外部ネットワーク経由でサブピクセル差分が残り得る）に加え、
+      // ページ下部「関連スポット」欄の[data-testid="post-card"]も対象から除く。
+      // 同一location（東京都）の他投稿がここに表示され、他specが作成した投稿の
+      // 有無・件数によって内容が変わるため（dark-theme-explore-search.spec.tsの
+      // map-view-modal-darkで発見した同種の問題）
       await expect(page.locator("main")).toHaveScreenshot(`post-detail-${colorScheme}.png`, {
-        mask: [page.locator(".leaflet-container")],
+        mask: [page.locator(".leaflet-container"), page.locator('[data-testid="post-card"]')],
       });
     });
 
