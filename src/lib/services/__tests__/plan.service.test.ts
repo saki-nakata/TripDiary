@@ -123,9 +123,12 @@ describe("createPlanService", () => {
       budgetBreakdown: [{ label: "", amount: 0 }],
     });
 
+    // withComputedBudgetは常に実際のfiltered配列（空配列を含む）をそのまま渡す（第4ラウンドレビューA-2対応）。
+    // 以前はここでundefinedへ変換していたが、update時にPrismaが「未変更」と解釈し予算内訳を
+    // 全削除できないバグの原因だったため、undefinedへの変換をやめた
     expect(createPlan).toHaveBeenCalledWith(
       USER_ID,
-      expect.objectContaining({ budget: null, budgetBreakdown: undefined })
+      expect.objectContaining({ budget: null, budgetBreakdown: [] })
     );
   });
 
@@ -220,6 +223,21 @@ describe("updatePlanService", () => {
 
     await expect(updatePlanService(USER_ID, PLAN_ID, { title: "更新", completed: false, version: 0 })).rejects.toThrow(
       ConflictError
+    );
+  });
+
+  it("budgetBreakdownを空配列で更新_undefinedに変換されず空配列のままrepositoryへ渡る（第4ラウンドレビューA-2の回帰防止）", async () => {
+    vi.mocked(findPlanAuthorId).mockResolvedValue(USER_ID);
+    vi.mocked(updatePlan).mockResolvedValue({ id: PLAN_ID } as never);
+
+    await updatePlanService(USER_ID, PLAN_ID, { title: "更新", completed: false, version: 0, budgetBreakdown: [] });
+
+    // undefinedへ変換されるとRepository層でPrismaが「未変更」と解釈し、DB上の予算内訳が
+    // 削除前のまま残ってしまう（A-2）。空配列のまま渡ることでRepository層がPrisma.DbNullへ変換できる
+    expect(updatePlan).toHaveBeenCalledWith(
+      PLAN_ID,
+      expect.objectContaining({ budget: null, budgetBreakdown: [] }),
+      0
     );
   });
 });
