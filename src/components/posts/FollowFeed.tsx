@@ -72,7 +72,7 @@ function FollowFeedCard({ post, now }: { post: Post; now: Date }) {
             className="h-9 w-9 shrink-0 rounded-full object-cover"
           />
         ) : (
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-700 text-sm font-medium text-zinc-500 dark:text-zinc-300">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-700 text-sm font-medium text-zinc-600 dark:text-zinc-300">
             {post.author.nickname[0]}
           </div>
         )}
@@ -82,7 +82,7 @@ function FollowFeedCard({ post, now }: { post: Post; now: Date }) {
           </p>
           <p className="text-xs text-zinc-400">{formatRelativeTime(post.createdAt, now)}</p>
         </div>
-        <span className="flex shrink-0 items-center gap-1 rounded-full border border-zinc-300 dark:border-zinc-600 px-2 py-0.5 text-[0.78rem] font-medium text-[#16a34a] dark:text-[#4ade80]">
+        <span className="flex shrink-0 items-center gap-1 rounded-full border border-zinc-300 dark:border-zinc-600 px-2 py-0.5 text-[0.78rem] font-medium text-[#15803d] dark:text-[#4ade80]">
           <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" /> {post.location}
         </span>
       </div>

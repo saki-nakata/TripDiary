@@ -91,4 +91,23 @@ describe("AccountForms（GATE-41: メール変更フォームの現在のパス�
     expect(body).toEqual({ currentPassword: "current-pass", newPassword: "newpassword1" });
     expect(await screen.findByText("パスワードを変更しました")).toBeInTheDocument();
   });
+
+  it("パスワード表示切替ボタンがキーボード操作（Enter/Space）で反応する（第4ラウンドレビューB-4: tabIndex={-1}除去の回帰防止）", async () => {
+    renderForms();
+    const user = userEvent.setup();
+    const passwordInput = document.getElementsByName("newPassword")[0] as HTMLInputElement;
+    await user.type(passwordInput, "secret123");
+
+    const toggleButtons = screen.getAllByLabelText("パスワードを表示");
+    const toggleButton = toggleButtons[toggleButtons.length - 1];
+    // tabIndex={-1}を除去したため、Tabキーでフォーカス移動できることが前提
+    toggleButton.focus();
+    expect(document.activeElement).toBe(toggleButton);
+
+    expect(passwordInput.type).toBe("password");
+    await user.keyboard("{Enter>}");
+    expect(passwordInput.type).toBe("text");
+    await user.keyboard("{/Enter}");
+    expect(passwordInput.type).toBe("password");
+  });
 });

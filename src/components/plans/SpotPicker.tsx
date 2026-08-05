@@ -66,7 +66,7 @@ function SpotListItem({ post, onAdd }: { post: PlanSpotPost; onAdd: (post: PlanS
             </p>
             <span
               aria-label="追加"
-              className="sm:hidden flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 dark:border-green-400 text-xs font-bold leading-none text-green-600 dark:text-green-400"
+              className="sm:hidden flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 dark:border-green-400 text-xs font-bold leading-none text-green-700 dark:text-green-400"
             >
               ＋
             </span>
@@ -74,7 +74,7 @@ function SpotListItem({ post, onAdd }: { post: PlanSpotPost; onAdd: (post: PlanS
         </div>
         <span
           aria-label="追加"
-          className="hidden sm:flex mr-3 md:mr-1 xl:mr-3 h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 dark:border-green-400 text-xs font-bold leading-none text-green-600 dark:text-green-400"
+          className="hidden sm:flex mr-3 md:mr-1 xl:mr-3 h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-600 dark:border-green-400 text-xs font-bold leading-none text-green-700 dark:text-green-400"
         >
           ＋
         </span>

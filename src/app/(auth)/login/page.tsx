@@ -124,8 +124,9 @@ export default function LoginPage() {
                     onTouchStart={() => setShowPassword(true)}
                     onTouchEnd={() => setShowPassword(false)}
                     onTouchCancel={() => setShowPassword(false)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowPassword(true); } }}
+                    onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") setShowPassword(false); }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] dark:text-zinc-500 dark:hover:text-zinc-300 select-none touch-manipulation peer-placeholder-shown:hidden"
-                    tabIndex={-1}
                     aria-label={showPassword ? "パスワードを隠す" : "パスワードを表示"}
                   >
                     {showPassword ? (
@@ -146,7 +147,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="w-48 mx-auto block mt-6 rounded-full bg-[#16a34a] py-2.5 text-sm font-semibold text-white hover:bg-[#15803d] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="w-48 mx-auto block mt-6 rounded-full bg-[#15803d] py-2.5 text-sm font-semibold text-white hover:bg-[#166534] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
               {isPending ? "ログイン中..." : "ログイン"}
             </button>
@@ -154,7 +155,7 @@ export default function LoginPage() {
 
           <p className="mt-5 text-center text-sm text-[#64748b] dark:text-zinc-400">
             アカウントをお持ちでない方は{" "}
-            <Link href="/signup" className="text-[#16a34a] dark:text-[#4ade80] font-semibold hover:underline">
+            <Link href="/signup" className="text-[#15803d] dark:text-[#4ade80] font-semibold hover:underline">
               新規登録
             </Link>
           </p>

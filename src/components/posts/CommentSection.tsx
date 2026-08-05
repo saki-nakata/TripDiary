@@ -157,7 +157,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
         </form>
       ) : (
         <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
-          <Link href="/login" className="text-green-600 dark:text-green-400 hover:underline font-medium">
+          <Link href="/login" className="text-green-700 dark:text-green-400 hover:underline font-medium">
             ログインする
           </Link>
           とコメントできます
@@ -185,7 +185,7 @@ export function CommentSection({ postId, currentUserId, postAuthorId }: Props) {
                       className="object-cover"
                     />
                   ) : (
-                    <span className="w-full h-full flex items-center justify-center text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    <span className="w-full h-full flex items-center justify-center text-xs font-medium text-zinc-600 dark:text-zinc-300">
                       {comment.author.nickname[0]}
                     </span>
                   )}

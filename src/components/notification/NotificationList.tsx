@@ -108,7 +108,7 @@ function NotificationItem({
       ) : (
         <TwemojiIcon codepoint={iconCodepoint} alt={iconAlt} className="h-5 w-5 shrink-0 mt-0.5" />
       )}
-      <div className="w-8 h-8 rounded-full bg-[#16a34a]/10 dark:bg-[#16a34a]/20 flex items-center justify-center shrink-0 text-sm font-semibold text-[#16a34a] dark:text-[#4ade80]">
+      <div className="w-8 h-8 rounded-full bg-[#16a34a]/10 dark:bg-[#16a34a]/20 flex items-center justify-center shrink-0 text-sm font-semibold text-[#166534] dark:text-[#4ade80]">
         {fromUser.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={fromUser.image} alt={fromUser.nickname} className="w-8 h-8 rounded-full object-cover" />
@@ -119,7 +119,7 @@ function NotificationItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-[0.8rem] sm:text-sm text-surface-foreground">{text}</p>
-          <span className="text-xs text-[#94a3b8] dark:text-zinc-500 shrink-0 -mr-2 sm:mr-1">{formatRelativeDate(notification.createdAt)}</span>
+          <span className="text-xs text-[#64748b] dark:text-zinc-400 shrink-0 -mr-2 sm:mr-1">{formatRelativeDate(notification.createdAt)}</span>
         </div>
         {type === "comment" && commentBody && (
           <p className="text-xs text-[#64748b] dark:text-zinc-400 mt-0.5 line-clamp-1">「{commentBody}」</p>
@@ -207,7 +207,7 @@ export function NotificationList() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-surface-border flex justify-center py-16 text-[#94a3b8] dark:text-zinc-500">
+      <div className="rounded-xl border border-surface-border flex justify-center py-16 text-[#64748b] dark:text-zinc-400">
         読み込み中…
       </div>
     );
@@ -215,7 +215,7 @@ export function NotificationList() {
 
   if (notifications.length === 0) {
     return (
-      <div className="rounded-xl border border-surface-border flex flex-col items-center py-16 text-[#94a3b8] dark:text-zinc-500">
+      <div className="rounded-xl border border-surface-border flex flex-col items-center py-16 text-[#64748b] dark:text-zinc-400">
         <TwemojiIcon codepoint="1f514" className="h-12 w-12 mb-3" />
         <p>{loadError ? "通知の読み込みに失敗しました" : "まだ通知はありません"}</p>
       </div>

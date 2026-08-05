@@ -157,7 +157,7 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
         <button
           type="submit"
           disabled={isSubmitting || uploading}
-          className="px-5 py-2.5 rounded-xl bg-[#16a34a] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors disabled:opacity-50"
+          className="px-5 py-2.5 rounded-xl bg-[#15803d] text-white text-sm font-semibold hover:bg-[#166534] transition-colors disabled:opacity-50"
         >
           保存する
         </button>
