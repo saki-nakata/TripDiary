@@ -94,7 +94,10 @@ export function Sidebar({ user }: { user: User }) {
     } catch {
       // 同期に失敗してもログアウトは継続する
     }
-    signOut({ callbackUrl: "/" });
+    // signOut()自体をawaitしていないと、Auth.jsのセッションCookie削除・リダイレクトが
+    // 完了する前にこの関数が終了扱いになる（Terraの指摘）。呼び出し元に完了を伝えるため
+    // 明示的にawaitする
+    await signOut({ callbackUrl: "/" });
   }
 
   useEffect(() => {
