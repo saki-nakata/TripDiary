@@ -23,7 +23,7 @@ export async function findCommentsByPostId({
     where: { postId },
     take: limit + 1,
     ...(cursor && { cursor: { id: cursor }, skip: 1 }),
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }], // idタイブレーカーで全順序を保証（第4ラウンドレビューB-1）
     select: COMMENT_SELECT,
   });
 
