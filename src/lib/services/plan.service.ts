@@ -19,7 +19,10 @@ import { NotFoundError, ForbiddenError, ValidationError, ConflictError } from "@
 
 function withComputedBudget<T extends PlanInput>(data: T): T & { budget: number | null } {
   const filtered = (data.budgetBreakdown ?? []).filter((item) => item.amount > 0 || item.label.trim() !== "");
-  return { ...data, budgetBreakdown: filtered.length > 0 ? filtered : undefined, budget: filtered.length > 0 ? filtered.reduce((sum, item) => sum + item.amount, 0) : null };
+  // budgetBreakdownは常に実際のfiltered配列（空配列を含む）をそのまま渡す。
+  // 以前はここで空配列をundefinedへ変換していたため、Repository層でPrismaが「フィールド未変更」と
+  // 解釈し、予算内訳を全削除して保存してもDB上の値が残ってしまうバグ（第4ラウンドレビューA-2）があった
+  return { ...data, budgetBreakdown: filtered, budget: filtered.length > 0 ? filtered.reduce((sum, item) => sum + item.amount, 0) : null };
 }
 
 async function assertSpotsExist(spots?: PlanInput["spots"]) {
