@@ -63,7 +63,7 @@ export async function findLocationCountsService() {
 }
 
 export async function findPostForEditService(userId: string, id: string) {
-  const post = await findPostById(id);
+  const post = await findPostById(id, userId);
   if (!post) throw new NotFoundError();
   if (post.authorId !== userId) throw new ForbiddenError();
   return post;
