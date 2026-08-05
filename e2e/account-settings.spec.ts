@@ -38,12 +38,26 @@ test.describe.serial("アカウント設定の主要フロー（パスワード�
     expect(response.status()).toBe(200);
 
     // セッションはパスワード変更後も有効なままのため、/login にアクセスしても proxy.ts のミドルウェアで
-    // ホームへリダイレクトされてしまう。ログインフォームを表示するにはまずセッションを明示的に破棄する。
-    // networkidleはNext.jsの常時通信（ポーリング等）に弱く、達成されない・遅延することがあるため使わない。
-    // PATCH後のクライアント処理（フォームリセット・成功トースト表示）が完了したことを示す
-    // 成功トースト自体の表示を明示的に待ってからCookieを破棄する
+    // ホームへリダイレクトされてしまう。ログインフォームを表示するにはまずログアウトする必要がある。
+    // 以前はpage.context().clearCookies()で直接Cookieを破棄していたが、CI環境ではclearCookies()
+    // 完了後に/loginへ移動しても、サーバー側のセッション判定と噛み合わずホームへリダイレクトされ続ける
+    // 事象が確認された（実行3回すべて再現）。画面上の正式なログアウト操作（Auth.jsのsignOut()）を
+    // 使い、その完了（ホームへのリダイレクト）を待ってからログインフォームを検証する
     await expect(page.getByText("パスワードを変更しました")).toBeVisible({ timeout: 15000 });
-    await page.context().clearCookies();
+    // デスクトップのサイドバー（aside）配下へロケータを限定する。モバイル用ドロップダウンにも
+    // 同名の「ログアウト」ボタンがDOMに存在し得るため（Terraの指摘）、対象を一意にする。
+    // ドロップダウンを開いた直後にボタンが実際にクリック可能になるまで明示的に待ってから操作する
+    // ニックネームボタンはレスポンシブ用に同じテキストを含むspanを2つ持つため、
+    // アクセシブルネームがニックネーム単体と完全一致しない。exact指定はしない
+    const sidebar = page.locator("aside");
+    await sidebar.getByRole("button", { name: TEST_USER.nickname }).click();
+    const logoutButton = sidebar.getByRole("button", { name: "ログアウト", exact: true });
+    await expect(logoutButton).toBeVisible({ timeout: 15_000 });
+    await logoutButton.click();
+    await expect(page).toHaveURL("/", { timeout: 15000 });
+    // URL遷移だけでなく、ログイン時だけ表示されるニックネームボタンが消えることで
+    // signOut()（セッションCookie破棄）が完了したことも確認する（Terraの指摘）
+    await expect(sidebar.getByRole("button", { name: TEST_USER.nickname })).not.toBeVisible({ timeout: 15000 });
 
     // 旧パスワードではログインできないことを確認。
     // CI高負荷では遷移/ハイドレーション遅延でフォーム未描画のまま fill してタイムアウトすることがあるため、

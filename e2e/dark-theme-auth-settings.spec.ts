@@ -88,11 +88,22 @@ test.describe("PR-7b: 認証・設定画面のダークテーマ対応（ログ�
     // ログインを行う「/settingsに...」「設定画面・アカウント設定画面」）で別途確認しており、
     // 同一テスト内でログアウト直後に再ログインする手順は、signOut()のセッションCookie
     // クリアタイミングに依存し不安定なため採用しない
-    await page.getByRole("button", { name: TEST_USER.nickname }).click();
+    // デスクトップのサイドバー（aside）配下へロケータを限定する。モバイル用ドロップダウンにも
+    // 同名の「ログアウト」ボタンがDOMに存在し得るため（Terraの指摘）、対象を一意にする。
+    // ドロップダウンを開いた直後にボタンが実際にクリック可能になるまで明示的に待ってから操作する
+    // ニックネームボタンはレスポンシブ用に同じテキストを含むspanを2つ持つため、
+    // アクセシブルネームがニックネーム単体と完全一致しない。exact指定はしない
+    const sidebar = page.locator("aside");
+    await sidebar.getByRole("button", { name: TEST_USER.nickname }).click();
+    const logoutButton = sidebar.getByRole("button", { name: "ログアウト", exact: true });
+    await expect(logoutButton).toBeVisible({ timeout: 15_000 });
     const logoutSyncResponse = page.waitForResponse((res) => res.url().includes("/api/me/theme") && res.request().method() === "POST");
-    await page.getByRole("button", { name: "ログアウト" }).click();
+    await logoutButton.click();
     expect((await logoutSyncResponse).ok()).toBe(true);
-    await expect(page).toHaveURL("/", { timeout: 15000 });
+    // もともとホーム（/）上でログアウトするため、toHaveURL("/")は遷移前後で常に真になり
+    // ログアウト完了の証明にならない（Terraの指摘）。ログイン時だけ表示されるニックネーム
+    // ボタンが消えることで、signOut()（セッションCookie破棄）が完了したことを確認する
+    await expect(sidebar.getByRole("button", { name: TEST_USER.nickname })).not.toBeVisible({ timeout: 15000 });
     const cookiesAfterLogout = await context.cookies();
     expect(cookiesAfterLogout.find((c) => c.name === "theme")?.value).toBe("dark");
   });
