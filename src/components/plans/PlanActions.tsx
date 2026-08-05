@@ -16,37 +16,50 @@ type Props = {
 export function PlanActions({ planId, completed, version, variant = "full" }: Props) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   const { showToast } = useToast();
   const router = useRouter();
 
   async function handleToggleComplete() {
-    // PATCH /completeは目標状態を受け取る冪等なset（旧トグル仕様から変更、DR-01）。
-    // 現在のchecked状態（completed）を反転した値とversionを送る
-    const res = await fetch(`/api/plans/${planId}/complete`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ completed: !completed, version }),
-    });
-    if (res.ok) {
+    // 連続クリックによる多重送信を防ぐ（in-flightガード）。PATCH /completeは冪等なsetのため
+    // 反転自体は起きないが、多重送信はversion競合(409)や無駄なリクエストの原因になる
+    if (isCompleting) return;
+    setIsCompleting(true);
+    try {
+      // PATCH /completeは目標状態を受け取る冪等なset（旧トグル仕様から変更、DR-01）。
+      // 現在のchecked状態（completed）を反転した値とversionを送る
+      const res = await fetch(`/api/plans/${planId}/complete`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: !completed, version }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error ?? "処理に失敗しました", "error");
+        return;
+      }
       showToast(completed ? "完了を取り消しました" : "旅行を完了済みにしました");
       router.refresh();
-    } else {
-      const err = await res.json().catch(() => ({}));
-      showToast(err.error ?? "処理に失敗しました", "error");
+    } catch {
+      showToast("処理に失敗しました", "error");
+    } finally {
+      setIsCompleting(false);
     }
   }
 
   async function handleDelete() {
     setIsSubmitting(true);
-    const res = await fetch(`/api/plans/${planId}`, { method: "DELETE" });
-    setIsSubmitting(false);
-    setShowDeleteModal(false);
-    if (res.ok) {
+    try {
+      const res = await fetch(`/api/plans/${planId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
       showToast("プランを削除しました");
       router.push("/mypage?tab=plans");
       router.refresh();
-    } else {
+    } catch {
       showToast("削除に失敗しました", "error");
+    } finally {
+      setIsSubmitting(false);
+      setShowDeleteModal(false);
     }
   }
 
@@ -96,6 +109,7 @@ export function PlanActions({ planId, completed, version, variant = "full" }: Pr
           data-testid="plan-completed-checkbox"
           checked={completed}
           onChange={handleToggleComplete}
+          disabled={isCompleting}
           className="sr-only"
         />
         {completed && <TwemojiIcon codepoint="2705" alt="完了" className="h-4 w-4" />}

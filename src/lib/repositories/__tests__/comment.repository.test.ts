@@ -92,6 +92,27 @@ describe("comment.repository", () => {
     expect(result.nextCursor).toBeNull();
   });
 
+  it("findCommentsByPostId_createdAtが同一のコメント群_idタイブレーカーで重複も欠落もなく全件取得できる（第4ラウンドレビューB-1）", async () => {
+    const user = await createTestUser("c-tie@example.com", "タイブレーカー");
+    const post = await createPost(user.id, { title: "投稿", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    const c1 = await createComment({ postId: post.id, authorId: user.id, body: "1件目" });
+    const c2 = await createComment({ postId: post.id, authorId: user.id, body: "2件目" });
+    const c3 = await createComment({ postId: post.id, authorId: user.id, body: "3件目" });
+    const sameCreatedAt = new Date("2026-01-01T00:00:00.000Z");
+    await prisma.comment.updateMany({ where: { id: { in: [c1.id, c2.id, c3.id] } }, data: { createdAt: sameCreatedAt } });
+
+    const page1 = await findCommentsByPostId({ postId: post.id, limit: 2 });
+    expect(page1.comments).toHaveLength(2);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await findCommentsByPostId({ postId: post.id, limit: 2, cursor: page1.nextCursor! });
+    expect(page2.comments).toHaveLength(1);
+    expect(page2.hasMore).toBe(false);
+
+    const allIds = [...page1.comments, ...page2.comments].map((c) => c.id).sort();
+    expect(allIds).toEqual([c1.id, c2.id, c3.id].sort());
+  });
+
   // ─── findCommentById ───
   it("findCommentById_存在するID_コメントを返す", async () => {
     const user = await createTestUser("c5@example.com", "ユーザー5");
