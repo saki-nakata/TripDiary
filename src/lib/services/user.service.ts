@@ -137,14 +137,15 @@ export async function searchUsersService(options: {
     getTabiScoresForUsers(userIds),
   ]);
 
-  const users = result.users
-    .map((u) => ({
-      ...u,
-      followedByCurrentUser: followingIds.has(u.id),
-      tabiScore: tabiScores.get(u.id)?.score ?? 0,
-      tabiRank: tabiScores.get(u.id)?.rank ?? "ブロンズトラベラー",
-    }))
-    .sort((a, b) => b.tabiScore - a.tabiScore);
+  // Repositoryのcursor順（id順）をそのまま維持する。以前はページ内でtabiScore降順に
+  // 並べ替えていたが、cursorページングは全体順序が一定であることを前提にしており、
+  // ページ内だけの並べ替えはページをまたぐと順序が不整合になる（第4ラウンドレビュー）
+  const users = result.users.map((u) => ({
+    ...u,
+    followedByCurrentUser: followingIds.has(u.id),
+    tabiScore: tabiScores.get(u.id)?.score ?? 0,
+    tabiRank: tabiScores.get(u.id)?.rank ?? "ブロンズトラベラー",
+  }));
 
   return { ...result, users };
 }

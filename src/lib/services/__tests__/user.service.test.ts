@@ -439,7 +439,10 @@ describe("searchUsersService", () => {
     });
   });
 
-  it("tabiScoreの降順で返す", async () => {
+  it("Repositoryのcursor順（id順）をそのまま維持する_tabiScoreで並べ替えない（第4ラウンドレビュー、ユーザー検索の表示順整理）", async () => {
+    // 以前はページ内だけtabiScore降順に並べ替えていたが、cursorページングは全体順序が
+    // 一定であることを前提にしており、ページ内だけの並べ替えはページをまたぐと順序が
+    // 不整合になる。Repositoryが返した順序（id順）をそのまま維持することを確認する
     vi.mocked(searchUsersByNickname).mockResolvedValue({
       users: [
         { id: "u1", nickname: "たろう", image: null, bio: null, _count: { posts: 1, followers: 0 } },
@@ -449,6 +452,7 @@ describe("searchUsersService", () => {
       nextCursor: null,
       hasMore: false,
     });
+    // u2が最もtabiScoreが高いが、並び順には反映されないはず
     vi.mocked(computeTabiScoreInputsForUsers).mockResolvedValue(
       new Map([
         ["u1", { postCount: 1, visitedCount: 0, likesReceived: 0, commentsReceived: 0 }],
@@ -459,7 +463,7 @@ describe("searchUsersService", () => {
 
     const result = await searchUsersService({ q: "", limit: 20 });
 
-    expect(result.users.map((u) => u.id)).toEqual(["u2", "u3", "u1"]);
+    expect(result.users.map((u) => u.id)).toEqual(["u1", "u2", "u3"]);
   });
 });
 
