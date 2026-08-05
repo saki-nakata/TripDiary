@@ -42,6 +42,8 @@
 | 費用管理 | 投稿への費用内訳記録（自分のみ表示）/ プランへの予算内訳記録 |
 | 地図 | 投稿スポットの位置情報表示（Leaflet + OpenStreetMap） |
 | ユーザー | プロフィール表示 / TabiScore / コメント履歴 / プロフィール編集 / プロフィール画像アップロード |
+| 通知 | いいね・コメント・フォローの通知一覧 / 既読管理 / 未読件数バッジ |
+| 表示テーマ | ライト / ダーク / 自動（OS設定に追従）の切り替え、ログイン中はDBに保存し端末間で同期 |
 | UI | スマートフォン・タブレット・PC に対応したレスポンシブレイアウト |
 
 ---
@@ -175,7 +177,7 @@ pnpm prisma migrate dev  # マイグレーション実行
 pnpm test                    # Vitest（単体・統合テスト）を実行
 pnpm test:coverage           # カバレッジ計測付きで実行
 pnpm prisma:migrate:test     # テスト用DBにスキーマ適用（事前に docker compose up -d mysql-test が必要）
-pnpm playwright test         # E2Eテスト（認証フロー・投稿の主要フロー）
+pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の主要フロー）
 ```
 
 ### API仕様書（Swagger）

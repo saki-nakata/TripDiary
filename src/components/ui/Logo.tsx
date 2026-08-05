@@ -22,20 +22,13 @@ const GRADIENTS: Record<LogoVariant, { light: string; dark: string }> = {
 export function Logo({
   variant,
   className,
-  // login/signupはまだ`bg-white`固定（PR-7b未対応）のため、ここでdarkバリアントを
-  // 有効にすると常に白いカードの上にダークモード用の明るい配色が乗ってしまう。
-  // そのグループが`bg-surface`へ移行するまではfalseで無効化する
-  adaptsToColorScheme = true,
 }: {
   variant: LogoVariant;
   className?: string;
-  adaptsToColorScheme?: boolean;
 }) {
   const g = GRADIENTS[variant];
   return (
-    <span
-      className={`bg-gradient-to-r ${g.light} ${adaptsToColorScheme ? g.dark : ""} bg-clip-text text-transparent ${className ?? ""}`}
-    >
+    <span className={`bg-gradient-to-r ${g.light} ${g.dark} bg-clip-text text-transparent ${className ?? ""}`}>
       TripDiary
     </span>
   );

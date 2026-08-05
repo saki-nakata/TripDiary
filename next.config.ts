@@ -26,8 +26,9 @@ const nextConfig: NextConfig = {
   },
   // 開発サーバーはデフォルトでlocalhost以外のオリジン（実機からのLAN IPアクセス等）からの
   // アセット読み込みをブロックするため、モバイル実機での動作確認用に許可する
-  // （本番ビルドでは無関係な開発時専用の設定）
-  allowedDevOrigins: ["192.168.1.6"],
+  // （本番ビルドでは無関係な開発時専用の設定）。個人のLAN IPをリポジトリに固定で残さないよう、
+  // 未設定時は空配列にする（実機確認時のみ.env.localでDEV_ALLOWED_ORIGINを設定する）
+  allowedDevOrigins: process.env.DEV_ALLOWED_ORIGIN ? [process.env.DEV_ALLOWED_ORIGIN] : [],
   async headers() {
     return [
       {
