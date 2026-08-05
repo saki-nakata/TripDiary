@@ -48,7 +48,7 @@ export default async function TagPage({ params }: Props) {
             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
               l.location === location
                 ? "bg-[#15803d] text-white border-[#15803d]"
-                : "bg-surface text-zinc-500 dark:text-zinc-400 border-surface-border hover:border-[#16a34a] dark:hover:border-[#4ade80] hover:text-[#16a34a] dark:hover:text-[#4ade80]"
+                : "bg-surface text-zinc-500 dark:text-zinc-400 border-surface-border hover:border-[#16a34a] dark:hover:border-[#4ade80] hover:text-[#15803d] dark:hover:text-[#4ade80]"
             }`}
           >
             {l.location}

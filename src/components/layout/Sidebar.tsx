@@ -430,7 +430,7 @@ export function Sidebar({ user }: { user: User }) {
                 onContextMenu={(e) => e.preventDefault()}
                 onClick={(e) => handleIconClick(item.key, e)}
                 className={`relative flex-1 flex items-center justify-center py-3 min-w-[44px] touch-manipulation select-none transition-colors
-                  ${!isCreate && active ? "text-[#16a34a]" : !isCreate ? "text-[#64748b] dark:text-zinc-400" : ""}`}
+                  ${!isCreate && active ? "text-[#15803d] dark:text-[#4ade80]" : !isCreate ? "text-[#64748b] dark:text-zinc-400" : ""}`}
                 // iOS Safari はリンクの長押しで独自の共有/プレビューメニューを表示し、
                 // これは contextmenu イベントの preventDefault では止められない
                 // （-webkit-touch-callout でのみ制御可能）。ここで無効化しないと

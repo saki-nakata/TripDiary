@@ -23,6 +23,12 @@ test.describe("PR-7b: 認証・設定画面のダークテーマ対応（未ロ�
       await expect(submitButton).toBeVisible();
 
       expect(await getContrastRatio(emailLabel)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
+      expect(await getContrastRatio(submitButton)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
+
+      // ホバー時の背景色（#166534）でも白文字とのコントラストを維持することを確認
+      // （第4ラウンドレビューB-4、#16a34a→#15803d・hover #166534への是正）
+      await submitButton.hover();
+      expect(await getContrastRatio(submitButton)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
 
       await expect(page).toHaveScreenshot(`auth-login-${colorScheme}.png`, { fullPage: false });
     });

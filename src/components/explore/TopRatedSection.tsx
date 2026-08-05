@@ -44,12 +44,12 @@ export function TopRatedSection({ posts }: { posts: Post[] }) {
                 {Array.from({ length: 5 }).map((_, i) => (
                   <span
                     key={i}
-                    className={`text-sm lg:text-xs xl:text-sm ${i < (post.rating ?? 0) ? "text-yellow-400" : "text-zinc-200 dark:text-zinc-500"}`}
+                    className={`text-sm lg:text-xs xl:text-sm ${i < (post.rating ?? 0) ? "text-yellow-400" : "text-zinc-500"}`}
                   >
                     ★
                   </span>
                 ))}
-                <span className="flex items-center gap-1 ml-auto text-[0.68rem] xl:text-[0.78rem] text-[#16a34a] dark:text-[#4ade80] border border-zinc-300 dark:border-zinc-600 rounded-full px-2 py-0.5 font-medium whitespace-nowrap">
+                <span className="flex items-center gap-1 ml-auto text-[0.68rem] xl:text-[0.78rem] text-[#15803d] dark:text-[#4ade80] border border-zinc-300 dark:border-zinc-600 rounded-full px-2 py-0.5 font-medium whitespace-nowrap">
                   <TwemojiIcon codepoint="1f4cd" alt="📍" className="hidden xl:block h-3 w-3" /> {post.location}
                 </span>
               </div>

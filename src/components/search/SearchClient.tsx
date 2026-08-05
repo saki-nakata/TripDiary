@@ -89,7 +89,7 @@ export function SearchClient({ viewerId }: { viewerId?: string }) {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`relative flex-1 sm:flex-none flex flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 text-[0.8rem] sm:text-[0.95rem] font-medium transition-colors whitespace-nowrap ${
-                tab === t.key ? "text-[#16a34a] dark:text-[#4ade80]" : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                tab === t.key ? "text-[#15803d] dark:text-[#4ade80]" : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
               }`}
             >
               <span className="text-base sm:text-[0.95rem]">{t.icon}</span>

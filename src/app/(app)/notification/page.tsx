@@ -11,7 +11,7 @@ export default function NotificationPage() {
         <h1 className="flex items-center gap-2 text-2xl font-bold text-surface-foreground">
           <TwemojiIcon codepoint="1f514" className="h-6 w-6" /> 通知
         </h1>
-        <p className="text-xs text-[#94a3b8] dark:text-zinc-500">（1年以上前の未読通知は自動的に既読になります）</p>
+        <p className="text-xs text-[#64748b] dark:text-zinc-400">（1年以上前の未読通知は自動的に既読になります）</p>
       </div>
       <NotificationList />
     </div>

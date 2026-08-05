@@ -13,7 +13,7 @@ export function AreaSection({ areas }: { areas: AreaItem[] }) {
         <h2 className="flex items-center gap-2 text-lg font-bold text-surface-foreground">
           <TwemojiIcon codepoint="1f4cd" className="h-5 w-5" /> エリアから探す
         </h2>
-        <Link href="/search?tab=area" className="text-sm text-[#16a34a] dark:text-[#4ade80] font-medium hover:underline">
+        <Link href="/search?tab=area" className="text-sm text-[#15803d] dark:text-[#4ade80] font-medium hover:underline">
           エリア検索
         </Link>
       </div>

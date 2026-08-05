@@ -68,7 +68,7 @@ export default async function PostDetailPage({ params }: Props) {
                 <CategoryIcon category={post.category} /> {post.category}
               </span>
             )}
-            <span className="inline-flex items-center gap-1 text-[#16a34a] dark:text-[#4ade80] text-sm font-medium">
+            <span className="inline-flex items-center gap-1 text-[#15803d] dark:text-[#4ade80] text-sm font-medium">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3.5 w-3.5" /> {post.location}
             </span>
             <span className="inline-flex items-center gap-1 text-zinc-400 text-sm ml-auto">
@@ -87,7 +87,7 @@ export default async function PostDetailPage({ params }: Props) {
                 {post.author.image ? (
                   <Image src={post.author.image} alt={post.author.nickname} fill sizes="32px" className="object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                  <div className="w-full h-full flex items-center justify-center text-xs text-zinc-600 dark:text-zinc-300 font-medium">
                     {post.author.nickname[0]}
                   </div>
                 )}

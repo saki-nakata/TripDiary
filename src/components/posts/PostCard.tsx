@@ -82,13 +82,13 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
                   className="w-[22px] h-[22px] rounded-full object-cover shrink-0"
                 />
               ) : (
-                <div className="w-[22px] h-[22px] rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-[10px] text-zinc-500 dark:text-zinc-300 font-medium shrink-0">
+                <div className="w-[22px] h-[22px] rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-[10px] text-zinc-600 dark:text-zinc-300 font-medium shrink-0">
                   {post.author.nickname[0]}
                 </div>
               )}
               <span className="truncate" title={post.author.nickname}>{post.author.nickname}</span>
             </div>
-            <span className="flex items-center gap-1 w-fit text-[0.78rem] text-[#16a34a] dark:text-[#4ade80] border border-zinc-300 dark:border-zinc-600 rounded-full px-2 py-0.5 font-medium">
+            <span className="flex items-center gap-1 w-fit text-[0.78rem] text-[#15803d] dark:text-[#4ade80] border border-zinc-300 dark:border-zinc-600 rounded-full px-2 py-0.5 font-medium">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" /> {post.location}
             </span>
             <span>{formatDateSlash(post.createdAt)}</span>
@@ -111,13 +111,13 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
               className="w-[22px] h-[22px] rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-[22px] h-[22px] rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-[10px] text-zinc-500 dark:text-zinc-300 font-medium shrink-0">
+            <div className="w-[22px] h-[22px] rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-[10px] text-zinc-600 dark:text-zinc-300 font-medium shrink-0">
               {post.author.nickname[0]}
             </div>
           )}
           <span className="truncate max-w-[6.5rem]" title={post.author.nickname}>{post.author.nickname}</span>
           <span className="ml-auto flex items-center gap-1.5 shrink-0">
-            <span className="flex items-center gap-1 text-[0.78rem] text-[#16a34a] dark:text-[#4ade80] border border-zinc-300 dark:border-zinc-600 rounded-full px-2 py-0.5 font-medium">
+            <span className="flex items-center gap-1 text-[0.78rem] text-[#15803d] dark:text-[#4ade80] border border-zinc-300 dark:border-zinc-600 rounded-full px-2 py-0.5 font-medium">
               <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" /> {post.location}
             </span>
             {showCost && post.cost != null && post.cost > 0 && (
