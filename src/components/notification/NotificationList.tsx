@@ -35,7 +35,7 @@ function NotificationItem({
   onRead,
 }: {
   notification: Notification;
-  onRead: (id: string) => void;
+  onRead: (id: string) => Promise<boolean>;
 }) {
   const ref = useRef<HTMLAnchorElement>(null);
   const calledRef = useRef(false);
@@ -57,9 +57,17 @@ function NotificationItem({
         observer = new IntersectionObserver(
           ([entry]) => {
             if (entry.isIntersecting && entry.intersectionRatio >= 0.5 && !calledRef.current) {
+              // 呼び出し中フラグ（同一表示中の多重発火防止）。既読化に失敗した場合は
+              // falseへ戻し、次にビューポートへ再度入った際に再試行できるようにする
+              // （第4ラウンドレビューB-3: 失敗後は再読み込みまで二度と既読化されなかった不具合）
               calledRef.current = true;
-              onRead(notification.id);
-              observer?.disconnect();
+              void onRead(notification.id).then((success) => {
+                if (success) {
+                  observer?.disconnect();
+                } else if (!cancelled) {
+                  calledRef.current = false;
+                }
+              });
             }
           },
           { threshold: 0.5 }
@@ -186,7 +194,7 @@ export function NotificationList() {
 
   const sentinelRef = useInfiniteScroll({ hasMore, loading: loadingMore, onLoadMore: loadMore });
 
-  const handleRead = useCallback(async (id: string) => {
+  const handleRead = useCallback(async (id: string): Promise<boolean> => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
@@ -197,11 +205,13 @@ export function NotificationList() {
       const res = await fetch(`/api/notifications/${id}/read`, { method: "PATCH" });
       if (!res.ok) throw new Error("failed to mark as read");
       queryClient.invalidateQueries({ queryKey: ["unread-count"] });
+      return true;
     } catch {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: false } : n))
       );
       queryClient.setQueryData(["unread-count"], (old: number | undefined) => (old ?? 0) + 1);
+      return false;
     }
   }, [queryClient]);
 
