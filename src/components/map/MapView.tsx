@@ -49,7 +49,7 @@ export function MapView({ lat, lng, label, heading, className }: Props) {
           onClick={() => setExpanded(true)}
           className="relative z-10 -mb-3 bg-sky-50 dark:bg-sky-950 text-xs font-medium text-sky-700 dark:text-sky-400 hover:text-sky-900 dark:hover:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900 border border-sky-200 dark:border-sky-800 rounded-full px-2.5 py-1 transition-colors"
         >
-          🗺️地図拡大表示🔍
+          <span aria-hidden="true" data-testid="map-expand-emoji-left">🗺️</span>地図拡大表示<span aria-hidden="true" data-testid="map-expand-emoji-right">🔍</span>
         </button>
       </div>
       <MapContainer

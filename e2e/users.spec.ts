@@ -117,7 +117,14 @@ test.describe.serial("フォロー・マイページ・プロフィール設定�
     await page.goto("/settings");
     await page.fill('input[name="nickname"]', NEW_NICKNAME);
     await page.fill('textarea[name="bio"]', NEW_BIO);
-    await page.click('button[type="submit"]');
+
+    // 保存APIの成功を明示的に確認してから遷移先を検証する。「保存自体の失敗」と
+    // 「保存後の表示が古いまま（Next.js Router Cacheのprefetch競合）」を区別するため
+    const [response] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes(`/api/users/${userAId}`) && res.request().method() === "PUT"),
+      page.click('button[type="submit"]'),
+    ]);
+    expect(response.status()).toBe(200);
 
     await expect(page).toHaveURL(`/users/${userAId}`, { timeout: 15000 });
     await expect(page.getByRole("heading", { name: NEW_NICKNAME })).toBeVisible();

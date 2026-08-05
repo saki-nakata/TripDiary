@@ -104,6 +104,10 @@ test.describe("PR-7e: 検索・タグページのライト/ダーク比較", () 
       // 共有テストDBの蓄積状況によって内容・件数が変わり非決定的になるため、
       // グリッドより上の対象要素（見出し・検索欄・タブ・カテゴリチップ・並び替え）
       // だけを撮影範囲に絞る
+      // globals.cssのscrollbar-gutter: stableにより、投稿グリッドの高さ次第で右端の
+      // スクロールバー表示有無が変わり、clip範囲の右端に安定しない差分が出る
+      // （dark-theme-shared-layout.spec.tsで対処した同種の問題）。撮影時のみ非表示にする
+      await page.addStyleTag({ content: "html, body { overflow: hidden !important; }" });
       await expect(page).toHaveScreenshot(`search-post-tab-${colorScheme}.png`, {
         clip: { x: 0, y: 0, width: 1280, height: 340 },
       });
@@ -366,7 +370,12 @@ test.describe("PR-7e: 地図コンポーネントのダークテーマ対応", (
       expect(await getContrastRatio(expandButton)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
 
       await expect(page.locator(".leaflet-container").first()).toBeVisible();
-      await expect(expandButton).toHaveScreenshot(`map-view-normal-${colorScheme}.png`);
+      // 絵文字（🗺️🔍）はOS・実行環境ごとにフォントレンダリングが微妙に異なり、ボタン全体の
+      // スクリーンショット比較を不安定にする。アクセシブル名・文字色・背景・borderは上記の
+      // toBeVisible/getContrastRatioで別途担保しているため、絵文字部分だけをmaskする
+      await expect(expandButton).toHaveScreenshot(`map-view-normal-${colorScheme}.png`, {
+        mask: [expandButton.getByTestId("map-expand-emoji-left"), expandButton.getByTestId("map-expand-emoji-right")],
+      });
     });
 
     test(`投稿作成フォームのLocationPicker通常表示が読める（${colorScheme}）`, async ({ page }) => {
@@ -382,7 +391,11 @@ test.describe("PR-7e: 地図コンポーネントのダークテーマ対応", (
       expect(await getContrastRatio(expandButton)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
 
       await expect(page.locator(".leaflet-container").first()).toBeVisible();
-      await expect(expandButton).toHaveScreenshot(`location-picker-normal-${colorScheme}.png`);
+      // 絵文字（🗺️🔍）のフォントレンダリング差によるジッターを避けるため、絵文字部分だけをmask
+      // する（アクセシブル名・文字色・背景・borderはtoBeVisible/getContrastRatioで別途担保）
+      await expect(expandButton).toHaveScreenshot(`location-picker-normal-${colorScheme}.png`, {
+        mask: [expandButton.getByTestId("map-expand-emoji-left"), expandButton.getByTestId("map-expand-emoji-right")],
+      });
     });
   }
 

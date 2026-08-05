@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/contexts/toast-context";
@@ -18,7 +17,6 @@ type Props = {
 };
 
 export function SettingsForm({ userId, initialNickname, initialBio, initialImage, initialVersion }: Props) {
-  const router = useRouter();
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState(initialImage);
@@ -74,7 +72,11 @@ export function SettingsForm({ userId, initialNickname, initialBio, initialImage
       }
 
       showToast("プロフィールを更新しました", "success");
-      router.push(`/users/${userId}`);
+      // Sidebarが常にプロフィールへのLinkを描画しておりNext.jsが編集前のRSC payloadを
+      // prefetchし得るため、router.pushではキャッシュされた古い内容が一瞬表示されることがある
+      // （Terraの調査、更新直後にキャッシュ無効化を伴わないため）。完全なdocument navigationで
+      // 確実に最新のサーバー応答を取得する（ログイン・新規登録直後と同じ方式）
+      window.location.assign(`/users/${userId}`);
     } catch (err) {
       showToast(err instanceof Error ? err.message : "エラーが発生しました", "error");
     }

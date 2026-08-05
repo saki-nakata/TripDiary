@@ -155,7 +155,15 @@ test.describe("PR-7b: 認証・設定画面のダークテーマ対応（設定�
       // 前のテストでDBのthemePreferenceが確定値（light等）のままだと、OS設定（emulateMedia）
       // より優先されてしまいこのテスト自体のcolorScheme比較にならない。「自動」へ戻し
       // OS設定に追従する状態にしてから撮影する
-      await page.getByRole("radio", { name: "表示テーマ: 自動" }).click();
+      const systemToggle = page.getByRole("radio", { name: "表示テーマ: 自動" });
+      if ((await systemToggle.getAttribute("aria-checked")) !== "true") {
+        const patchResponse = page.waitForResponse(
+          (res) => res.url().includes("/api/me/theme") && res.request().method() === "PATCH",
+        );
+        await systemToggle.click();
+        expect((await patchResponse).ok()).toBe(true);
+      }
+      await expect(systemToggle).toHaveAttribute("aria-checked", "true");
       // 初回ログイン時だけ表示される案内トーストをベースラインに含めない。
       // 表示済みなら消滅を待ち、未表示なら即座に通過するため撮影条件を安定化できる。
       await page.getByText("下のアイコンを長押しすると名前が表示されます").waitFor({ state: "hidden" });
@@ -164,6 +172,9 @@ test.describe("PR-7b: 認証・設定画面のダークテーマ対応（設定�
       await page.goto("/settings/account");
       const emailHeading = page.getByRole("heading", { name: "メールアドレス変更" });
       await expect(emailHeading).toBeVisible();
+      // 「自動」のDB保存が完了していれば、次のSSRで以前の固定テーマが復活しない。
+      // OS設定と逆のdata-themeが残っていないことを撮影前に明示的に保証する。
+      await expect(page.locator("html")).not.toHaveAttribute("data-theme", colorScheme === "dark" ? "light" : "dark");
       expect(await getContrastRatio(emailHeading)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
       await expect(page).toHaveScreenshot(`settings-account-${colorScheme}.png`, { fullPage: false });
     });
