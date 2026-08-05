@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ConflictError } from "@/lib/errors";
 import type { PlanInput, PlanUpdateInput } from "@/lib/validations/plan";
@@ -214,7 +215,10 @@ export async function updatePlan(id: string, data: PlanUpdateWithBudget, expecte
       data: {
         ...rest,
         budget,
-        budgetBreakdown: budgetBreakdown && budgetBreakdown.length > 0 ? budgetBreakdown : undefined,
+        // budgetBreakdownがundefinedの場合はフィールド自体を更新しない（既存値を保持）。
+        // 空配列（全項目削除）の場合はundefinedではなくPrisma.DbNullを明示し、DB上の値をNULLへ更新する
+        // （undefinedのままだとPrismaが「未変更」と解釈し、削除前の値が残ってしまう不具合〔第4ラウンドレビューA-2〕だった）
+        budgetBreakdown: budgetBreakdown === undefined ? undefined : budgetBreakdown.length > 0 ? budgetBreakdown : Prisma.DbNull,
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
         version: { increment: 1 },

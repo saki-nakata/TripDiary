@@ -27,7 +27,7 @@ vi.mock("@aws-sdk/client-s3", () => ({
 }));
 
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
-import { createPostService, deletePostService } from "@/lib/services/post.service";
+import { createPostService, deletePostService, updatePostService, findPostForEditService } from "@/lib/services/post.service";
 
 function ownedUrl(userId: string, filename: string) {
   return `https://${HOSTNAME}/uploads/${userId}/${filename}`;
@@ -118,5 +118,46 @@ describe("post.service 統合テスト（実DB + 実service/repository層、AWS 
       Bucket: BUCKET,
       Delete: { Objects: [{ Key: `uploads/${user.id}/fresh.jpg` }] },
     });
+  });
+
+  it("投稿編集画面用の取得で費用内訳が含まれ、タイトルだけ編集して保存しても内訳が保持される（第4ラウンドA-1の回帰防止）", async () => {
+    const author = await createTestUser("cost-edit-author@example.com", "編集太郎");
+
+    const created = await createPostService(author.id, {
+      title: "編集前タイトル",
+      body: "本文",
+      location: "東京都",
+      category: "観光",
+      visitedAt: "2026-01-01",
+      costBreakdown: [{ label: "交通費", amount: 1000 }, { label: "食費", amount: 2000 }],
+    });
+
+    // 編集画面用の取得（findPostForEditService）が費用内訳を含んで返すこと
+    const forEdit = await findPostForEditService(author.id, created.id);
+    expect(forEdit.cost).toBe(3000);
+    expect(forEdit.costBreakdown).toEqual([
+      { label: "交通費", amount: 1000 },
+      { label: "食費", amount: 2000 },
+    ]);
+
+    // 編集画面用の取得結果をそのままフォームへ反映し、タイトルだけ変更して保存する想定
+    await updatePostService(author.id, created.id, {
+      title: "編集後タイトル",
+      body: "本文",
+      location: "東京都",
+      category: "観光",
+      visitedAt: "2026-01-01",
+      costBreakdown: forEdit.costBreakdown,
+      version: 0,
+    });
+
+    // 保存後に再度編集画面用の取得を行い、費用内訳が消えていないこと
+    const afterEdit = await findPostForEditService(author.id, created.id);
+    expect(afterEdit.title).toBe("編集後タイトル");
+    expect(afterEdit.cost).toBe(3000);
+    expect(afterEdit.costBreakdown).toEqual([
+      { label: "交通費", amount: 1000 },
+      { label: "食費", amount: 2000 },
+    ]);
   });
 });

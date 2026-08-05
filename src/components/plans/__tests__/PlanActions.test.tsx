@@ -60,4 +60,51 @@ describe("PlanActions（DR-01: PATCH /completeの冪等set化とversion受け渡
 
     expect(await screen.findByText("他の画面で更新されています。再読み込みしてください。")).toBeInTheDocument();
   });
+
+  // ─── 第4ラウンドレビューB-2: 通信例外＋in-flightガード ───
+  it("完了トグルでfetch自体が例外を投げる_エラートーストを表示しチェックボックスの状態は変化しない", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("network error")));
+
+    renderActions(false, 4);
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("plan-completed-checkbox"));
+
+    expect(await screen.findByText("処理に失敗しました")).toBeInTheDocument();
+    expect(refreshMock).not.toHaveBeenCalled();
+  });
+
+  it("完了トグルを連続クリック_1回分のリクエストしか発生しない（in-flightガード）", async () => {
+    let resolveFetch!: (value: { ok: boolean; json: () => Promise<unknown> }) => void;
+    const fetchMock = vi.fn().mockReturnValue(
+      new Promise((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderActions(false, 4);
+    const user = userEvent.setup();
+    const checkbox = screen.getByTestId("plan-completed-checkbox");
+
+    await user.click(checkbox);
+    await user.click(checkbox);
+    await user.click(checkbox);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    resolveFetch({ ok: true, json: async () => ({}) });
+    await screen.findByText("旅行を完了済みにしました");
+  });
+
+  it("削除でfetch自体が例外を投げる_エラートーストを表示しモーダルを閉じる", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("network error")));
+
+    renderActions(false, 4);
+    const user = userEvent.setup();
+    await user.click(screen.getByText("削除"));
+    await user.click(screen.getByText("削除する"));
+
+    expect(await screen.findByText("削除に失敗しました")).toBeInTheDocument();
+    expect(screen.queryByText("プランを削除しますか？")).not.toBeInTheDocument();
+  });
 });
