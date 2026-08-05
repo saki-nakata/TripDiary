@@ -81,7 +81,7 @@ function CommentItem({ comment, variant }: { comment: AuthorComment; variant: "w
         {isReceived
           ? comment.author.image
             ? <Image src={comment.author.image} alt={comment.author.nickname} fill sizes="40px" className="object-cover" />
-            : <div className="w-full h-full flex items-center justify-center text-sm text-zinc-500 dark:text-zinc-400 font-medium">{comment.author.nickname[0]}</div>
+            : <div className="w-full h-full flex items-center justify-center text-sm text-zinc-600 dark:text-zinc-300 font-medium">{comment.author.nickname[0]}</div>
           : comment.post.images[0] && <Image src={comment.post.images[0].url} alt={comment.post.title} fill sizes="56px" className="object-cover" />}
       </div>
       <div className="min-w-0 flex-1">

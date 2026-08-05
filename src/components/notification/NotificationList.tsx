@@ -35,7 +35,7 @@ function NotificationItem({
   onRead,
 }: {
   notification: Notification;
-  onRead: (id: string) => void;
+  onRead: (id: string) => Promise<boolean>;
 }) {
   const ref = useRef<HTMLAnchorElement>(null);
   const calledRef = useRef(false);
@@ -57,9 +57,17 @@ function NotificationItem({
         observer = new IntersectionObserver(
           ([entry]) => {
             if (entry.isIntersecting && entry.intersectionRatio >= 0.5 && !calledRef.current) {
+              // 呼び出し中フラグ（同一表示中の多重発火防止）。既読化に失敗した場合は
+              // falseへ戻し、次にビューポートへ再度入った際に再試行できるようにする
+              // （第4ラウンドレビューB-3: 失敗後は再読み込みまで二度と既読化されなかった不具合）
               calledRef.current = true;
-              onRead(notification.id);
-              observer?.disconnect();
+              void onRead(notification.id).then((success) => {
+                if (success) {
+                  observer?.disconnect();
+                } else if (!cancelled) {
+                  calledRef.current = false;
+                }
+              });
             }
           },
           { threshold: 0.5 }
@@ -108,7 +116,7 @@ function NotificationItem({
       ) : (
         <TwemojiIcon codepoint={iconCodepoint} alt={iconAlt} className="h-5 w-5 shrink-0 mt-0.5" />
       )}
-      <div className="w-8 h-8 rounded-full bg-[#16a34a]/10 dark:bg-[#16a34a]/20 flex items-center justify-center shrink-0 text-sm font-semibold text-[#16a34a] dark:text-[#4ade80]">
+      <div className="w-8 h-8 rounded-full bg-[#16a34a]/10 dark:bg-[#16a34a]/20 flex items-center justify-center shrink-0 text-sm font-semibold text-[#166534] dark:text-[#4ade80]">
         {fromUser.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={fromUser.image} alt={fromUser.nickname} className="w-8 h-8 rounded-full object-cover" />
@@ -119,7 +127,7 @@ function NotificationItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-[0.8rem] sm:text-sm text-surface-foreground">{text}</p>
-          <span className="text-xs text-[#94a3b8] dark:text-zinc-500 shrink-0 -mr-2 sm:mr-1">{formatRelativeDate(notification.createdAt)}</span>
+          <span className="text-xs text-[#64748b] dark:text-zinc-400 shrink-0 -mr-2 sm:mr-1">{formatRelativeDate(notification.createdAt)}</span>
         </div>
         {type === "comment" && commentBody && (
           <p className="text-xs text-[#64748b] dark:text-zinc-400 mt-0.5 line-clamp-1">「{commentBody}」</p>
@@ -186,7 +194,7 @@ export function NotificationList() {
 
   const sentinelRef = useInfiniteScroll({ hasMore, loading: loadingMore, onLoadMore: loadMore });
 
-  const handleRead = useCallback(async (id: string) => {
+  const handleRead = useCallback(async (id: string): Promise<boolean> => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
@@ -197,17 +205,19 @@ export function NotificationList() {
       const res = await fetch(`/api/notifications/${id}/read`, { method: "PATCH" });
       if (!res.ok) throw new Error("failed to mark as read");
       queryClient.invalidateQueries({ queryKey: ["unread-count"] });
+      return true;
     } catch {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: false } : n))
       );
       queryClient.setQueryData(["unread-count"], (old: number | undefined) => (old ?? 0) + 1);
+      return false;
     }
   }, [queryClient]);
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-surface-border flex justify-center py-16 text-[#94a3b8] dark:text-zinc-500">
+      <div className="rounded-xl border border-surface-border flex justify-center py-16 text-[#64748b] dark:text-zinc-400">
         読み込み中…
       </div>
     );
@@ -215,7 +225,7 @@ export function NotificationList() {
 
   if (notifications.length === 0) {
     return (
-      <div className="rounded-xl border border-surface-border flex flex-col items-center py-16 text-[#94a3b8] dark:text-zinc-500">
+      <div className="rounded-xl border border-surface-border flex flex-col items-center py-16 text-[#64748b] dark:text-zinc-400">
         <TwemojiIcon codepoint="1f514" className="h-12 w-12 mb-3" />
         <p>{loadError ? "通知の読み込みに失敗しました" : "まだ通知はありません"}</p>
       </div>

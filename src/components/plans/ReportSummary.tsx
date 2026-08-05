@@ -238,7 +238,7 @@ function TopRatedHighlights({ posts }: { posts: StatsResponse["topRatedPosts"] }
             <p className="line-clamp-1 text-sm font-bold text-surface-foreground">{post.title}</p>
             <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
               <div className="flex min-w-0 items-center gap-2.5">
-                <span className="flex shrink-0 items-center gap-1 truncate text-[0.7rem] font-medium text-green-600 dark:text-green-400">
+                <span className="flex shrink-0 items-center gap-1 truncate text-[0.7rem] font-medium text-green-700 dark:text-green-400">
                   <TwemojiIcon codepoint="1f4cd" alt="📍" className="h-3 w-3" /> {post.location}
                 </span>
                 <span className="flex items-center gap-1 truncate text-[0.7rem] font-medium text-zinc-500 dark:text-zinc-400">

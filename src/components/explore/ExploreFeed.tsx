@@ -41,7 +41,7 @@ export function ExploreFeed({ initialData, viewerId }: { initialData: PortalFeed
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-surface-foreground">💖 人気の旅スポット</h2>
-          <Link href="/search?tab=post&sort=popular" className="text-sm text-[#16a34a] dark:text-[#4ade80] font-medium hover:underline">
+          <Link href="/search?tab=post&sort=popular" className="text-sm text-[#15803d] dark:text-[#4ade80] font-medium hover:underline">
             もっと見る
           </Link>
         </div>
@@ -61,7 +61,7 @@ export function ExploreFeed({ initialData, viewerId }: { initialData: PortalFeed
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-surface-foreground">✨ 新着の旅スポット</h2>
-          <Link href="/search?tab=post" className="text-sm text-[#16a34a] dark:text-[#4ade80] font-medium hover:underline">
+          <Link href="/search?tab=post" className="text-sm text-[#15803d] dark:text-[#4ade80] font-medium hover:underline">
             もっと見る
           </Link>
         </div>

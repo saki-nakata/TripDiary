@@ -145,6 +145,23 @@ describe("plan.repository", () => {
     expect(detail?.spots).toHaveLength(1);
   });
 
+  it("updatePlan_budgetBreakdownを空配列で更新_DB上のbudget/budgetBreakdownがnullになる（第4ラウンドレビューA-2の回帰防止）", async () => {
+    const me = await createTestUser("plan-me4h@example.com", "自分4h");
+    const plan = await createPlan(me.id, {
+      ...basePlanInput,
+      budget: 3000,
+      budgetBreakdown: [{ label: "交通費", amount: 3000 }],
+    });
+    expect(plan.budget).toBe(3000);
+    expect(plan.budgetBreakdown).toEqual([{ label: "交通費", amount: 3000 }]);
+
+    await updatePlan(plan.id, { ...basePlanInput, completed: false, version: plan.version, budgetBreakdown: [] }, plan.version);
+
+    const detail = await prisma.plan.findUniqueOrThrow({ where: { id: plan.id } });
+    expect(detail.budget).toBeNull();
+    expect(detail.budgetBreakdown).toBeNull();
+  });
+
   it("updatePlan_completedをtrueに統合更新_completedが反映されversionがincrementされる（GATE-21）", async () => {
     const me = await createTestUser("plan-me4d@example.com", "自分4d");
     const plan = await createPlan(me.id, basePlanInput);

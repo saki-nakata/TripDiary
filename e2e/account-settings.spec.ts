@@ -39,8 +39,10 @@ test.describe.serial("アカウント設定の主要フロー（パスワード�
 
     // セッションはパスワード変更後も有効なままのため、/login にアクセスしても proxy.ts のミドルウェアで
     // ホームへリダイレクトされてしまう。ログインフォームを表示するにはまずセッションを明示的に破棄する。
-    // CI高負荷ではPATCH後のクライアント処理が続いていることがあるため、落ち着かせてからCookieを破棄する
-    await page.waitForLoadState("networkidle");
+    // networkidleはNext.jsの常時通信（ポーリング等）に弱く、達成されない・遅延することがあるため使わない。
+    // PATCH後のクライアント処理（フォームリセット・成功トースト表示）が完了したことを示す
+    // 成功トースト自体の表示を明示的に待ってからCookieを破棄する
+    await expect(page.getByText("パスワードを変更しました")).toBeVisible({ timeout: 15000 });
     await page.context().clearCookies();
 
     // 旧パスワードではログインできないことを確認。
@@ -57,13 +59,15 @@ test.describe.serial("アカウント設定の主要フロー（パスワード�
       page.getByText("メールアドレスまたはパスワードが正しくありません")
     ).toBeVisible({ timeout: 15000 });
 
-    // 新パスワードでログインできることを確認
+    // 新パスワードでログインできることを確認。URL遷移だけでなく、ログイン後にしか
+    // 表示されないユーザー固有UI（サイドバーのニックネームボタン）まで表示されることを確認する
     await page.goto("/login");
     await expect(page.locator("#email")).toBeVisible({ timeout: 15000 });
     await page.fill("#email", TEST_USER.email);
     await page.fill("#password", NEW_PASSWORD);
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL("/", { timeout: 15000 });
+    await expect(page.getByRole("button", { name: TEST_USER.nickname })).toBeVisible({ timeout: 15000 });
   });
 
   test("メールアドレス変更フォーム：現在のパスワードが誤り_エラーがメール変更フォーム自身に表示されパスワード変更フォームには表示されない（GATE-41）", async ({ page }) => {

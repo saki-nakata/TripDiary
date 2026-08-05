@@ -18,14 +18,16 @@ export function MyPostActions({ postId }: Props) {
 
   async function handleConfirm() {
     setIsDeleting(true);
-    const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
-    setIsDeleting(false);
-    setShowModal(false);
-    if (res.ok) {
+    try {
+      const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
       showToast("投稿を削除しました", "success");
       router.refresh();
-    } else {
+    } catch {
       showToast("削除に失敗しました", "error");
+    } finally {
+      setIsDeleting(false);
+      setShowModal(false);
     }
   }
 

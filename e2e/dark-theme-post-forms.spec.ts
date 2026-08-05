@@ -1,7 +1,7 @@
 import { test, expect } from "./fixtures";
 import { pickDate } from "./utils/dateField";
 import { createSolidColorPng } from "./utils/testImage";
-import { getContrastRatio, WCAG_NORMAL_TEXT_MIN_CONTRAST } from "./helpers/contrast";
+import { getContrastRatio, WCAG_NORMAL_TEXT_MIN_CONTRAST, WCAG_LARGE_TEXT_MIN_CONTRAST } from "./helpers/contrast";
 
 // PR-7c（GATE-40、DR-02グループD: 投稿フォーム・カード）の検証。
 // 対象: PostForm.tsx・DateField.tsx・DeleteButton.tsx・FollowFeed.tsx・
@@ -62,6 +62,12 @@ test.describe("PR-7c: 投稿フォーム・カードのダークテーマ対応"
       const costLabel = page.getByText("費用内訳", { exact: true });
       await expect(costLabel).toBeVisible();
       expect(await getContrastRatio(costLabel)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
+
+      // 未選択の★（StarRating、readonlyなしの操作可能なコントロール）はWCAG 1.4.11の
+      // 非活性コントロール基準（3:1）で判定する（第4ラウンドレビューB-4、ライト側の是正）
+      const unselectedStar = page.getByLabel("1星").locator("span");
+      await expect(unselectedStar).toBeVisible();
+      expect(await getContrastRatio(unselectedStar)).toBeGreaterThanOrEqual(WCAG_LARGE_TEXT_MIN_CONTRAST);
 
       const submitButton = page.getByRole("button", { name: "投稿する" });
       await expect(submitButton).toBeVisible();

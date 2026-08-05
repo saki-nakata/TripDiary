@@ -48,7 +48,7 @@ export function VisitedButton({ postId, initialVisited, isLoggedIn, forcedVisite
       disabled={loading || forcedVisited}
       className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
         visited
-          ? `bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400 ${forcedVisited ? "" : "hover:bg-green-100 dark:hover:bg-green-900"}`
+          ? `bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 ${forcedVisited ? "" : "hover:bg-green-100 dark:hover:bg-green-900"}`
           : `bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 ${forcedVisited ? "" : "hover:bg-zinc-200 dark:hover:bg-zinc-700"}`
       } ${forcedVisited ? "cursor-not-allowed" : ""}`}
       title={forcedVisited ? "自分の投稿です" : visited ? "訪問済みを解除" : "訪問済みにする"}

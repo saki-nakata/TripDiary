@@ -191,7 +191,7 @@ export default async function UserProfilePage({ params, searchParams }: Props) {
                 "desktopOnly" in t ? "max-sm:hidden" : ""
               } ${
                 activeTab === t.key
-                  ? "text-[#16a34a] dark:text-[#4ade80]"
+                  ? "text-[#15803d] dark:text-[#4ade80]"
                   : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-zinc-700 dark:hover:text-zinc-300"
               }`}
             >

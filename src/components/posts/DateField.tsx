@@ -151,7 +151,7 @@ export function DateField({ value, onChange, max, error, testId }: Props) {
                       : isDisabled(day)
                         ? "text-zinc-300 dark:text-zinc-600"
                         : isToday(day)
-                          ? "text-green-600 dark:text-green-400 font-semibold hover:bg-green-50 dark:hover:bg-green-950"
+                          ? "text-green-700 dark:text-green-400 font-semibold hover:bg-green-50 dark:hover:bg-green-950"
                           : "text-surface-foreground hover:bg-zinc-100 dark:hover:bg-white/5"
                   }`}
                 >

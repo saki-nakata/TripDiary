@@ -275,3 +275,85 @@ test.describe.serial("PR-7f: 実データの操作・一覧・旅行レポート
     });
   }
 });
+
+// 第4ラウンドレビューB-4/B-5: 通知一覧の日時・注記・送信者アイコンのコントラスト測定
+// （空状態ではなく実データで表示される要素を対象にする）。
+const NOTIF_OWNER = {
+  nickname: "PRB4通知確認オーナー",
+  email: "test_playwright_dark_theme_b4_notif_owner@example.com",
+  password: "Password1234",
+};
+const NOTIF_FOLLOWER = {
+  nickname: "PRB4通知確認フォロワー",
+  email: "test_playwright_dark_theme_b4_notif_follower@example.com",
+  password: "Password1234",
+};
+let notifOwnerId = "";
+let notifOwnerStatePath = "";
+let notifFollowerStatePath = "";
+
+test.describe.serial("PR-B4: 通知一覧のコントラスト・アバター確認", () => {
+  test.beforeAll(async ({ browser, request }, testInfo) => {
+    await request.delete(`/api/test/cleanup?email=${encodeURIComponent(NOTIF_OWNER.email)}`);
+    await request.delete(`/api/test/cleanup?email=${encodeURIComponent(NOTIF_FOLLOWER.email)}`);
+
+    const ownerSignup = await request.post("/api/auth/signup", { data: NOTIF_OWNER });
+    expect(ownerSignup.status()).toBe(201);
+    notifOwnerId = (await ownerSignup.json() as { id: string }).id;
+    const followerSignup = await request.post("/api/auth/signup", { data: NOTIF_FOLLOWER });
+    expect(followerSignup.status()).toBe(201);
+
+    const authDir = join(testInfo.project.outputDir, ".auth");
+    mkdirSync(authDir, { recursive: true });
+    notifOwnerStatePath = join(authDir, "pr-b4-notif-owner.json");
+    notifFollowerStatePath = join(authDir, "pr-b4-notif-follower.json");
+    await saveSignedInState(browser, NOTIF_OWNER, notifOwnerStatePath);
+    await saveSignedInState(browser, NOTIF_FOLLOWER, notifFollowerStatePath);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`通知一覧の日時・注記・送信者アイコンが読める（${colorScheme}）`, async ({ browser }) => {
+      const follower = await openSignedInPage(browser, notifFollowerStatePath, colorScheme);
+      try {
+        await follower.page.goto(`/users/${notifOwnerId}`);
+        const followButton = follower.page.locator('[data-testid="follow-button"]:visible');
+        await expect(followButton).toBeVisible();
+        // 2回目以降の実行（light/darkの2ループ）でも冪等に「フォロー中」状態へ揃える
+        if (!(await followButton.innerText()).includes("フォロー中")) {
+          await followButton.click();
+          await expect(followButton).toContainText("フォロー中");
+        }
+      } finally {
+        await follower.context.close();
+      }
+
+      const owner = await openSignedInPage(browser, notifOwnerStatePath, colorScheme);
+      try {
+        await owner.page.goto("/notification");
+
+        const note = owner.page.getByText("（1年以上前の未読通知は自動的に既読になります）");
+        await expect(note).toBeVisible();
+        expect(await getContrastRatio(note)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
+
+        const notificationRow = owner.page.getByText(`${NOTIF_FOLLOWER.nickname} さんがあなたをフォローしました`).locator("xpath=ancestor::a[1]");
+        await expect(notificationRow).toBeVisible();
+
+        const dateText = notificationRow.locator("span.text-xs").first();
+        await expect(dateText).toBeVisible();
+        expect(await getContrastRatio(dateText)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
+
+        // 送信者アイコン（画像未設定時は頭文字フォールバック。ブランドグリーン系パターン、
+        // 第4ラウンドレビューOpus発見のアバター9箇所目）
+        const senderAvatar = notificationRow.locator("div.rounded-full").first();
+        await expect(senderAvatar).toBeVisible();
+        expect(await getContrastRatio(senderAvatar)).toBeGreaterThanOrEqual(WCAG_NORMAL_TEXT_MIN_CONTRAST);
+
+        await expect(owner.page.locator("main")).toHaveScreenshot(`notification-list-${colorScheme}.png`, {
+          mask: [dateText],
+        });
+      } finally {
+        await owner.context.close();
+      }
+    });
+  }
+});

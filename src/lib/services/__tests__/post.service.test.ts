@@ -45,6 +45,7 @@ import {
   updatePostService,
   deletePostService,
   findPostByIdService,
+  findPostForEditService,
   findExplorePostsService,
   findFollowingPostsService,
   getPortalDataService,
@@ -413,6 +414,38 @@ describe("findPostByIdService", () => {
 
     expect(findPostById).toHaveBeenCalledWith(POST_ID, "viewer-1");
     expect(result).toEqual({ id: POST_ID, authorId: AUTHOR_ID });
+  });
+});
+
+describe("findPostForEditService", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("本人が編集画面用に取得_findPostByIdをuserId付きで呼び費用内訳を含む結果を返す（第4ラウンドA-1の回帰防止）", async () => {
+    vi.mocked(findPostById).mockResolvedValue({
+      id: POST_ID,
+      authorId: AUTHOR_ID,
+      cost: 1000,
+      costBreakdown: [{ label: "交通費", amount: 1000 }],
+    } as never);
+
+    const result = await findPostForEditService(AUTHOR_ID, POST_ID);
+
+    // userIdなしで呼ぶとformatPost側の本人判定に失敗し費用内訳が除外される（A-1のバグ）ため、
+    // 呼び出し引数そのものを固定して回帰を防ぐ
+    expect(findPostById).toHaveBeenCalledWith(POST_ID, AUTHOR_ID);
+    expect(result).toMatchObject({ cost: 1000, costBreakdown: [{ label: "交通費", amount: 1000 }] });
+  });
+
+  it("存在しない投稿ID_NotFoundError", async () => {
+    vi.mocked(findPostById).mockResolvedValue(null);
+
+    await expect(findPostForEditService(AUTHOR_ID, POST_ID)).rejects.toThrow(NotFoundError);
+  });
+
+  it("他人の投稿を編集画面用に取得_ForbiddenError", async () => {
+    vi.mocked(findPostById).mockResolvedValue({ id: POST_ID, authorId: AUTHOR_ID } as never);
+
+    await expect(findPostForEditService(OTHER_USER_ID, POST_ID)).rejects.toThrow(ForbiddenError);
   });
 });
 

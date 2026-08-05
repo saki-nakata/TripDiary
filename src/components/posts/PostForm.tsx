@@ -338,7 +338,7 @@ export function PostForm({ initialData, planId, presetTitle, presetLocation, pre
           <label
             className={`w-full h-14 rounded-xl border border-dashed flex items-center justify-center text-sm cursor-pointer transition-colors ${
               isDragging
-                ? "border-green-500 bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400"
+                ? "border-green-500 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400"
                 : "border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700"
             }`}
             onDragOver={handleDragOver}
