@@ -515,7 +515,7 @@ registry.registerPath({
 registry.registerPath({
   method: "get",
   path: "/api/users/search",
-  summary: "ユーザー検索（ニックネーム部分一致・qを省略した場合は全ユーザーが対象）。結果はTabiScoreの降順、ログイン中の場合は自分自身を除外",
+  summary: "ユーザー検索（ニックネーム部分一致・qを省略した場合は全ユーザーが対象）。結果はcursor順（ID昇順）で返し、ログイン中の場合は自分自身を除外",
   tags: ["Users"],
   request: {
     query: z.object({
