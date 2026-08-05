@@ -91,7 +91,9 @@ describe("NotificationList", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ notifications: NOTIFICATIONS }) })
-      .mockResolvedValueOnce({ ok: false, json: async () => ({}) });
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+      // ロールバック後に再試行が発生するため、以降は失敗のまま維持する既定応答を用意する
+      .mockResolvedValue({ ok: false, json: async () => ({}) });
     vi.stubGlobal("fetch", fetchMock);
 
     renderWithClient();
@@ -101,6 +103,50 @@ describe("NotificationList", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     const notificationLink = screen.getByText(/いいねしました/).closest("a");
     await waitFor(() => expect(notificationLink?.querySelector(".bg-red-500")).not.toBeNull());
+  });
+
+  it("handleRead_既読API失敗後に再度表示範囲へ入る_既読化が再試行される（第4ラウンドレビューB-3の回帰防止）", async () => {
+    // 同一observerがビューポートへ再度入ったことを模し、交差イベントを2回発火するモック。
+    // 1回目（失敗）でcalledRefがtrueのまま残らずリセットされることを、2回目の交差で
+    // onReadが再度呼ばれること（＝リセットされていること）で確認する
+    class RetryMockIntersectionObserver implements IntersectionObserver {
+      readonly root = null;
+      readonly rootMargin = "";
+      readonly scrollMargin = "";
+      readonly thresholds: ReadonlyArray<number> = [];
+      private callback: IntersectionObserverCallback;
+      constructor(callback: IntersectionObserverCallback) {
+        this.callback = callback;
+      }
+      observe(target: Element) {
+        this.callback([{ isIntersecting: true, intersectionRatio: 1, target } as IntersectionObserverEntry], this);
+        setTimeout(() => {
+          this.callback([{ isIntersecting: true, intersectionRatio: 1, target } as IntersectionObserverEntry], this);
+        }, 0);
+      }
+      unobserve() {}
+      disconnect() {}
+      takeRecords(): IntersectionObserverEntry[] {
+        return [];
+      }
+    }
+    vi.stubGlobal("IntersectionObserver", RetryMockIntersectionObserver);
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ notifications: NOTIFICATIONS }) })
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderWithClient();
+
+    await waitFor(() => expect(screen.getByText(/いいねしました/)).toBeInTheDocument());
+    // 1回目の既読化（失敗）の後、同一observerが再度交差イベントを発火し、
+    // calledRefがリセットされていたおかげで2回目のPATCHが送られ、今度は成功する
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    const notificationLink = screen.getByText(/いいねしました/).closest("a");
+    await waitFor(() => expect(notificationLink?.querySelector(".bg-red-500")).toBeNull());
   });
 
   // ─── 継続取得（GATE-22種類A、無限スクロール） ───
