@@ -76,6 +76,10 @@ scripts-tmp-*.js
 # performance test generated data (performance/seed.ts の出力)
 performance/k6/data/
 
+# 6-B2本番シード用画像プール（scripts/fetch-seed-images.ts の出力。Pexelsから収集した実写素材で
+# リポジトリの恒久保管対象に含めない。マニフェスト・元画像はローカルPCとバックアップのみで保持する）
+seed-images/
+
 # performance test results (実行結果。.gitkeepのみ管理)
 performance/k6/results/*
 !performance/k6/results/.gitkeep

@@ -29,7 +29,9 @@
     "perf:capture": "tsx scripts/capture-performance-report.ts",
     "perf:vitals": "dotenv -e .env.perf -- playwright test --project=perf --workers=1",
     "perf:down": "docker compose stop mysql-perf",
-    "perf:typecheck": "tsc --noEmit -p performance/k6"
+    "perf:typecheck": "tsc --noEmit -p performance/k6",
+    "seed:fetch-images": "dotenv -e .env.local -- tsx scripts/fetch-seed-images.ts",
+    "seed:production": "dotenv -e .env.local -- tsx prisma/seed-production.ts"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.5.0",
