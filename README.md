@@ -16,7 +16,7 @@
 | データベース | MySQL（開発: Docker / 本番: AWS RDS 予定） |
 | 画像ストレージ | AWS S3（実装計画書 Phase 6-A 対応済み。アップロードには`AWS_REGION`/`AWS_S3_BUCKET_NAME`の設定と実際のバケットが必要） |
 | 地図 | Leaflet + OpenStreetMap |
-| ホスティング | 未デプロイ（想定構成: AWS EC2 + RDS + S3。詳細は [インフラ構成書](docs/インフラ構成書.md)） |
+| ホスティング | AWS EC2 + RDS + S3（Terraform構築済み、2026-08-06デプロイ・実機能検証完了。現在は運用者IPのみに公開範囲を限定し一般公開前）。詳細は [インフラ構成書](docs/インフラ構成書.md) |
 
 ---
 
@@ -187,7 +187,7 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 - Swagger UI: http://localhost:3000/api-docs
 - OpenAPI JSON: http://localhost:3000/api/openapi.json
 
-現時点（本番デプロイ＝Phase 6未実施）は上記の通りローカルで `pnpm dev` を起動して確認する必要がある。Phase 6でのデプロイ後は本番URLでも常時公開する方針のため、そちらでも閲覧可能になる。
+本番環境（Phase 6-B）でも`/api-docs`が200で表示されることを実機確認済み。ただし本番URLは現時点で運用者IPのみに公開範囲を限定しているため、一般公開までは上記の通りローカルで `pnpm dev` を起動して確認する必要がある。
 
 ---
 
@@ -226,7 +226,7 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 
 ## 本番環境へのデプロイ
 
-現時点で本番デプロイは未実施（ローカル開発環境のみ）。本番環境は AWS EC2（アプリ）+ AWS RDS（MySQL）+ AWS S3（画像ストレージ）で構成予定。画像ストレージのS3移行（実装計画書 Phase 6-A）は実装済み。EC2/RDSへのデプロイ（Phase 6-B）は今後実施する。インフラの詳細は [docs/インフラ構成書.md](docs/インフラ構成書.md) を参照。
+本番環境は AWS EC2（アプリ）+ AWS RDS（MySQL）+ AWS S3（画像ストレージ）、Terraform（`infra/terraform/`）でコード管理して構築している（Phase 6-B、2026-08-06 構築・デプロイ・実機能検証まで完了）。**現時点ではセキュリティグループにより運用者IPのみに公開範囲を限定しており、一般公開はまだ行っていない**（実S3/IAM実機検証・監視実証等の「公開阻止DoD」完了後、本番シード投入〔6-B2〕とあわせて一般公開する予定）。インフラの詳細・デプロイ手順は [docs/インフラ構成書.md](docs/インフラ構成書.md)・[infra/terraform/README.md](infra/terraform/README.md) を参照。
 
 > ⚠️ **HTTPS非採用について**: コスト・作業量を理由に、本番環境はHTTP運用とする（独自ドメイン・Elastic IP・Let's Encryptによる正式なHTTPS化は行わない）。ログイン情報・セッションが平文で流れ得るため、**確認用アカウントは使い捨て前提**とし、本番環境で個人情報・普段使いのパスワードを絶対に使い回さないこと。
 
