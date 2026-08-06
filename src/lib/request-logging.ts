@@ -7,6 +7,11 @@ import { runWithRequestContext } from "@/lib/request-context";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 動的ルートのctx型はファイル毎に異なるため、汎用ラッパーの型はanyで受けてHにそのまま透過させる
 export type AnyRouteHandler = (req: NextRequest, ...args: any[]) => Promise<NextResponse> | NextResponse;
 
+// Nginx/PM2から5秒間隔等でポーリングされる想定のため、アクセスログ出力とuserId解決用の
+// auth()呼び出し（セッションデコード）の両方をスキップする対象パス（GATE-35）。
+// ハンドラ自体の実行はスキップしない（ヘルスチェック失敗時のlogger.errorはroute.ts側に既存）。
+const SKIP_ACCESS_LOG_PATHS = new Set(["/api/health"]);
+
 /**
  * handleApiError()はエラー時のみログを出すため、正常系を含む全リクエストの
  * method/path/status/duration_ms/userId/requestIdをここで一元的に記録する。
@@ -22,28 +27,37 @@ export function withRequestLogging<H extends AnyRouteHandler>(handler: H): H {
     // reqが無いケースでもクラッシュしないようoptional chainingで守る
     const method = req?.method;
     const path = req ? new URL(req.url).pathname : undefined;
-    const res = await runWithRequestContext({ requestId, method, path }, () => handler(req, ...args));
 
-    let userId: string | undefined;
-    try {
-      const session = await auth();
-      userId = session?.user?.id;
-    } catch {
-      // Next.jsのリクエストスコープ外（Controllerテスト等）で呼ばれた場合は取得しない
+    if (path && SKIP_ACCESS_LOG_PATHS.has(path)) {
+      return runWithRequestContext({ requestId, method, path }, () => handler(req, ...args));
     }
 
-    logger.info(
-      {
-        requestId,
-        method,
-        path,
-        status: res.status,
-        duration_ms: Date.now() - start,
-        userId,
-      },
-      "API request completed"
-    );
+    // handlerがthrowした場合もアクセスログを1行残すため、resの代入とログ出力をtry/finallyに分ける。
+    // finally到達時点でresが未代入（＝throwされた）ならstatus 500として記録し、例外はそのまま再送出する。
+    let res: NextResponse | undefined;
+    try {
+      res = await runWithRequestContext({ requestId, method, path }, () => handler(req, ...args));
+      return res;
+    } finally {
+      let userId: string | undefined;
+      try {
+        const session = await auth();
+        userId = session?.user?.id;
+      } catch {
+        // Next.jsのリクエストスコープ外（Controllerテスト等）で呼ばれた場合は取得しない
+      }
 
-    return res;
+      logger.info(
+        {
+          requestId,
+          method,
+          path,
+          status: res?.status ?? 500,
+          duration_ms: Date.now() - start,
+          userId,
+        },
+        "API request completed"
+      );
+    }
   }) as H;
 }

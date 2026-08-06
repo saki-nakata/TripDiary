@@ -2,7 +2,12 @@ import { Options } from "k6/options";
 import { login } from "../../helpers/auth.ts";
 import { generateSummary } from "../../helpers/summary.ts";
 import { SUMMARY_TREND_STATS } from "../../config/config.ts";
-import { placeholderThresholds, gatingEndpointThresholds, UNGATED_ENDPOINT_NAMES } from "../../helpers/thresholds.ts";
+import {
+  placeholderThresholds,
+  gatingEndpointThresholds,
+  checksThreshold,
+  UNGATED_ENDPOINT_NAMES,
+} from "../../helpers/thresholds.ts";
 import { users, paginationTargetUser } from "../../helpers/csv.ts";
 import { feedScenario } from "../../scenarios/feedScenario.ts";
 import { postDetailScenario } from "../../scenarios/postDetailScenario.ts";
@@ -29,6 +34,8 @@ export const options: Options = {
   },
   thresholds: {
     http_req_failed: ["rate<0.01"],
+    // iterations:1で全シナリオを1周するSmokeは全check成功を要求する（GATE-24）
+    ...checksThreshold("rate==1"),
     ...gatingEndpointThresholds("smoke"),
     ...placeholderThresholds("endpoint", UNGATED_ENDPOINT_NAMES),
   },

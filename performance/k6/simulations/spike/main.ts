@@ -3,7 +3,12 @@ import exec from "k6/execution";
 import { login } from "../../helpers/auth.ts";
 import { generateSummary } from "../../helpers/summary.ts";
 import { SUMMARY_TREND_STATS } from "../../config/config.ts";
-import { placeholderThresholds, gatingScenarioAuxThresholds, ENDPOINT_NAMES } from "../../helpers/thresholds.ts";
+import {
+  placeholderThresholds,
+  gatingScenarioAuxThresholds,
+  checksThreshold,
+  ENDPOINT_NAMES,
+} from "../../helpers/thresholds.ts";
 import { users, paginationTargetUser } from "../../helpers/csv.ts";
 import { feedScenario } from "../../scenarios/feedScenario.ts";
 import { postDetailScenario } from "../../scenarios/postDetailScenario.ts";
@@ -43,6 +48,8 @@ export const options: Options = {
   },
   thresholds: {
     http_req_failed: ["rate<0.05"],
+    // http_req_failedの許容度（<0.05）に合わせる（GATE-24）
+    ...checksThreshold("rate>0.95"),
     // rampdown中の高負荷リクエストを混ぜず、5VUで1分維持したcooldown区間だけで回復を判定する。
     // 既存の閾値を維持し、修正後のクリーン実測で妥当性を再確認する。
     "http_req_duration{scenario:cooldown1}": ["p(99)<2000"],

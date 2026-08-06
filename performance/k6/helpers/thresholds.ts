@@ -113,3 +113,12 @@ export function gatingScenarioAuxThresholds(
   }
   return result;
 }
+
+// GATE-24: check()の失敗（ページ内容不正・ログイン失敗等）が閾値に接続されておらず、
+// 誤ったページ内容やログイン失敗があってもPASSになり得た問題への対応。
+// checksメトリクスを各シナリオのhttp_req_failed許容度に合わせてゲートする
+// （全シナリオ一律rate==1にすると、意図的にエラーを許容するload/spikeの設計と矛盾するため）。
+// stressは意図的に無ゲート（限界点の記録が目的）のため呼び出し対象外。
+export function checksThreshold(condition: string): Record<string, string[]> {
+  return { checks: [condition] };
+}
