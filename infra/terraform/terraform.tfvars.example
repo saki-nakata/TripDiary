@@ -1,0 +1,26 @@
+# terraform.tfvars.example
+#
+# 実際の値を書いた terraform.tfvars を同じディレクトリに作成すること（.gitignore対象）。
+# bucket_name はグローバルに一意な値かつ、destroy/apply・完全撤去後の再作成でも
+# 変更しない固定値にすること（README.md「事前確認チェックリスト」「S3の保護・復旧方針」参照）。
+
+region       = "ap-northeast-1"
+project_name = "tripdiary"
+
+# 運用者の現在のグローバルIP（`curl https://checkip.amazonaws.com` 等で確認）
+allowed_ssh_cidr = "203.0.113.10/32"
+
+# 6-B構築・検証中は運用者IPのみに限定する。一般公開applyの直前に ["0.0.0.0/0"] へ変更する。
+app_public_cidr_blocks = ["203.0.113.10/32"]
+
+# グローバルに一意な名前にすること（推測しにくい名前を推奨）
+bucket_name = "tripdiary-prod-uploads-CHANGE-ME"
+
+db_username = "tripdiary_admin"
+
+# 事前に `aws ec2 create-key-pair --key-name tripdiary-prod --query 'KeyMaterial' --output text > tripdiary-prod.pem` 等で作成
+key_pair_name = "tripdiary-prod"
+
+# 通常はデフォルト（コメントアウトのまま）でよい。destroy準備時のみ -var で上書きする。
+# snapshot_suffix     = "20260810-1430"
+# deletion_protection = false

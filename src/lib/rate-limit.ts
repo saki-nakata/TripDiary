@@ -8,6 +8,21 @@ type Bucket = { count: number; resetAt: number };
 // スケールする場合はRedis等の外部ストアに置き換える必要がある。
 const buckets = new Map<string, Bucket>();
 
+// t2.micro（1GB RAM）でのメモリ圧迫を防ぐための保有バケット数上限（GATE-20）。
+// 上限到達時は「新規キーを拒否する」方式のみを採る（生きているバケットは絶対に追い出さない）。
+// login:${email} 等、キーがIPアドレスに基づかない用途があるため、最古のバケットを追い出す
+// LRU方式だと、大量の新規キー（例: ランダムなメールアドレスでの大量ログイン試行）で標的の
+// バケットそのものを追い出せてしまい、レート制限の解除と等価になる。
+const MAX_BUCKETS = 5000;
+
+function sweepExpiredBuckets(now: number): void {
+  for (const [k, v] of buckets) {
+    if (now >= v.resetAt) {
+      buckets.delete(k);
+    }
+  }
+}
+
 /**
  * `key` ごとに `windowMs` の固定ウィンドウで `limit` 回までのアクセスを許容する。
  * 超過時は `RateLimitError` を投げる（呼び出し元でハンドリングする）。
@@ -29,6 +44,14 @@ export function checkRateLimit(key: string, limit: number, windowMs: number): vo
   const bucket = buckets.get(key);
 
   if (!bucket || now >= bucket.resetAt) {
+    // 新規キー（Mapにまだ存在しない）を追加する場合のみ、上限チェックの対象にする。
+    // 既存キーのウィンドウ満了によるリセットはMapのサイズを変えないため対象外。
+    if (!buckets.has(key)) {
+      sweepExpiredBuckets(now);
+      if (buckets.size >= MAX_BUCKETS) {
+        throw new RateLimitError();
+      }
+    }
     buckets.set(key, { count: 1, resetAt: now + windowMs });
     return;
   }
@@ -42,6 +65,12 @@ export function checkRateLimit(key: string, limit: number, windowMs: number): vo
 export function __resetRateLimitForTests() {
   buckets.clear();
 }
+
+export function __getBucketsSizeForTests(): number {
+  return buckets.size;
+}
+
+export const __MAX_BUCKETS_FOR_TESTS = MAX_BUCKETS;
 
 /**
  * クライアントIPを取得する。`x-forwarded-for` ヘッダの最左要素を採用する。

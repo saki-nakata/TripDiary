@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { checkRateLimit, getClientIp, __resetRateLimitForTests } from "@/lib/rate-limit";
+import {
+  checkRateLimit,
+  getClientIp,
+  __resetRateLimitForTests,
+  __getBucketsSizeForTests,
+  __MAX_BUCKETS_FOR_TESTS,
+} from "@/lib/rate-limit";
 import { RateLimitError } from "@/lib/errors";
 
 describe("checkRateLimit", () => {
@@ -59,6 +65,54 @@ describe("checkRateLimit", () => {
       process.env.DISABLE_RATE_LIMIT_FOR_TESTS = originalDisable;
       process.env.ENABLE_TEST_ENDPOINTS = originalEnableTestEndpoints;
     }
+  });
+
+  // GATE-20: メモリ上限対策（満了スイープ＋件数上限時の新規キー拒否）。
+  // 「最古のバケットを追い出す」LRU方式は、login:${email}のようにIPに基づかない
+  // キー設計と組み合わさるとブルートフォース対策を無効化するため採用しない
+  // （攻撃者が大量の新規メールアドレスでログイン試行し、標的アカウントのバケットを
+  // 追い出せてしまう）。生きているバケットは絶対に追い出さず、新規キー側を制限する。
+
+  it("満了エントリは新規キー追加時にスイープされ、保有バケット数に含まれない", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    checkRateLimit("sweep-old", 5, 1000);
+    expect(__getBucketsSizeForTests()).toBe(1);
+
+    vi.setSystemTime(1001); // sweep-oldのウィンドウが満了
+    checkRateLimit("sweep-new", 5, 1000); // 新規キー追加時にスイープが走る
+    expect(__getBucketsSizeForTests()).toBe(1); // sweep-oldが除去され、sweep-newのみ残る
+    vi.useRealTimers();
+  });
+
+  it("保有バケット数が上限に達していても、既存キーへのアクセスは影響を受けない（追い出されない）", () => {
+    for (let i = 0; i < __MAX_BUCKETS_FOR_TESTS; i++) {
+      checkRateLimit(`fill-${i}`, 100, 60_000);
+    }
+    expect(__getBucketsSizeForTests()).toBe(__MAX_BUCKETS_FOR_TESTS);
+
+    // 既存キー（先頭に追加したもの）への再アクセスは通常どおりカウントされる
+    expect(() => checkRateLimit("fill-0", 100, 60_000)).not.toThrow();
+  });
+
+  it("保有バケット数が上限に達している場合、新規キーは即座にRateLimitErrorになる", () => {
+    for (let i = 0; i < __MAX_BUCKETS_FOR_TESTS; i++) {
+      checkRateLimit(`fill2-${i}`, 100, 60_000);
+    }
+    expect(() => checkRateLimit("brand-new-key", 100, 60_000)).toThrow(RateLimitError);
+  });
+
+  it("満了により空きが出れば、上限到達後でも新規キーが再び受け入れられる", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    for (let i = 0; i < __MAX_BUCKETS_FOR_TESTS; i++) {
+      checkRateLimit(`fill3-${i}`, 100, 1000);
+    }
+    expect(() => checkRateLimit("blocked-key", 100, 1000)).toThrow(RateLimitError);
+
+    vi.setSystemTime(1001); // 全バケットのウィンドウが満了
+    expect(() => checkRateLimit("accepted-key", 100, 1000)).not.toThrow();
+    vi.useRealTimers();
   });
 });
 

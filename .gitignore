@@ -92,3 +92,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .claude/
+
+# terraform（infra/terraform/.terraform.lock.hcl・*.tfはコミット対象）
+infra/terraform/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!*.tfvars.example
+infra/terraform/tfplan*
