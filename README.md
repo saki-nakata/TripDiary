@@ -13,7 +13,7 @@
 | バックエンド | Next.js Route Handlers |
 | ORM | Prisma 6.19.3 |
 | 認証 | Auth.js（next-auth v5 beta.32） |
-| データベース | MySQL（開発: Docker / 本番: AWS RDS 予定） |
+| データベース | MySQL（開発: Docker / 本番: AWS RDS） |
 | 画像ストレージ | AWS S3（実装計画書 Phase 6-A 対応済み。アップロードには`AWS_REGION`/`AWS_S3_BUCKET_NAME`の設定と実際のバケットが必要） |
 | 地図 | Leaflet + OpenStreetMap |
 | ホスティング | AWS EC2 + RDS + S3（Terraform構築済み、2026-08-06デプロイ・実機能検証完了。2026-08-07 一般公開済み: http://54.248.13.248 ）。詳細は [インフラ構成書](docs/インフラ構成書.md) |
@@ -114,7 +114,12 @@ TripDiary/
 │   ├── lib/                       # ユーティリティ（prisma / auth / logger / openapi 等）
 │   └── types/                     # 型定義
 ├── prisma/
-│   └── schema.prisma
+│   ├── schema.prisma
+│   └── seed-production.ts         # 本番シード投入スクリプト（Phase 6-B2）
+├── scripts/
+│   └── fetch-seed-images.ts       # 本番シード用画像収集（Pexels API、Phase 6-B2）
+├── infra/terraform/               # 本番インフラのコード管理（EC2 + RDS + S3、Phase 6-B）
+├── performance/                   # k6負荷試験・Web Vitals計測
 ├── e2e/                           # Playwright E2Eテスト
 ├── public/
 ├── .env.local
@@ -128,7 +133,7 @@ TripDiary/
 
 ### 前提条件
 
-- Node.js 20 以上 / pnpm
+- Node.js 24 / pnpm（本番EC2・CIともにNode.js 24で統一。`@node-rs/bcrypt`のネイティブアドオンがビルド時のNodeバージョンに依存するため）
 - Docker（開発用MySQLコンテナの起動に使用）
 - Leaflet + OpenStreetMap（APIキー不要）
 - ※ 画像アップロード機能（投稿画像・アバター）を使うには `AWS_REGION` / `AWS_S3_BUCKET_NAME` の設定と実際のS3バケットが必要（バケット自体の構築は実装計画書 Phase 6-B）。それ以外の画面・機能はS3設定なしでも動作する
@@ -213,7 +218,7 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 
 | 変数名 | 説明 |
 |--------|------|
-| `DATABASE_URL` | MySQL 接続 URL（開発時は `docker compose up -d db` のコンテナ、本番は AWS RDS 予定） |
+| `DATABASE_URL` | MySQL 接続 URL（開発時は `docker compose up -d db` のコンテナ、本番は AWS RDS） |
 | `AUTH_SECRET` | Auth.js のシークレットキー |
 | `AUTH_URL` | アプリの URL（開発時は http://localhost:3000） |
 | `AWS_REGION` | S3 バケットのリージョン（例: ap-northeast-1）。画像アップロード機能に必須 |
@@ -241,6 +246,8 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 
 ⚠️ 本番はHTTP運用のため認証情報が平文で流れ得る。**このアカウントは確認専用の使い捨てとして扱い、他サービスと共用しているパスワードを入力しないこと。**
 
+自分の投稿9件（画像付き）・旅行プラン2件（完了済み1件＋進行中1件）・行きたい登録済みで、ログイン後すぐに「旅行レポート」「行きたい」「旅行プラン」「訪問済み」の各画面を空でない状態で確認できる。
+
 常設デモアカウント（6-Cデモ動画用）のパスワードはリポジトリに含めず、`prisma/seed-production.ts`実行時にランダム生成・標準出力にのみ表示する。
 
 ---
@@ -251,7 +258,7 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 |------------|------|
 | [要件定義書](docs/要件定義書.md) | 機能要件・非機能要件・技術スタック |
 | [DB 設計書](docs/DB設計書.md) | ER 図・テーブル定義 |
-| [API 仕様書（Swagger UI）](http://localhost:3000/api-docs) | エンドポイント一覧・リクエスト/レスポンス仕様（開発サーバー起動中に閲覧。手書きの`docs/API仕様書.md`は廃止しSwagger自動生成に一本化済み。Phase 6デプロイ後は本番URLでも常時閲覧可能になる予定） |
+| [API 仕様書（Swagger UI）](http://localhost:3000/api-docs) | エンドポイント一覧・リクエスト/レスポンス仕様（開発サーバー起動中に閲覧。手書きの`docs/API仕様書.md`は廃止しSwagger自動生成に一本化済み。[本番URL](http://54.248.13.248/api-docs)でも常時閲覧可能） |
 | [画面設計書](docs/画面設計書.md) | ワイヤーフレーム（全画面） |
 | [画面遷移図](docs/画面遷移図.md) | 画面間の遷移フロー |
 | [シーケンス図](docs/シーケンス図.md) | 認証・投稿・ソーシャル機能のシーケンス |
