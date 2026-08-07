@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
+import { PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { uploadObject } from "@/lib/s3";
@@ -38,6 +39,42 @@ const CONFIRM_WISHLIST_COUNT = 7;
 const SEED_IMAGES_DIR = path.join(process.cwd(), "seed-images");
 const IMAGES_PER_CATEGORY = 3;
 const DRY_RUN = process.env.DRY_RUN === "true";
+
+// 排他実行。ensureLike/ensureWishlist/ensureFollow は「存在確認 → トグルAPI呼び出し」の2段構えのため、
+// 2プロセスが同時に走ると、後発側が存在しないと判定した直後に先発側が作成し、後発側のトグルが
+// それを解除してしまう（冪等どころか逆の結果になる）。ensureComment も Comment に一意制約が
+// ないため重複作成され得る。通知を発行するにはService層（＝トグルAPI）を経由する必要があり
+// 「存在しなければ作成」操作に置き換えられないため、シード実行そのものを排他化する。
+//
+// GET_LOCK は接続スコープのロックで、コネクションプール経由だと取得と解放が別接続になり得る。
+// connection_limit=1 の専用クライアントを立て、取得・保持・解放を1本の接続に固定する。
+const SEED_LOCK_NAME = "tripdiary:seed-production";
+const SEED_LOCK_TIMEOUT_SECONDS = 10;
+
+async function withSeedLock<T>(fn: () => Promise<T>): Promise<T> {
+  const lockUrl = new URL(process.env.DATABASE_URL!);
+  lockUrl.searchParams.set("connection_limit", "1");
+  const lockClient = new PrismaClient({ datasourceUrl: lockUrl.toString() });
+
+  try {
+    const rows = await lockClient.$queryRaw<
+      { locked: number | bigint | null }[]
+    >`SELECT GET_LOCK(${SEED_LOCK_NAME}, ${SEED_LOCK_TIMEOUT_SECONDS}) AS locked`;
+    if (Number(rows[0]?.locked ?? 0) !== 1) {
+      throw new Error(
+        `[seed-production] 他のシード実行がロック（${SEED_LOCK_NAME}）を保持しています。同時実行するといいね・行きたい・フォローが解除される恐れがあるため中断します。`
+      );
+    }
+
+    try {
+      return await fn();
+    } finally {
+      await lockClient.$queryRaw`SELECT RELEASE_LOCK(${SEED_LOCK_NAME})`;
+    }
+  } finally {
+    await lockClient.$disconnect();
+  }
+}
 
 const DEMO_USER_ID = "seed-demo-user";
 const DEMO_EMAIL = "demo@tripdiary.example";
@@ -239,7 +276,10 @@ async function ensurePlan(params: {
 }
 
 // Like・Followは複合主キー自体が冪等判定になる。Commentには自然な複合ユニーク制約がないため
-// authorId+postId+bodyの組み合わせで存在確認する（decisive IDは付与しない。理由は実装計画書参照）
+// authorId+postId+bodyの組み合わせで存在確認する（decisive IDは付与しない。理由は実装計画書参照）。
+//
+// 以下4関数はいずれも「存在確認 → Service層の呼び出し」であり、単体では並行実行に耐えない。
+// 単一プロセス内では直列にawaitしており、プロセス間の同時実行は withSeedLock() が排他化する。
 async function ensureLike(userId: string, postId: string): Promise<void> {
   const existing = await prisma.like.findUnique({ where: { userId_postId: { userId, postId } } });
   if (existing) return;
@@ -300,6 +340,11 @@ async function main(): Promise<void> {
 
   console.log(`[seed-production] 開始（モード: ${mode}、接続先: ${url.hostname} / ${database}）`);
 
+  // 書き込みフェーズ全体を排他化する（同時実行でトグル操作が打ち消し合うのを防ぐ）
+  await withSeedLock(runSeed);
+}
+
+async function runSeed(): Promise<void> {
   // 1. 一般ユーザー（ログインさせる想定がないため password は null）
   for (let i = 0; i < GENERAL_USER_COUNT; i++) {
     await ensureUser(
