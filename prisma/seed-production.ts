@@ -8,6 +8,7 @@ import { toggleLikeService } from "@/lib/services/like.service";
 import { createCommentService } from "@/lib/services/comment.service";
 import { toggleFollowService } from "@/lib/services/follow.service";
 import { isFollowing } from "@/lib/repositories/follow.repository";
+import { toggleWishlistService } from "@/lib/services/wishlist.service";
 import { CATEGORIES, LOCATIONS } from "@/lib/constants";
 import { resolveSeedMode, assertProductionSeedConfirmed } from "./assert-production-database";
 
@@ -29,6 +30,10 @@ const GENERAL_COMMENT_COUNT = 80;
 const GENERAL_FOLLOW_COUNT = 25;
 const GENERAL_PLAN_COUNT = 12;
 const DEMO_POST_COUNT = 11;
+// 確認用アカウントは動作確認（旅行レポート・行きたい・旅行プラン・訪問済みタブ）の
+// 「見せる完成品」として、デモアカウント相当の件数を自分の投稿として持たせる
+const CONFIRM_POST_COUNT = 9;
+const CONFIRM_WISHLIST_COUNT = 7;
 
 const SEED_IMAGES_DIR = path.join(process.cwd(), "seed-images");
 const IMAGES_PER_CATEGORY = 3;
@@ -241,6 +246,12 @@ async function ensureLike(userId: string, postId: string): Promise<void> {
   await toggleLikeService(userId, postId);
 }
 
+async function ensureWishlist(userId: string, postId: string): Promise<void> {
+  const existing = await prisma.wishlist.findUnique({ where: { userId_postId: { userId, postId } } });
+  if (existing) return;
+  await toggleWishlistService(userId, postId);
+}
+
 async function ensureComment(authorId: string, postId: string, body: string): Promise<void> {
   const existing = await prisma.comment.findFirst({ where: { authorId, postId, body } });
   if (existing) return;
@@ -267,9 +278,10 @@ async function printDryRunSummary(mode: string, host: string, database: string):
   console.log(`  既存のシード関連プラン: ${existingPlans}件`);
   console.log(`  作成目標（既に存在する分はスキップされます）:`);
   console.log(`    ユーザー: 一般${GENERAL_USER_COUNT}名＋デモ1名＋確認用1名`);
-  console.log(`    投稿: 一般${GENERAL_POST_COUNT}件＋デモ${DEMO_POST_COUNT}件`);
+  console.log(`    投稿: 一般${GENERAL_POST_COUNT}件＋デモ${DEMO_POST_COUNT}件＋確認用${CONFIRM_POST_COUNT}件`);
   console.log(`    いいね: 最大${GENERAL_LIKE_COUNT}件、コメント: 最大${GENERAL_COMMENT_COUNT}件、フォロー: 最大${GENERAL_FOLLOW_COUNT}件`);
-  console.log(`    プラン: 一般${GENERAL_PLAN_COUNT}件＋デモ2件`);
+  console.log(`    プラン: 一般${GENERAL_PLAN_COUNT}件＋デモ2件＋確認用2件`);
+  console.log(`    確認用アカウントの行きたい: 最大${CONFIRM_WISHLIST_COUNT}件`);
   console.log(`[seed-production] DRY RUNのため書き込みは行っていません。`);
 }
 
@@ -416,6 +428,57 @@ async function main(): Promise<void> {
     let targetIdx = (i * 3) % followTargets.length;
     if (followTargets[targetIdx] === followerId) targetIdx = (targetIdx + 1) % followTargets.length;
     await ensureFollow(followerId, followTargets[targetIdx]);
+  }
+
+  // 9. 確認用アカウントの投稿（すべて画像付き。旅行レポート・訪問済みタブの動作確認用に
+  //    複数年へ分散させる。自分の投稿は必ず訪問済みとして扱う本番の挙動により訪問済みタブも自動で埋まる）
+  const confirmPosts: { id: string; authorId: string }[] = [];
+  for (let i = 0; i < CONFIRM_POST_COUNT; i++) {
+    const id = `seed-post-confirm-${padded(i + 1, 2)}`;
+    await ensurePost({
+      id,
+      authorId: CONFIRM_USER_ID,
+      title: pick(POST_TITLES, i + 40),
+      body: pick(POST_BODIES, i + 1),
+      category: pick(CATEGORIES, i * 3 + 1),
+      location: pick(LOCATIONS, i * 7 + 3),
+      rating: (i % 5) + 1,
+      visitedAt: demoVisitedAt(i + 1),
+      imageCount: 1 + (i % 3),
+      imageSeed: i + 2,
+    });
+    confirmPosts.push({ id, authorId: CONFIRM_USER_ID });
+  }
+
+  // 10. 確認用アカウントのプラン（完了済み1件＋進行中1件。完了済みは旅行レポートの年別集計に
+  //     反映されるよう必ずstartDateを設定する）
+  const confirmCompletedStart = planStartDate(3);
+  await ensurePlan({
+    id: "seed-plan-confirm-completed",
+    userId: CONFIRM_USER_ID,
+    title: "確認用の旅の記録",
+    completed: true,
+    startDate: confirmCompletedStart,
+    endDate: addDays(confirmCompletedStart, 2),
+    spotPostIds: confirmPosts.slice(0, 3).map((p) => p.id),
+  });
+  await ensurePlan({
+    id: "seed-plan-confirm-active",
+    userId: CONFIRM_USER_ID,
+    title: "確認用の次の旅",
+    completed: false,
+    startDate: null,
+    endDate: null,
+    spotPostIds: confirmPosts.slice(3, 5).map((p) => p.id),
+  });
+
+  // 11. 確認用アカウントの行きたい（一般・デモユーザーの投稿へWishlistを付与）
+  const confirmWishlistTargets = [...generalPosts.slice(0, 4), ...demoPosts.slice(0, 3)].slice(
+    0,
+    CONFIRM_WISHLIST_COUNT
+  );
+  for (const target of confirmWishlistTargets) {
+    await ensureWishlist(CONFIRM_USER_ID, target.id);
   }
 
   console.log("[seed-production] 完了");
