@@ -9,8 +9,15 @@
 export type SeedMode = "local" | "production";
 
 // infra/terraform/rds.tf の identifier = "${var.project_name}-prod"（project_nameの既定値は
-// infra/terraform/variables.tf より "tripdiary"）。本番RDSのホスト名には必ずこの文字列を含む。
-const PRODUCTION_HOST_MARKER = "tripdiary-prod";
+// infra/terraform/variables.tf より "tripdiary"）。
+//
+// 部分一致（host.includes("tripdiary-prod")）は誤接続防止として弱い。攻撃を想定しなくとも、
+// 例えば "tripdiary-prod-restore-test.example.com" のような検証用ホストを本番と誤認する。
+// RDSのエンドポイントは必ず <identifier>.<資源ID>.<リージョン>.rds.amazonaws.com という
+// 構造を取るため、「末尾が .rds.amazonaws.com」かつ「先頭ラベルが identifier と完全一致」の
+// 2条件で厳密に判定する。
+const PRODUCTION_DB_IDENTIFIER = "tripdiary-prod";
+const RDS_HOST_SUFFIX = ".rds.amazonaws.com";
 
 export function resolveSeedMode(databaseUrl: string | undefined): SeedMode {
   if (!databaseUrl) {
@@ -29,9 +36,11 @@ export function resolveSeedMode(databaseUrl: string | undefined): SeedMode {
     return "local";
   }
 
-  if (!host.includes(PRODUCTION_HOST_MARKER)) {
+  const isRdsEndpoint = host.endsWith(RDS_HOST_SUFFIX);
+  const identifierLabel = host.split(".")[0];
+  if (!isRdsEndpoint || identifierLabel !== PRODUCTION_DB_IDENTIFIER) {
     throw new Error(
-      `[seed-production] 接続先ホスト（${host}）が本番RDS（"${PRODUCTION_HOST_MARKER}"を含むホスト名）ともローカル（localhost/127.0.0.1）とも一致しません。意図しない接続先の可能性があるため中断します。`
+      `[seed-production] 接続先ホスト（${host}）が本番RDS（${PRODUCTION_DB_IDENTIFIER}${RDS_HOST_SUFFIX} 形式のエンドポイント）ともローカル（localhost/127.0.0.1）とも一致しません。意図しない接続先の可能性があるため中断します。`
     );
   }
 
