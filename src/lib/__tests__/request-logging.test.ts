@@ -101,4 +101,42 @@ describe("withRequestLogging", () => {
       })
     );
   });
+
+  // GATE-35: /api/health はNginx/PM2から高頻度でポーリングされる想定のため、
+  // アクセスログ出力・userId解決用のauth()呼び出しの両方をスキップする。
+  it("/api/healthへのリクエスト_アクセスログを出力せずauth()も呼び出さない", async () => {
+    const handler: AnyRouteHandler = vi.fn(async () => NextResponse.json({ status: "ok" }, { status: 200 }));
+    const wrapped = withRequestLogging(handler);
+
+    const req = new NextRequest(new Request("http://localhost/api/health", { method: "GET" }));
+    const res = await wrapped(req);
+
+    expect(res.status).toBe(200);
+    expect(handler).toHaveBeenCalledWith(req);
+    expect(logger.info).not.toHaveBeenCalled();
+    expect(authMock).not.toHaveBeenCalled();
+  });
+
+  // GATE-23: handlerがthrowした場合もアクセスログを1行残し、例外はそのまま呼び出し元へ伝播させる。
+  it("handlerがthrowする場合_status500でアクセスログを出力し例外をそのまま再送出する", async () => {
+    authMock.mockResolvedValue(null);
+    const thrownError = new Error("unexpected failure");
+    const handler: AnyRouteHandler = vi.fn(async () => {
+      throw thrownError;
+    });
+    const wrapped = withRequestLogging(handler);
+
+    const req = new NextRequest(new Request("http://localhost/api/posts", { method: "POST" }));
+
+    await expect(wrapped(req)).rejects.toBe(thrownError);
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: "POST",
+        path: "/api/posts",
+        status: 500,
+        requestId: expect.any(String),
+      }),
+      "API request completed"
+    );
+  });
 });

@@ -48,10 +48,12 @@ pnpm perf:down
 
 | 種別 | スケジュール | 合否判定 |
 |---|---|---|
-| Smoke | VU=1、全シナリオ1周（約30秒） | `http_req_failed: rate<0.01` ＋ 第一級エンドポイントのp95/p99閾値。シード後に必ず最初に実行するゲート |
-| Load | ramp(0→10VU,3m) → steady(10VU,5m) → rampdown(2m) | `http_req_failed: rate<0.01` ＋ 第一級エンドポイントのp95/p99閾値 |
-| Stress | 5→15→30→50VU（各3分） | 判定しない（`passed: null`＝限界点の記録が目的） |
-| Spike | 5→40→5（ランプダウン）→5VU定常→60→5（ランプダウン）→5VU定常 | `http_req_failed: rate<0.05` ＋ cooldown1/cooldown2区間のp99閾値（回復確認） |
+| Smoke | VU=1、全シナリオ1周（約30秒） | `http_req_failed: rate<0.01` ＋ `checks: rate==1` ＋ 第一級エンドポイントのp95/p99閾値。シード後に必ず最初に実行するゲート |
+| Load | ramp(0→10VU,3m) → steady(10VU,5m) → rampdown(2m) | `http_req_failed: rate<0.01` ＋ `checks: rate>0.99` ＋ 第一級エンドポイントのp95/p99閾値 |
+| Stress | 5→15→30→50VU（各3分） | 判定しない（`passed: null`＝限界点の記録が目的。`checks`閾値も意図的に置かない） |
+| Spike | 5→40→5（ランプダウン）→5VU定常→60→5（ランプダウン）→5VU定常 | `http_req_failed: rate<0.05` ＋ `checks: rate>0.95` ＋ cooldown1/cooldown2区間のp99閾値（回復確認） |
+
+**`checks`閾値について（GATE-24、2026-08-07追加）**: `check()`の失敗（ページ内容不正・ログイン失敗等）がそれまで閾値に接続されておらず、`http_req_failed`とレイテンシだけを見る既存閾値では「間違った内容を高速に返す」失敗を検知できなかった。`helpers/thresholds.ts`の`checksThreshold()`で各シナリオの`http_req_failed`許容度に合わせた`checks`閾値を追加した（全シナリオ一律`rate==1`にすると、意図的にエラーを許容するLoad/Spikeの設計と矛盾するため）。Stressは限界点記録が目的のため対象外。
 
 第一級エンドポイント（`home_ssr`・`post_detail_ssr`・`mypage_report_ssr`・`user_profile_ssr`・`posts_portal`・`posts_explore`・`posts_like_toggle`・`posts_comments_create`・`users_follow_toggle`）のp95/p99閾値は`helpers/thresholds.ts`の`CONFIRMED_ENDPOINT_P95_THRESHOLDS_MS`/`CONFIRMED_ENDPOINT_P99_THRESHOLDS_MS`に確定済み（クリーン再シード後のLoad定常10VU実測にマージン）。それ以外の補助エンドポイントは引き続き計測のみ（非ゲート）。ログインは独立シナリオ（低頻度）で、他エンドポイントのp95/p99を汚染しないよう`endpoint:login`タグで分離して計測する。
 

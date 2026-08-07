@@ -107,11 +107,16 @@ test.describe.serial("投稿の主要フロー（作成 → 詳細表示 → い
   });
 
   // Phase 6-Aで画像保存先がS3必須になったが、CI（.github/workflows/ci.yml のe2eジョブ）には
-  // AWS認証情報を設定していないため、実際にアップロードするこのテストはCI上で必ず失敗する。
-  // 実バケット・IAMロールはPhase 6-B（Terraform）で構築予定のため、それまで一時的にスキップする。
-  // ローカルで`.env.local`にAWS認証情報を設定していれば手動実行では引き続き検証可能。
-  // 6-B着手時にこのskipを解除すること。
-  test.skip("複数枚の写真をアップロードし、ドラッグ&ドロップで並び替えて保存できる", async ({ page }) => {
+  // AWS認証情報を設定していないため、実際にアップロードするこのテストはCI上では実行できない。
+  // 長期AWSキーをCIへ追加する方針は取らない（本プロジェクトが一貫して避けている運用）ため、
+  // E2E_REAL_S3_UPLOAD=trueを明示的に設定した場合のみ実行する条件付きskipにしている
+  // （CIでは未設定のため自動的にスキップされ続ける）。ローカルで`.env.local`に実AWS認証情報
+  // （本番と同じバケット等）を設定した上で実行することを想定する。
+  test("複数枚の写真をアップロードし、ドラッグ&ドロップで並び替えて保存できる", async ({ page }) => {
+    test.skip(
+      process.env.E2E_REAL_S3_UPLOAD !== "true",
+      "実S3へのアップロードを伴うため、E2E_REAL_S3_UPLOAD=trueを明示的に設定した場合のみ実行する"
+    );
     await page.goto("/posts/new");
 
     await page.fill('input[name="title"]', `E2E画像並び替えテスト_${Date.now()}`);

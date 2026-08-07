@@ -3,7 +3,12 @@ import exec from "k6/execution";
 import { login } from "../../helpers/auth.ts";
 import { generateSummary } from "../../helpers/summary.ts";
 import { SUMMARY_TREND_STATS } from "../../config/config.ts";
-import { placeholderThresholds, gatingEndpointThresholds, UNGATED_ENDPOINT_NAMES } from "../../helpers/thresholds.ts";
+import {
+  placeholderThresholds,
+  gatingEndpointThresholds,
+  checksThreshold,
+  UNGATED_ENDPOINT_NAMES,
+} from "../../helpers/thresholds.ts";
 import { users, paginationTargetUser } from "../../helpers/csv.ts";
 import { feedScenario } from "../../scenarios/feedScenario.ts";
 import { postDetailScenario } from "../../scenarios/postDetailScenario.ts";
@@ -60,6 +65,8 @@ export const options: Options = {
   },
   thresholds: {
     http_req_failed: ["rate<0.01"],
+    // http_req_failedの許容度（<0.01）に合わせる（GATE-24）
+    ...checksThreshold("rate>0.99"),
     ...gatingEndpointThresholds("steady"),
     ...placeholderThresholds("scenario", SCENARIO_NAMES),
     ...placeholderThresholds("endpoint", UNGATED_ENDPOINT_NAMES),
