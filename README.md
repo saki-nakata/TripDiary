@@ -16,7 +16,7 @@
 | データベース | MySQL（開発: Docker / 本番: AWS RDS 予定） |
 | 画像ストレージ | AWS S3（実装計画書 Phase 6-A 対応済み。アップロードには`AWS_REGION`/`AWS_S3_BUCKET_NAME`の設定と実際のバケットが必要） |
 | 地図 | Leaflet + OpenStreetMap |
-| ホスティング | AWS EC2 + RDS + S3（Terraform構築済み、2026-08-06デプロイ・実機能検証完了。現在は運用者IPのみに公開範囲を限定し一般公開前）。詳細は [インフラ構成書](docs/インフラ構成書.md) |
+| ホスティング | AWS EC2 + RDS + S3（Terraform構築済み、2026-08-06デプロイ・実機能検証完了。2026-08-07 一般公開済み: http://54.248.13.248 ）。詳細は [インフラ構成書](docs/インフラ構成書.md) |
 
 ---
 
@@ -187,7 +187,7 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 - Swagger UI: http://localhost:3000/api-docs
 - OpenAPI JSON: http://localhost:3000/api/openapi.json
 
-本番環境（Phase 6-B）でも`/api-docs`が200で表示されることを実機確認済み。ただし本番URLは現時点で運用者IPのみに公開範囲を限定しているため、一般公開までは上記の通りローカルで `pnpm dev` を起動して確認する必要がある。
+本番環境（http://54.248.13.248/api-docs ）でも一般公開後の実機確認済み。
 
 ---
 
@@ -226,9 +226,22 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 
 ## 本番環境へのデプロイ
 
-本番環境は AWS EC2（アプリ）+ AWS RDS（MySQL）+ AWS S3（画像ストレージ）、Terraform（`infra/terraform/`）でコード管理して構築している（Phase 6-B、2026-08-06 構築・デプロイ・実機能検証まで完了）。**現時点ではセキュリティグループにより運用者IPのみに公開範囲を限定しており、一般公開はまだ行っていない**（実S3/IAM実機検証・監視実証等の「公開阻止DoD」完了後、本番シード投入〔6-B2〕とあわせて一般公開する予定）。インフラの詳細・デプロイ手順は [docs/インフラ構成書.md](docs/インフラ構成書.md)・[infra/terraform/README.md](infra/terraform/README.md) を参照。
+本番環境は AWS EC2（アプリ）+ AWS RDS（MySQL）+ AWS S3（画像ストレージ）、Terraform（`infra/terraform/`）でコード管理して構築している（Phase 6-B、2026-08-06 構築・デプロイ・実機能検証まで完了）。「公開阻止DoD」（実S3/IAM実機検証・監視実証等）・本番シード投入（6-B2）を経て、**2026-08-07 一般公開済み**: http://54.248.13.248 。インフラの詳細・デプロイ手順は [docs/インフラ構成書.md](docs/インフラ構成書.md)・[infra/terraform/README.md](infra/terraform/README.md) を参照。
 
 > ⚠️ **HTTPS非採用について**: コスト・作業量を理由に、本番環境はHTTP運用とする（独自ドメイン・Elastic IP・Let's Encryptによる正式なHTTPS化は行わない）。ログイン情報・セッションが平文で流れ得るため、**確認用アカウントは使い捨て前提**とし、本番環境で個人情報・普段使いのパスワードを絶対に使い回さないこと。
+
+### 確認用アカウント（6-B2本番シード）
+
+本番URL（http://54.248.13.248 ）で動作確認する場合は、以下の確認用アカウントを使用する。`isProtected: true`のためパスワード・メールアドレスの変更はできない。
+
+| 項目 | 値 |
+|------|-----|
+| メールアドレス | `confirm@tripdiary.example` |
+| パスワード | `TripDiary-Confirm-2026-Seed` |
+
+⚠️ 本番はHTTP運用のため認証情報が平文で流れ得る。**このアカウントは確認専用の使い捨てとして扱い、他サービスと共用しているパスワードを入力しないこと。**
+
+常設デモアカウント（6-Cデモ動画用）のパスワードはリポジトリに含めず、`prisma/seed-production.ts`実行時にランダム生成・標準出力にのみ表示する。
 
 ---
 
