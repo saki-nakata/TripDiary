@@ -18,11 +18,13 @@
 | 地図 | Leaflet + OpenStreetMap |
 | ホスティング | AWS EC2 + RDS + S3（Terraform構築済み、2026-08-06デプロイ・実機能検証完了。2026-08-07 一般公開済み: http://54.248.13.248 ）。詳細は [インフラ構成書](docs/インフラ構成書.md) |
 
+> ⚠️ **既知のセキュリティ制約**: 本番環境はコスト・作業量を理由にHTTP運用（HTTPS非採用）としており、確認用アカウントの認証情報も公開済み（[詳細](#本番環境へのデプロイ)）。認証情報平文送信・第三者によるデータ改変のリスクを許容した上での公開判断であり、確認用アカウントの使い捨て運用を前提とする。
+
 ---
 
 ## セキュリティ確認メモ
 
-`pnpm audit` の残存警告（high 5 / low 1）は `swagger-ui-react` の内部依存由来。TripDiary本体機能への直接影響は限定的と判断し、critical 0 の状態で Phase 5 は完了とする。`swagger-ui-react` 側の修正版が公開され次第、依存更新で追従する。
+`pnpm audit`（2026-08-08時点）: 全依存 critical 0 / high 0 / moderate 0 / low 0（`pnpm-workspace.yaml`の`overrides`で`brace-expansion`・`js-yaml`・`dompurify`・`postcss`・`undici`・`nanoid`・`immutable`をパッチ／マイナー版に固定して解消。`immutable`は`swagger-ui-react`が直接依存に`^3.x.x`を指定しているが、実機でAPI Docsページの表示・操作を検証し4.x系でも問題ないことを確認済み）。
 
 ---
 
@@ -52,14 +54,14 @@
 
 perf専用MySQLへ再シードした環境で、k6による負荷試験とPlaywrightによるWeb Vitals計測を実施しています。詳細な実行手順・シナリオ・閾値は[performance/k6/README.md](performance/k6/README.md)を参照してください。
 
-> ⚠️ 以下の実測値・スクリーンショットは、ログイン処理のパスワード照合に`bcryptjs`を使用していた時点（Phase 6 6-A2でネイティブ実装の`@node-rs/bcrypt`へ置き換える前）のものです。ログイン処理のCPU負荷特性が変わりうるため、本番デプロイ（Phase 6-B）完了後に再計測し、この節を更新する予定です。
+> ✅ 2026-08-08、`@node-rs/bcrypt`移行・GATE-22ページングシナリオ・GATE-24 checks閾値を含む現行実装を、perf専用MySQLのクリーン再シード後に再測定しました。測定対象・環境・生成物は[再測定summary](docs/performance-test-results-2026-08-08.md)を参照してください。以下はローカル隔離環境の値であり、本番EC2/RDSの容量保証ではありません。
 
 | 種別 | ピーク業務VU | 結果 | 主な実測値 |
 |---|---:|---|---|
-| Smoke | 1 | PASS | p95 120ms / p99 463ms / エラー率 0% |
-| Load | 10 | PASS | steady p95 670ms / p99 744ms / エラー率 0% |
-| Stress | 50 | N/A | vu50 p95 1011ms / p99 1380ms、全体エラー率 0.005% |
-| Spike | 60 | PASS | cooldown p99 655ms / 603ms / エラー率 0.034% |
+| Smoke | 1 | PASS | 29件、p95 235.6ms / p99 266.3ms / エラー率 0% / checks 47/47 |
+| Load | 10 | PASS | 8,460件、steady p95 85.0ms / p99 99.3ms / エラー率 0% |
+| Stress | 50 | N/A | 30,713件、vu50 p95 110.9ms / p99 162.4ms / エラー率 0% |
+| Spike | 60 | PASS | 18,198件、cooldown p99 91.9ms / 115.9ms / エラー率 0% |
 
 <details>
 <summary>集約レポートのスクリーンショット</summary>
@@ -135,7 +137,6 @@ TripDiary/
 
 - Node.js 24 / pnpm（本番EC2・CIともにNode.js 24で統一。`@node-rs/bcrypt`のネイティブアドオンがビルド時のNodeバージョンに依存するため）
 - Docker（開発用MySQLコンテナの起動に使用）
-- Leaflet + OpenStreetMap（APIキー不要）
 - ※ 画像アップロード機能（投稿画像・アバター）を使うには `AWS_REGION` / `AWS_S3_BUCKET_NAME` の設定と実際のS3バケットが必要（バケット自体の構築は実装計画書 Phase 6-B）。それ以外の画面・機能はS3設定なしでも動作する
 
 ### 手順
@@ -225,7 +226,6 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 | `AWS_S3_BUCKET_NAME` | S3 バケット名。画像アップロード機能に必須 |
 | `AWS_ACCESS_KEY_ID` | IAM ユーザーのアクセスキー（任意。ローカル開発で一時的な認証情報を使う場合のみ設定。本番は EC2 の IAM ロールを使うため設定不要） |
 | `AWS_SECRET_ACCESS_KEY` | IAM ユーザーのシークレットキー（任意。用途は上記と同じ） |
-| ~~`NEXT_PUBLIC_MAPBOX_TOKEN`~~ | 不要（Leaflet + OpenStreetMap に変更） |
 
 ---
 

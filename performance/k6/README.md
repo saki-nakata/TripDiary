@@ -57,7 +57,7 @@ pnpm perf:down
 
 第一級エンドポイント（`home_ssr`・`post_detail_ssr`・`mypage_report_ssr`・`user_profile_ssr`・`posts_portal`・`posts_explore`・`posts_like_toggle`・`posts_comments_create`・`users_follow_toggle`）のp95/p99閾値は`helpers/thresholds.ts`の`CONFIRMED_ENDPOINT_P95_THRESHOLDS_MS`/`CONFIRMED_ENDPOINT_P99_THRESHOLDS_MS`に確定済み（クリーン再シード後のLoad定常10VU実測にマージン）。それ以外の補助エンドポイントは引き続き計測のみ（非ゲート）。ログインは独立シナリオ（低頻度）で、他エンドポイントのp95/p99を汚染しないよう`endpoint:login`タグで分離して計測する。
 
-**実測結果（2026-07-22、クリーン再シード後の最終確認）**: `toggleLike`/`createComment`/`toggleFollow`のPrisma `P2034`デッドロック未捕捉バグ、および`post.repository.ts`のLIMIT漏れを検出・修正した。Max VUs表示は`peakWorkloadVUs()`（`options.scenarios`から自動算出、`login`用VUは除く）に置き換え済み。perf DBをクリーンな状態に再シードした上でSmoke/Load/Stress/Spikeを最終実行し、Smoke PASS（19件、p95 120ms / p99 463ms）、Load（10VU）PASS（5,680件、エラー率0%、steady p95 670ms / p99 744ms）、Spike（60VU）PASS（11,616件、エラー率0.034%、cooldown1/2 p99 655ms / 603ms）、Stress（50VU）は18,755件・**全体エラー率**0.005%・vu50区間p95 1011ms / p99 1380msで限界点を記録した。Web Vitals・操作応答時間も4列CSV対応後に8件すべて通過している。詳細は`docs/テスト設計書.md`12.11節を参照。
+**実測結果（2026-08-08、現行実装のクリーン再シード後再測定）**: `@node-rs/bcrypt`移行後、GATE-22のcursorページング専用シナリオとGATE-24の`checks`閾値を含む構成でSmoke→Load→Stress→Spikeを通しで実行した。Smoke PASS（29件、checks 47/47、p95 235.6ms / p99 266.3ms）、Load（10VU）PASS（8,460件、エラー率0%、steady p95 85.0ms / p99 99.3ms）、Stress（50VU）は30,713件・エラー率0%・vu50 p95 110.9ms / p99 162.4msで限界点を記録、Spike（60VU）PASS（18,198件、エラー率0%、cooldown1/2 p99 91.9ms / 115.9ms）だった。PlaywrightのWeb Vitals・操作応答時間も8件すべて通過した。測定対象・実行環境・seed件数・ファイル名を含む追跡可能な証跡は`docs/performance-test-results-2026-08-08.md`、詳細なテスト設計は`docs/テスト設計書.md`12.13節を参照。ローカル隔離環境の実測であり、本番EC2/RDSの容量保証には使用しない。
 
 ## シナリオ構成（Load/Stress/Spike共通の加重分散）
 
