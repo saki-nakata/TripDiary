@@ -31,7 +31,8 @@
     "perf:down": "docker compose stop mysql-perf",
     "perf:typecheck": "tsc --noEmit -p performance/k6",
     "seed:fetch-images": "dotenv -e .env.local -- tsx scripts/fetch-seed-images.ts",
-    "seed:production": "dotenv -e .env.local -- tsx prisma/seed-production.ts"
+    "seed:production": "dotenv -e .env.local -- tsx prisma/seed-production.ts",
+    "demo:record": "dotenv -e .env.demo -- playwright test --project=demo --project=demo-mobile"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.5.0",
