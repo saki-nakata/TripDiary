@@ -12,7 +12,8 @@
 | ブランチ | `docs/pre-submission-audit-fixes` |
 | ベースHEAD | `003d52d6f7e8d5bb20dc4bc01fbc01962dece9ea` |
 | working tree | dirty。測定開始前から`README.md`・`docs/画面設計書.md`・`docs/要件定義書.md`・`pnpm-lock.yaml`・`pnpm-workspace.yaml`に未コミット変更あり。アプリケーションソースとk6シナリオには未コミット変更なし |
-| 注意 | 依存overrideを含む未コミットの`pnpm-workspace.yaml`/lockfile状態でbuildしたため、SHA単独では完全再現できない。最終コミット確定後にSHAを本書へ追記するか、厳密な固定commit証跡が必要なら同じ手順で再実行する |
+| 確定SHA | `bd72e6b`（計測時のworking treeをそのままコミット。計測後、依存関係の変更なし） |
+| 注意（解消済み） | 計測時点では上記working treeが未コミットだったためSHA単独では再現できなかったが、依存関係を変更せずに`bd72e6b`としてコミットしたため、このSHAでの再現が可能になった |
 
 ## 実行環境
 
