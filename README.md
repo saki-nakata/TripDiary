@@ -233,16 +233,19 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 
 本番環境（http://54.248.13.248 ）に対して、常設デモアカウントで実際に操作しながら撮影した動画。いずれも無音・カット無しの通し撮りで、ブラウザのアドレスバーは映らない（Playwrightの録画仕様のため）。代表的な主要機能をカバーしているが、投稿の編集・削除やアンフォロー等の操作は含まない。
 
+<details open>
 <summary>① 閲覧・いいね・行きたい・コメント</summary>
 
-<video controls src="https://cdn.jsdelivr.net/gh/saki-nakata/TripDiary@main/docs/demo/01-feed-engage.mp4"></video>
+https://github.com/user-attachments/assets/871462c5-5680-4b8e-bbdd-27bc3cf723dd
 
 未ログインでのトップページ閲覧→ログイン→探索ポータル→投稿詳細（画像ライトボックス）→いいね→「行きたい」登録→コメント投稿。
+
+</details>
 
 <details>
 <summary>② 投稿する（地図・複数枚画像）</summary>
 
-<video controls src="https://cdn.jsdelivr.net/gh/saki-nakata/TripDiary@main/docs/demo/02-post-create.mp4"></video>
+https://github.com/user-attachments/assets/67dad9ee-dbd3-4a2d-90dd-28257e81e384
 
 新規投稿フォームの入力（タイトル・本文・カテゴリ・エリア・評価・訪問日）→Leaflet地図でのスポット位置指定→画像2枚のアップロード→投稿完了後、ホームでのハイライト表示と投稿詳細での画像・地図の反映確認。
 
@@ -253,7 +256,7 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 <details>
 <summary>③ つながる（検索・フォロー・TabiScore）</summary>
 
-<video controls src="https://cdn.jsdelivr.net/gh/saki-nakata/TripDiary@main/docs/demo/03-social.mp4"></video>
+https://github.com/user-attachments/assets/39458019-2960-4888-bf8f-dc7132014ba9
 
 通知一覧の閲覧（他ユーザーからの反応が視界に入ると自動的に既読化される）→ユーザー検索→プロフィール（TabiScore表示）→フォロー。
 
@@ -262,7 +265,7 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 <details>
 <summary>④ 記録と振り返り（旅行プラン・旅行レポート・地図・テーマ）</summary>
 
-<video controls src="https://cdn.jsdelivr.net/gh/saki-nakata/TripDiary@main/docs/demo/04-record-and-reflect.mp4"></video>
+https://github.com/user-attachments/assets/c1275338-fa41-471e-860b-37323d66405f
 
 マイページ→旅行プラン新規作成（スポット追加、地図に反映）→旅行レポート（統計カード・エリア別バブルチャート・カテゴリ別グラフ・月別ヒートマップ・年別推移・年フィルタ）→表示テーマのダーク/ライト切り替え→訪問済み（都道府県塗り分け地図）→ログアウト。
 
@@ -273,7 +276,7 @@ APIドキュメント（Swagger UI）は動画に含めていないが、[本番
 <details>
 <summary>⑤ モバイル表示</summary>
 
-<video controls height="400" src="https://cdn.jsdelivr.net/gh/saki-nakata/TripDiary@main/docs/demo/05-mobile.mp4"></video>
+https://github.com/user-attachments/assets/a0e49ecc-eff0-4749-9e21-e63d0a29e3c3
 
 未ログイン時のモバイル表示（検索→投稿詳細）→ログイン後のモバイル下部ナビ（新規投稿アイコンの長押しでラベルがポップアップ表示される）。
 
