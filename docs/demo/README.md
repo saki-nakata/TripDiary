@@ -34,7 +34,23 @@ README本体の「デモ動画」節に埋め込まれている`.mp4`5本の撮�
 | `04-record-and-reflect.mp4` | 1.9M |
 | `05-mobile.mp4` | 336K |
 
-合計約6.6MB。全ファイルとも音声トラックなし（`ffprobe`で確認済み）。GitHub上での再生確認は別途プッシュ後に実施すること。
+合計約6.6MB。全ファイルとも音声トラックなし（`ffprobe`で確認済み）。GitHub上での再生確認済み（下記「README埋め込み時のトラブルと対応」参照）。
+
+## README埋め込み時のトラブルと対応（重要、再撮影時も同じ手順が必要）
+
+**GitHubのMarkdownレンダラーは、srcの値に関わらず`<video>`タグを一律で除去する**（`<details>`/`<summary>`/`<img>`は許可されるが`<video>`は非許可。レンダリング後のHTMLを`curl`で確認し`<video`要素が0件だったことで判明）。そのため、以下はいずれも**再生できない**:
+
+- `<video src="docs/demo/xxx.mp4">`（リポジトリ内の相対パス）— タグごと除去される
+- `<video src="https://raw.githubusercontent.com/...">`（絶対URLでも同様にタグごと除去される。仮にタグが残ったとしても`Content-Type: application/octet-stream`＋`nosniff`で配信されるため再生不可）
+- `<video src="https://cdn.jsdelivr.net/gh/...">`（`Content-Type: video/mp4`で正しく配信されるが、そもそも`<video>`タグ自体が除去されるため無意味）
+
+**唯一の正しい方法**: GitHubのuser-attachments機能を使う。Issue/PR本文の入力欄に動画ファイルをドラッグ&ドロップすると、`https://github.com/user-attachments/assets/<uuid>`という裸のURLが自動挿入される。このURLを`<video>`タグで囲まず、**Markdown中に裸のリンクとしてそのまま貼るだけ**でGitHub側が自動的にインラインの動画プレーヤー（実体は`https://private-user-images.githubusercontent.com/...`への署名付きURL）へ変換する。
+
+再撮影・動画差し替え時の手順:
+1. 新しい`.mp4`を`docs/demo/`に置く（既存ファイルを上書き、またはファイル名変更）
+2. GitHub Issue作成画面（`/issues/new`）等の本文入力欄に動画をドラッグ&ドロップし、挿入された裸のURLをコピー（Issueを実際に送信する必要はない）
+3. アップロード先のファイルサイズ（`curl --range 0-0`のレスポンスの`Content-Range`）をローカルの`.mp4`の実サイズと照合し、意図した順序・ファイルであることを確認する
+4. READMEの該当箇所の裸URLを差し替える
 
 ## 動画から外した項目とその理由
 
