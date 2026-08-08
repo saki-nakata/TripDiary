@@ -56,9 +56,14 @@ test("投稿する（地図・複数枚画像）", async ({ page }) => {
   await pickDate(page, "visited-at-field", today);
   await page.waitForTimeout(500);
 
-  // 地図でピンを立てる
+  // 地図でピンを立てる（地図初期表示は東京駅中心・zoom 5のため、コンテナ中央をクリックして
+  // 東京都内に収める。zoom 5は1pxあたりの実距離が大きく、中心から少しでもずれると
+  // 隣接県まで飛ぶため、オフセットは付けずコンテナの厳密な中央をクリックする）
   await waitForLeafletTiles(page);
-  await page.locator(".leaflet-container").first().click({ position: { x: 120, y: 90 } });
+  const mapContainer = page.locator(".leaflet-container").first();
+  const mapBox = await mapContainer.boundingBox();
+  if (!mapBox) throw new Error("leaflet-container のbounding boxが取得できませんでした");
+  await mapContainer.click({ position: { x: mapBox.width / 2, y: mapBox.height / 2 } });
   await page.waitForTimeout(1000);
 
   const expandMapButton = page.getByRole("button", { name: /地図拡大表示/ });

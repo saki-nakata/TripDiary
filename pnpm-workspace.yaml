@@ -3,10 +3,28 @@ overrides:
   # </style>未エスケープによるXSS脆弱性（GHSA-qx2v-qp2m-jg93）がある。8.5.10以上に強制する
   # 2026-07-25: PostCSSのソースマップパストラバーサル（GHSA-r28c-9q8g-f849、8.5.17以下が対象）
   # も踏まえ8.5.18以上に引き上げ
-  postcss: '>=8.5.18'
+  # 2026-08-08: sourceMappingURL経由の任意.map読み取り（GHSA未フィックスの追補）対応で8.5.23以上に引き上げ
+  # メジャー跳躍を避けるため8.x系内に固定
+  postcss: '^8.5.23'
   # 2026-07-25: next@16.2.11が同梱するsharp@0.34.5にlibvips由来の脆弱性
   # （CVE-2026-33327/33328/35590/35591、GHSA-f88m-g3jw-g9cj）がある。0.35.0以上に強制する
   sharp: '>=0.35.0'
+  # 2026-08-08 提出前監査: eslint/minimatch系(1.x)とswagger-client/apidom-reference系(5.x)の
+  # 両系統でbrace-expansionのDoS脆弱性（CVE-2026-14257関連含む）が検出されたため個別に固定
+  # （'>='だとminimatch@3.x系がメジャー5系に引き上がり互換性を壊すため'^'でメジャー内に固定）
+  brace-expansion@1: '^1.1.18'
+  brace-expansion@5: '^5.0.9'
+  # 2026-08-08: swagger-ui-react経由のjs-yaml/dompurifyに脆弱性（quadratic CPU消費、XSS）
+  # js-yamlは5.x系に飛ぶとswagger-ui-react/eslintの想定APIと非互換のため4.x系に固定
+  js-yaml: '^4.3.1'
+  dompurify: '^3.4.13'
+  # 2026-08-08: vitest/jsdom経由のundiciにcross-user情報漏えい等の脆弱性。8.x系はjsdomが未対応のため7.x系に固定
+  undici: '^7.29.0'
+  # 2026-08-08: postcss経由のnanoidにsize=0時の無限ループ脆弱性。postcssはnanoid ^3.3.6依存のため3.x系に固定
+  nanoid: '^3.3.17'
+  # 2026-08-08: swagger-ui-react経由のimmutableにDoS脆弱性2件。swagger-ui-react自体は
+  # immutable ^3.x.xを直接依存しており4.x系は非対応の可能性があるため実機検証目的で一時的に試験導入
+  immutable: '^4.3.9'
 
 allowBuilds:
   '@prisma/client': true
