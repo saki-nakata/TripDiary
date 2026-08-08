@@ -229,6 +229,58 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 
 ---
 
+## デモ動画
+
+本番環境（http://54.248.13.248 ）に対して、常設デモアカウントで実際に操作しながら撮影した動画。いずれも無音・カット無しの通し撮りで、ブラウザのアドレスバーは映らない（Playwrightの録画仕様のため）。代表的な主要機能をカバーしているが、投稿の編集・削除やアンフォロー等の操作は含まない。
+
+### ① 閲覧・いいね・行きたい・コメント
+
+<video controls src="docs/demo/01-feed-engage.mp4"></video>
+
+未ログインでのトップページ閲覧→ログイン→探索ポータル→投稿詳細（画像ライトボックス）→いいね→「行きたい」登録→コメント投稿。
+
+<details>
+<summary>② 投稿する（地図・複数枚画像）</summary>
+
+<video controls src="docs/demo/02-post-create.mp4"></video>
+
+新規投稿フォームの入力（タイトル・本文・カテゴリ・エリア・評価・訪問日）→Leaflet地図でのスポット位置指定→画像2枚のアップロード→投稿完了後、ホームでのハイライト表示と投稿詳細での画像・地図の反映確認。
+
+画像アップロードは`@aws-sdk/client-s3`でS3へ保存し、表示は`next/image`経由でS3から配信される。動画では扱っていないが、投稿には費用内訳（自分のみ表示）を記録する機能もある。
+
+</details>
+
+<details>
+<summary>③ つながる（検索・フォロー・TabiScore）</summary>
+
+<video controls src="docs/demo/03-social.mp4"></video>
+
+通知一覧の閲覧（他ユーザーからの反応が視界に入ると自動的に既読化される）→ユーザー検索→プロフィール（TabiScore表示）→フォロー。
+
+</details>
+
+<details>
+<summary>④ 記録と振り返り（旅行プラン・旅行レポート・地図・テーマ）</summary>
+
+<video controls src="docs/demo/04-record-and-reflect.mp4"></video>
+
+マイページ→旅行プラン新規作成（スポット追加、地図に反映）→旅行レポート（統計カード・エリア別バブルチャート・カテゴリ別グラフ・月別ヒートマップ・年別推移・年フィルタ）→表示テーマのダーク/ライト切り替え→訪問済み（都道府県塗り分け地図）→ログアウト。
+
+APIドキュメント（Swagger UI）は動画に含めていないが、[本番URL/api-docs](http://54.248.13.248/api-docs)で常時閲覧可能。
+
+</details>
+
+<details>
+<summary>⑤ モバイル表示</summary>
+
+<video controls height="400" src="docs/demo/05-mobile.mp4"></video>
+
+未ログイン時のモバイル表示（検索→投稿詳細）→ログイン後のモバイル下部ナビ（新規投稿アイコンの長押しでラベルがポップアップ表示される）。
+
+</details>
+
+---
+
 ## 本番環境へのデプロイ
 
 本番環境は AWS EC2（アプリ）+ AWS RDS（MySQL）+ AWS S3（画像ストレージ）、Terraform（`infra/terraform/`）でコード管理して構築している（Phase 6-B、2026-08-06 構築・デプロイ・実機能検証まで完了）。「公開阻止DoD」（実S3/IAM実機検証・監視実証等）・本番シード投入（6-B2）を経て、**2026-08-07 一般公開済み**: http://54.248.13.248 。インフラの詳細・デプロイ手順は [docs/インフラ構成書.md](docs/インフラ構成書.md)・[infra/terraform/README.md](infra/terraform/README.md) を参照。

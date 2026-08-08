@@ -1,4 +1,26 @@
 import { defineConfig, devices } from "@playwright/test";
+import { DEMO_STORAGE_STATE_PATH } from "./e2e/demo/support/paths";
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`[playwright.config] ${name}が設定されていません。`);
+  return value;
+}
+
+// 6-Cデモ動画撮影（.env.demo）専用のuse設定。demo-login/demoプロジェクトで共有する。
+const demoPcUse = {
+  video: {
+    mode: "on" as const,
+    size: { width: 1280, height: 720 },
+    // 操作対象への視覚アノテーション（クリック位置のハイライト等）。無音動画で
+    // クリック対象が分からなくなるのを防ぐ（recordVideo.showActions、Playwright実在API）。
+    showActions: { position: "top-right" as const, duration: 800 },
+  },
+  launchOptions: { slowMo: 400 },
+  actionTimeout: 20_000,
+  // /api/test/cleanup用シークレットを本番へ空文字のまま送らないよう明示的に上書きする
+  extraHTTPHeaders: {},
+};
 
 export default defineConfig({
   // CIの共有vCPUランナーは負荷スパイク時に一時的な遅延が出やすく、ローカルでは再現しない
@@ -24,7 +46,7 @@ export default defineConfig({
     ["list"],
   ],
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: process.env.DEMO === "1" ? requireEnv("DEMO_BASE_URL") : "http://localhost:3000",
     headless: !!process.env.CI,
     // CIで再現するDOM重複の原因調査用。失敗時だけ証跡を残す。
     trace: "retain-on-failure",
@@ -37,11 +59,11 @@ export default defineConfig({
     // ここで全リクエストに共通付与する。未設定時は空文字を送るため、サーバー側は403で拒否する
     extraHTTPHeaders: { "x-test-cleanup-secret": process.env.TEST_CLEANUP_SECRET ?? "" },
   },
-  // PERF=1（.env.perf）のときはwebServerを無効化する。有効のままだと`pnpm build && pnpm start`が
-  // .env.localの開発DBを対象に起動してしまい、perf:build/perf:start済みのサーバーに接続する
-  // つもりが気づかず開発DBを相手に計測する事故につながる（8-1節）。
+  // PERF=1（.env.perf）・DEMO=1（.env.demo）のときはwebServerを無効化する。有効のままだと
+  // `pnpm build && pnpm start`が.env.localの開発DBを対象に起動してしまい、perf:build/perf:start
+  // 済みのサーバーや本番URLに接続するつもりが気づかず開発DBを相手にする事故につながる（8-1節）。
   webServer:
-    process.env.PERF === "1"
+    process.env.PERF === "1" || process.env.DEMO === "1"
       ? undefined
       : {
           command: "pnpm build && pnpm start",
@@ -54,7 +76,8 @@ export default defineConfig({
     {
       name: "e2e",
       testDir: "./e2e",
-      testIgnore: "**/performance/**",
+      // demo/はDEMO_USER_EMAIL等の撮影専用envに依存し、CIには無いため実行対象から外す
+      testIgnore: ["**/performance/**", "**/demo/**"],
       use: { ...devices["Desktop Chrome"] },
     },
     // perf専用のログイン処理（storageState生成）。perfプロジェクトの前提として1回だけ実行する
@@ -72,6 +95,45 @@ export default defineConfig({
       testIgnore: "**/perf.setup.ts",
       dependencies: ["perf-setup"],
       use: { ...devices["Desktop Chrome"] },
+    },
+    // 6-Cデモ動画: ログイン専用（storageState保存のみ、副作用なし）
+    {
+      name: "demo-login",
+      testDir: "./e2e/demo",
+      testMatch: /00-auth\.setup\.ts/,
+      retries: 0,
+      workers: 1,
+      timeout: 120_000,
+      use: { ...devices["Desktop Chrome"], ...demoPcUse },
+    },
+    // 6-Cデモ動画: storageStateを再利用する本編01〜04
+    {
+      name: "demo",
+      testDir: "./e2e/demo",
+      testMatch: /0[1-4]-.*\.demo\.spec\.ts/,
+      dependencies: ["demo-login"],
+      retries: 0,
+      workers: 1,
+      timeout: 150_000,
+      use: { ...devices["Desktop Chrome"], ...demoPcUse, storageState: DEMO_STORAGE_STATE_PATH },
+    },
+    // 6-Cデモ動画: モバイル（未ログイン→ログイン後の長押し操作）。書き込みは行わないが、
+    // demo-loginが生成するstorageStateファイル（cookie抽出用）を読むため依存させ、実行順を
+    // 保証する。ただしprojectのuse.storageStateは設定しない（開始時点は未ログイン状態にし、
+    // spec内でcontext.addCookies()により途中からログイン状態へ切り替えるため）
+    {
+      name: "demo-mobile",
+      testDir: "./e2e/demo",
+      testMatch: /05-mobile\.demo\.spec\.ts/,
+      dependencies: ["demo-login"],
+      retries: 0,
+      timeout: 120_000,
+      use: {
+        ...devices["iPhone 13"],
+        video: { mode: "on" as const, size: devices["iPhone 13"].viewport! },
+        launchOptions: { slowMo: 400 },
+        extraHTTPHeaders: {},
+      },
     },
   ],
 });
