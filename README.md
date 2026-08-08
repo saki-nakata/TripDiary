@@ -235,14 +235,14 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 
 <summary>① 閲覧・いいね・行きたい・コメント</summary>
 
-<video controls src="docs/demo/01-feed-engage.mp4"></video>
+<video controls src="https://cdn.jsdelivr.net/gh/saki-nakata/TripDiary@main/docs/demo/01-feed-engage.mp4"></video>
 
 未ログインでのトップページ閲覧→ログイン→探索ポータル→投稿詳細（画像ライトボックス）→いいね→「行きたい」登録→コメント投稿。
 
 <details>
 <summary>② 投稿する（地図・複数枚画像）</summary>
 
-<video controls src="docs/demo/02-post-create.mp4"></video>
+<video controls src="https://cdn.jsdelivr.net/gh/saki-nakata/TripDiary@main/docs/demo/02-post-create.mp4"></video>
 
 新規投稿フォームの入力（タイトル・本文・カテゴリ・エリア・評価・訪問日）→Leaflet地図でのスポット位置指定→画像2枚のアップロード→投稿完了後、ホームでのハイライト表示と投稿詳細での画像・地図の反映確認。
 
@@ -253,7 +253,7 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 <details>
 <summary>③ つながる（検索・フォロー・TabiScore）</summary>
 
-<video controls src="docs/demo/03-social.mp4"></video>
+<video controls src="https://cdn.jsdelivr.net/gh/saki-nakata/TripDiary@main/docs/demo/03-social.mp4"></video>
 
 通知一覧の閲覧（他ユーザーからの反応が視界に入ると自動的に既読化される）→ユーザー検索→プロフィール（TabiScore表示）→フォロー。
 
@@ -262,7 +262,7 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 <details>
 <summary>④ 記録と振り返り（旅行プラン・旅行レポート・地図・テーマ）</summary>
 
-<video controls src="docs/demo/04-record-and-reflect.mp4"></video>
+<video controls src="https://cdn.jsdelivr.net/gh/saki-nakata/TripDiary@main/docs/demo/04-record-and-reflect.mp4"></video>
 
 マイページ→旅行プラン新規作成（スポット追加、地図に反映）→旅行レポート（統計カード・エリア別バブルチャート・カテゴリ別グラフ・月別ヒートマップ・年別推移・年フィルタ）→表示テーマのダーク/ライト切り替え→訪問済み（都道府県塗り分け地図）→ログアウト。
 
@@ -273,7 +273,7 @@ APIドキュメント（Swagger UI）は動画に含めていないが、[本番
 <details>
 <summary>⑤ モバイル表示</summary>
 
-<video controls height="400" src="docs/demo/05-mobile.mp4"></video>
+<video controls height="400" src="https://cdn.jsdelivr.net/gh/saki-nakata/TripDiary@main/docs/demo/05-mobile.mp4"></video>
 
 未ログイン時のモバイル表示（検索→投稿詳細）→ログイン後のモバイル下部ナビ（新規投稿アイコンの長押しでラベルがポップアップ表示される）。
 
