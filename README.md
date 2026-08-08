@@ -233,7 +233,7 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 
 本番環境（http://54.248.13.248 ）に対して、常設デモアカウントで実際に操作しながら撮影した動画。いずれも無音・カット無しの通し撮りで、ブラウザのアドレスバーは映らない（Playwrightの録画仕様のため）。代表的な主要機能をカバーしているが、投稿の編集・削除やアンフォロー等の操作は含まない。
 
-### ① 閲覧・いいね・行きたい・コメント
+<summary>① 閲覧・いいね・行きたい・コメント</summary>
 
 <video controls src="https://cdn.jsdelivr.net/gh/saki-nakata/TripDiary@main/docs/demo/01-feed-engage.mp4"></video>
 
