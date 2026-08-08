@@ -92,6 +92,8 @@ TripDiary/
 │   ├── 画面遷移図.md
 │   ├── シーケンス図.md
 │   ├── インフラ構成書.md
+│   ├── demo/                       # デモ動画本編（mp4）と埋め込み時のトラブル対応記録
+│   ├── images/                     # パフォーマンステスト等のスクリーンショット
 │   └── 機能定義書/
 │       ├── 認証機能定義書.md
 │       ├── 投稿機能定義書.md
@@ -123,6 +125,7 @@ TripDiary/
 ├── infra/terraform/               # 本番インフラのコード管理（EC2 + RDS + S3、Phase 6-B）
 ├── performance/                   # k6負荷試験・Web Vitals計測
 ├── e2e/                           # Playwright E2Eテスト
+├── prototype/                     # 実装着手前の静的HTMLプロトタイプ（16画面、UI検討用の参考資料）
 ├── public/
 ├── .env.local
 ├── .env.sample
@@ -183,7 +186,18 @@ pnpm prisma migrate dev  # マイグレーション実行
 pnpm test                    # Vitest（単体・統合テスト）を実行
 pnpm test:coverage           # カバレッジ計測付きで実行
 pnpm prisma:migrate:test     # テスト用DBにスキーマ適用（事前に docker compose up -d mysql-test が必要）
-pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の主要フロー）
+```
+
+E2E（Playwright）は各specが`/api/test/cleanup`を叩くため、素の`pnpm playwright test --project=e2e`だけでは`beforeEach`が403で失敗する。事前に以下の環境変数が必要（詳細レシピは[docs/テスト設計書.md](docs/テスト設計書.md)10章参照）。
+
+```bash
+docker compose up -d mysql-test
+pnpm prisma:migrate:test
+DATABASE_URL="mysql://tripdiary:tripdiary@127.0.0.1:3307/tripdiary_test" \
+AUTH_URL="http://localhost:3000" AUTH_SECRET="<任意の値>" \
+ENABLE_TEST_ENDPOINTS=true TEST_CLEANUP_SECRET="<任意の値>" DISABLE_RATE_LIMIT_FOR_TESTS=true \
+AWS_REGION=ap-northeast-1 AWS_S3_BUCKET_NAME=tripdiary-e2e-dummy-bucket \
+pnpm playwright test --project=e2e
 ```
 
 ### API仕様書（Swagger）
@@ -226,6 +240,12 @@ pnpm playwright test --project=e2e  # E2Eテスト（認証フロー・投稿の
 | `AWS_S3_BUCKET_NAME` | S3 バケット名。画像アップロード機能に必須 |
 | `AWS_ACCESS_KEY_ID` | IAM ユーザーのアクセスキー（任意。ローカル開発で一時的な認証情報を使う場合のみ設定。本番は EC2 の IAM ロールを使うため設定不要） |
 | `AWS_SECRET_ACCESS_KEY` | IAM ユーザーのシークレットキー（任意。用途は上記と同じ） |
+
+---
+
+## 画像素材の出所
+
+本番シード投入（`scripts/fetch-seed-images.ts`）で使用している投稿画像は、[Pexels](https://www.pexels.com/) API（[Pexels License](https://www.pexels.com/license/)、商用利用可・帰属表示は法的には不要）から取得した実写素材である。TripDiary本体のUIには帰属表示欄がないため、撮影者名・撮影者URL・写真ページURL・Pexels写真ID等を記録した`manifest.json`（実行時に`seed-images/`配下へ生成。gitignore対象でリポジトリには含まない）と、このREADMEへの出所明記をもって対応する。
 
 ---
 
@@ -323,6 +343,20 @@ CONFIRM_PRODUCTION_SEED=true pnpm dlx tsx prisma/seed-production.ts             
 公開期間中は、確認者による変更を前提に**定期的に本番URLの表示を確認し、崩れていれば上記で復旧する**運用とする。
 
 常設デモアカウント（6-Cデモ動画用）のパスワードはリポジトリに含めず、`prisma/seed-production.ts`実行時にランダム生成・標準出力にのみ表示する。
+
+---
+
+## 開発期間・体制
+
+2026-06-27〜2026-08-08（約6週間）、個人開発。要件定義・設計・実装・テスト・パフォーマンス計測・AWS本番デプロイ・デモ動画撮影までを一人で担当した。設計・実装の各段階でOpus・Sol（AIレビュアー）による指摘を継続的に取り込み、レビュー→修正→再検証のサイクルを回した（`実装計画書/reviews/`に主要な指摘・対応の記録があるが、当該ディレクトリは`.gitignore`対象のためリポジトリには含まれない）。
+
+**設計・実装で工夫した点:**
+
+- **並行更新の競合対策**: いいね・コメント等の非正規化カウンタ更新に加え、投稿・旅行プランの編集には楽観ロック用の`version`列を導入し、同時編集による上書き事故を検知できるようにした
+- **S3オブジェクトの所有権・参照整合性**: アップロードキーに所有者IDを含めて誤削除を防止し、削除前に`findStillReferencedUrls`で他レコードからの参照有無を確認してから削除する設計にした（旅行プランへの画像引き継ぎ機能で同一オブジェクトを複数投稿から参照できるため）
+- **構造化ログとダークテーマの全画面対応**: pinoによる構造化ログを整備し、表示テーマはローカルストレージからCookie＋DB方式へ移行して全画面をダークテーマ対応させた（対応漏れを`docs/画面設計書.md`に更新履歴として都度記録）
+- **IaCによる本番構築**: AWSインフラをTerraformでコード管理し、`apply`一発での再構築・`destroy`一発での削除を検証済み
+- **テスト・パフォーマンス計測**: Vitest 740件・カバレッジ92%超、Playwright E2E、k6による負荷試験（Smoke/Load/Stress/Spike）とWeb Vitals計測をCI・ローカルの両方で運用
 
 ---
 
