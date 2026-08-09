@@ -34,5 +34,7 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  // twemoji/ は末尾スラッシュ必須（前方一致のため。/twemoji-guide 等の将来ページを
+  // 巻き込んでmiddlewareから除外してしまわないようにする）。
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|twemoji/).*)"],
 };

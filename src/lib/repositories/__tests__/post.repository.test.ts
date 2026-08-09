@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import {
   findFollowingPosts,
   findLocationCounts,
+  findLocationNameCounts,
   createPost,
   updatePost,
   findStillReferencedUrls,
@@ -96,6 +97,44 @@ describe("post.repository", () => {
     expect(tokyo?.thumbnailUrl).toBe("https://example.com/tokyo.jpg");
     expect(osaka?.count).toBe(1);
     expect(osaka?.thumbnailUrl).toBeNull();
+  });
+
+  it("findLocationCounts_limit指定時は同数エリアでもlocation昇順で決定的に上位が返る", async () => {
+    const me = await createTestUser("me-limit@example.com", "自分limit");
+    // 13エリア、各1件ずつ同数にする。count DESCだけではタイブレーカーが無く境界が不定になるため、
+    // location ASCの追加ソートで境界が決定的であることを検証する。
+    const locations = [
+      "東京都", "大阪府", "京都府", "北海道", "沖縄県",
+      "福岡県", "愛知県", "宮城県", "広島県", "新潟県",
+      "長野県", "石川県", "静岡県",
+    ];
+    for (const [i, location] of locations.entries()) {
+      await createPost(me.id, { title: `投稿${i}`, body: "本文", location, category: "観光", visitedAt: "2026-01-01" });
+    }
+
+    const result = await findLocationCounts({ limit: 12 });
+
+    expect(result).toHaveLength(12);
+    const expectedOrder = [...locations].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).slice(0, 12);
+    expect(result.map((r) => r.location)).toEqual(expectedOrder);
+  });
+
+  // ─── findLocationNameCounts ───
+  it("findLocationNameCounts_サムネイル無しで全エリアの件数が返る", async () => {
+    const me = await createTestUser("me-locnames@example.com", "自分locnames");
+    await createPost(me.id, { title: "投稿A", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-01" });
+    await createPost(me.id, { title: "投稿B", body: "本文", location: "東京都", category: "観光", visitedAt: "2026-01-02" });
+    await createPost(me.id, { title: "投稿C", body: "本文", location: "大阪府", category: "観光", visitedAt: "2026-01-03" });
+
+    const result = await findLocationNameCounts();
+
+    expect(result).toEqual(
+      expect.arrayContaining([
+        { location: "東京都", count: 2 },
+        { location: "大阪府", count: 1 },
+      ])
+    );
+    expect(result[0]).not.toHaveProperty("thumbnailUrl");
   });
 
   // ─── findTopRatedByCategory ───

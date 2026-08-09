@@ -17,7 +17,7 @@ import { formatDateSlash } from "@/lib/date";
 import { fetchJson } from "@/lib/fetchJson";
 import type { PostsResponse } from "@/types/post";
 
-type AreaItem = { location: string; count: number; thumbnailUrl: string | null };
+type LocationCount = { location: string; count: number };
 type UserItem = {
   id: string;
   nickname: string;
@@ -339,7 +339,7 @@ function AreaSearchTab({ q, initialLocation }: { q: string; initialLocation?: st
   const { data, isLoading, isError } = useQuery({
     queryKey: ["search-areas"],
     queryFn: async () => {
-      const data = await fetchJson<{ locations?: AreaItem[] }>("/api/posts/portal", "エリアの読み込みに失敗しました");
+      const data = await fetchJson<{ locations?: LocationCount[] }>("/api/posts/locations", "エリアの読み込みに失敗しました");
       return data.locations ?? [];
     },
   });
@@ -359,7 +359,7 @@ function AreaSearchTab({ q, initialLocation }: { q: string; initialLocation?: st
   }
 
   const areasByLocation = new Map(data?.map((a) => [a.location, a]) ?? []);
-  const areas = LOCATIONS.map((l) => areasByLocation.get(l)).filter((a): a is AreaItem => a != null);
+  const areas = LOCATIONS.map((l) => areasByLocation.get(l)).filter((a): a is LocationCount => a != null);
   if (areas.length === 0) {
     return <EmptyState codepoint="1f4cd" message="投稿があるエリアがありません" />;
   }

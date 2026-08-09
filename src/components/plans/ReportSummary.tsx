@@ -220,7 +220,13 @@ function TopRatedHighlights({ posts }: { posts: StatsResponse["topRatedPosts"] }
         >
           <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
             {post.thumbnail ? (
-              <CardImage src={post.thumbnail} alt={post.title} sizes="(max-width: 640px) 100vw, 33vw" containerRatio={4 / 3} />
+              <CardImage
+                src={post.thumbnail}
+                alt={post.title}
+                sizes="(max-width: 640px) 100vw, 33vw"
+                containerRatio={4 / 3}
+                fallback={<TwemojiIcon codepoint="1f4f7" alt="📷" className="h-10 w-10" />}
+              />
             ) : (
               <div className="flex h-full items-center justify-center text-4xl text-zinc-300 dark:text-zinc-600">
                 <TwemojiIcon codepoint="1f4f7" alt="📷" className="h-10 w-10" />

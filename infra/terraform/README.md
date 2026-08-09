@@ -62,6 +62,30 @@ aws secretsmanager describe-secret --secret-id "$(terraform output -raw db_secre
 # → false であることを確認する
 ```
 
+## nginx設定のみを変更する場合（IPを変えたくない場合）
+
+`nginx.conf.tpl`・`user-data.sh.tpl`はどちらも`ec2.tf`の`local.user_data`に含まれ、`user_data_replace_on_change = true`のため、**これらを変更してから`terraform apply`を実行するとEC2インスタンスが再作成される**（Elastic IP未使用のため本番IPが変わる）。
+
+nginx設定だけを変えたく、かつIPを変えたくない場合は、`terraform apply`を経由せず**SSHで稼働中インスタンスへ直接適用する**（2026-08-09、`proxy_cache`導入時に実施。詳細は`docs/インフラ構成書.md`9.5節運用ログ）。
+
+```bash
+# 1. 変更後のnginx.conf.tplの内容をローカルに用意し、アップロード
+scp -i tripdiary-prod.pem infra/terraform/templates/nginx.conf.tpl \
+  ec2-user@<ec2_public_ip>:/tmp/tripdiary.conf.new
+
+# 2. 既存設定をバックアップしてから置き換え、構文チェック
+ssh -i tripdiary-prod.pem ec2-user@<ec2_public_ip> '
+  sudo cp /etc/nginx/conf.d/tripdiary.conf /etc/nginx/conf.d/tripdiary.conf.bak-$(date +%Y%m%d%H%M%S)
+  sudo cp /tmp/tripdiary.conf.new /etc/nginx/conf.d/tripdiary.conf
+  sudo nginx -t
+'
+
+# 3. 問題なければ無停止で反映（restartではなくreload）
+ssh -i tripdiary-prod.pem ec2-user@<ec2_public_ip> 'sudo systemctl reload nginx'
+```
+
+**注意（ドリフト）**: この方法は`.tpl`ファイル（Terraform管理）と実際の反映経路が一致しない「手動適用」になる。`.tpl`ファイル自体は必ずリポジトリ側も更新しておくこと（内容を一致させ、次回インスタンス再作成時に自動反映されるようにするため）。一度でも`.tpl`を編集すると、**理由を問わず次回の`terraform apply`でEC2インスタンスが再作成される**（今回の手動適用の有無に関わらず）。`user-data.sh.tpl`側で新規ディレクトリ作成等が必要な変更（例: `proxy_cache_path`用のキャッシュディレクトリ）も、次回の自然な再作成時に反映されるよう合わせて更新しておく。
+
 ## アプリの手動デプロイ（Terraform管理外・SSH経由）
 
 `git`・`jq`・`mariadb105`（mysqlクライアント）はuser-dataで導入済み（実機デプロイ時に不足が判明し追加した）。

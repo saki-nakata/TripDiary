@@ -88,6 +88,10 @@ seed-images/
 performance/k6/results/*
 !performance/k6/results/.gitkeep
 
+# scripts/backfill-image-cache-control.ts の出力（本番S3オブジェクトの変更前メタデータ
+# manifest。バックアップ・復元用のローカル運用ファイルであり、リポジトリの恒久保管対象に含めない）
+s3-manifests/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

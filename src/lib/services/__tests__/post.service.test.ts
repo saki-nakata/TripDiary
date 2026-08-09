@@ -13,6 +13,7 @@ vi.mock("@/lib/repositories/post.repository", () => ({
   findPopularPosts: vi.fn(),
   findLatestPosts: vi.fn(),
   findLocationCounts: vi.fn(),
+  findLocationNameCounts: vi.fn(),
   findCategoryCounts: vi.fn(),
   findTopRatedByCategory: vi.fn(),
 }));
@@ -35,6 +36,7 @@ import {
   findPopularPosts,
   findLatestPosts,
   findLocationCounts,
+  findLocationNameCounts,
   findCategoryCounts,
   findTopRatedByCategory,
 } from "@/lib/repositories/post.repository";
@@ -49,6 +51,7 @@ import {
   findExplorePostsService,
   findFollowingPostsService,
   getPortalDataService,
+  getLocationsService,
 } from "@/lib/services/post.service";
 
 const AUTHOR_ID = "author-1";
@@ -489,6 +492,7 @@ describe("getPortalDataService", () => {
 
     const result = await getPortalDataService();
 
+    expect(findLocationCounts).toHaveBeenCalledWith({ limit: 12 });
     expect(findTopRatedByCategory).toHaveBeenCalledWith(["p1", "p2"]);
     expect(result).toEqual({
       popular: [{ id: "p1" }, { id: "p2" }],
@@ -496,6 +500,26 @@ describe("getPortalDataService", () => {
       locations: [{ location: "東京都", count: 3 }],
       categories: [{ category: "観光", count: 2 }],
       topRated: [{ id: "t1" }],
+    });
+  });
+});
+
+describe("getLocationsService", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("全エリアの件数をそのまま返す", async () => {
+    vi.mocked(findLocationNameCounts).mockResolvedValue([
+      { location: "東京都", count: 3 },
+      { location: "大阪府", count: 1 },
+    ]);
+
+    const result = await getLocationsService();
+
+    expect(result).toEqual({
+      locations: [
+        { location: "東京都", count: 3 },
+        { location: "大阪府", count: 1 },
+      ],
     });
   });
 });

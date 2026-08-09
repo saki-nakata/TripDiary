@@ -14,6 +14,7 @@ export function CategorySection({ categories }: { categories: CategoryItem[] }) 
           <Link
             key={c.category}
             href={`/search?tab=post&category=${encodeURIComponent(c.category)}`}
+            prefetch={false}
             className="flex flex-col items-center gap-1.5 rounded-xl border border-surface-border bg-surface py-6 transition-all hover:-translate-y-1 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-md"
           >
             <span className="text-3xl"><CategoryIcon category={c.category} /></span>

@@ -403,6 +403,69 @@ CONFIRM_PRODUCTION_SEED=true pnpm dlx tsx prisma/seed-production.ts             
 
 常設デモアカウント（6-Cデモ動画用）のパスワードはリポジトリに含めず、`prisma/seed-production.ts`実行時にランダム生成・標準出力にのみ表示する。
 
+### 画像キャッシュ・S3運用
+
+投稿画像・アバターはS3の`uploads/`配下に保存し、`/_next/image`（Next.jsの画像最適化）を経由して配信している。`/_next/image`のキャッシュTTLは`max(next.config.tsのimages.minimumCacheTTL, S3オブジェクトのCache-Controlのmax-age)`で決まるため、S3側にヘッダを付けておくことで最適化画像のキャッシュも長持ちする。
+
+**S3オブジェクトキーの2種類（バージョニング規約）**
+
+| 種別 | キー | 内容の再現性 |
+|------|------|------|
+| ユーザーアップロード | `uploads/{userId}/{randomUUID}.{ext}` | UUIDなので内容が変われば必ず別キー（`immutable`キャッシュを付けて問題ない） |
+| 本番シード画像 | `uploads/{authorId}/seed/{postId}/{index}.{ext}` | **決定的キー**。同じキーに別内容を再アップロードできてしまう |
+
+`src/lib/s3.ts`の`uploadObject()`は全アップロードに`Cache-Control: public, max-age=31536000, immutable`を付与する。ユーザーアップロードはUUIDキーのため問題ないが、**本番シード画像の内容（`prisma/seed-production.ts`の`getSeedImageBuffer`が返す実体）を差し替える場合は、キー自体を`uploads/{authorId}/seed/v2/{postId}/{index}.{ext}`のようにバージョニングし、URLごと変えること。** 同じキーのまま内容だけ差し替えると、`immutable`でキャッシュ済みのクライアントに古い画像が残り続ける。今回のように「消えた実体を同一バイト列で復元する」場合はキーと内容が一致したままなので問題ない。
+
+**S3実体の監査（`pnpm audit:images`）**
+
+DBが参照する画像URL（`PostImage.url`・`User.image`）に対応するS3実体が存在するかを、匿名HTTPSのHEADで確認する読み取り専用スクリプト。本番S3オブジェクトが失われる事故（バケット再作成等）の再発検知用。
+
+```bash
+# 本番RDSへ到達できるEC2上で実行（本番RDS以外への接続では中断する）
+pnpm exec dotenv -e .env.local -- pnpm audit:images
+```
+
+異常（欠落・403・Content-Type不正等）が1件でもあれば非ゼロ終了する。
+
+**既存S3オブジェクトへのCache-Control遡及付与（`pnpm backfill:image-cache-control`）**
+
+`uploadObject()`のCache-Control付与は今後のアップロード分にのみ効く。既存オブジェクトへ遡及適用するには専用のバックフィルスクリプトを使う。**このバケットはバージョニングが無効**（コスト回避のため意図的に見送り。`infra/terraform/s3.tf`参照）なので、`--apply`実行前に必ず以下を満たすこと。
+
+1. `aws sts get-caller-identity`でAWSアカウントIDが想定どおりであることを確認する
+2. 対象バケットの`ListBucket`・`uploads/*`の`GetObject`・`uploads/*`の`PutObject`のみを持つ専用ポリシー／一時セッションを用意する（`terraform apply`用の管理者クレデンシャルは使わない）
+3. `aws s3 sync s3://<bucket> ./s3-backup-<日付>/`でバケット全体をバックアップする
+4. dry-run（引数無し実行）で対象件数と変更前メタデータmanifest（`s3-manifests/`配下、gitignore対象）を確認する
+5. `CONFIRM_PRODUCTION_S3_BACKFILL=true`と`--apply`の両方を指定して実行する
+6. 適用後、`pnpm audit:images`と全件HEADでCache-Control・Content-Typeを再検証する
+7. `docs/インフラ構成書.md`「9.5 運用ログ」に実行結果を記録する
+
+```bash
+# dry-run（書き込みなし。manifestのみ保存）
+pnpm exec dotenv -e .env.local -- pnpm backfill:image-cache-control
+
+# 適用（上記1〜4を満たした後にのみ実行する）
+CONFIRM_PRODUCTION_S3_BACKFILL=true pnpm exec dotenv -e .env.local -- \
+  pnpm backfill:image-cache-control --apply
+```
+
+**復元Runbook（バックフィルが失敗した場合）**
+
+バージョニングが無いため、復元は「バイト列」と「メタデータ」を別々に戻す2段階になる。
+
+1. バイト列の復元: `aws s3 sync ./s3-backup-<日付>/ s3://<bucket>/`
+2. メタデータの復元: バックフィル実行時に保存されたmanifestを指定してスクリプトを再実行する
+
+   ```bash
+   # dry-run（差分確認のみ）
+   pnpm backfill:image-cache-control --restore-manifest ./s3-manifests/<file>.json
+
+   # 適用
+   CONFIRM_PRODUCTION_S3_BACKFILL=true pnpm backfill:image-cache-control \
+     --restore-manifest ./s3-manifests/<file>.json --apply
+   ```
+
+3. 再検証: 全件HEAD（Content-Type・Cache-Controlがmanifestと一致すること）＋実ブラウザでの画像表示確認＋`pnpm audit:images`の再実行
+
 ---
 
 ## 画像素材の出所

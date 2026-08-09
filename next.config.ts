@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
       ...(s3Hostname ? [{ protocol: "https" as const, hostname: s3Hostname }] : []),
     ],
+    // 保険としての下限値（本来はS3側のCache-Controlに追従する: max(minimumCacheTTL, 上流のmax-age)）。
+    // ユーザーアップロード画像はUUIDキーで内容が変わらないため長期キャッシュしてよい。
+    // 本番シード画像（uploads/{userId}/seed/{postId}/{index}.jpg）は決定的キーのため、
+    // 内容を差し替える場合はキー自体をバージョニングする運用とする（README.md参照）。
+    minimumCacheTTL: 2678400, // 31日
   },
   // 開発サーバーはデフォルトでlocalhost以外のオリジン（実機からのLAN IPアクセス等）からの
   // アセット読み込みをブロックするため、モバイル実機での動作確認用に許可する
@@ -42,6 +47,12 @@ const nextConfig: NextConfig = {
             ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" }]
             : []),
         ],
+      },
+      {
+        // Twemojiの固定アイコン（50ファイル、1ページあたり最大20件超読み込まれる）。
+        // 内容が変わらないため長期キャッシュする。差し替える場合はファイル名自体を変える運用とする。
+        source: "/twemoji/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
     ];
   },

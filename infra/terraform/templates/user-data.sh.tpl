@@ -46,6 +46,11 @@ dnf install -y git jq
 dnf install -y nginx
 rm -f /etc/nginx/conf.d/default.conf || true
 
+# proxy_cache_path（tripdiary.conf内、実装計画書/phase8.md タスクD）が使うキャッシュ用ディレクトリ。
+# nginxはproxy_cache_pathで指定したディレクトリを自動作成しないため事前に用意する。
+mkdir -p /var/cache/nginx/tripdiary
+chown nginx:nginx /var/cache/nginx/tripdiary
+
 cat > /etc/nginx/conf.d/tripdiary.conf <<'NGINX_CONF'
 ${nginx_conf}
 NGINX_CONF
