@@ -130,7 +130,10 @@ export default defineConfig({
       timeout: 120_000,
       use: {
         ...devices["iPhone 13"],
-        video: { mode: "on" as const, size: devices["iPhone 13"].viewport! },
+        // iPhone 13のCSSビューポート(390x844)をそのままvideo.sizeに使うと画質が粗い。
+        // 実機はdevicePixelRatio 3で描画されているため、アスペクト比を保ったまま2倍の
+        // 解像度で書き出すことで、操作対象の座標やCSSビューポートを変えずに画質だけ上げる
+        video: { mode: "on" as const, size: { width: 780, height: 1688 } },
         launchOptions: { slowMo: 400 },
         extraHTTPHeaders: {},
       },
