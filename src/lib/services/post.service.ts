@@ -14,11 +14,13 @@ import {
   findPopularPosts,
   findLatestPosts,
   findLocationCounts,
+  findLocationNameCounts,
   findCategoryCounts,
   findTopRatedByCategory,
   findRelatedPosts,
 } from "@/lib/repositories/post.repository";
 import { findPlanAuthorId } from "@/lib/repositories/plan.repository";
+import { PORTAL_AREA_LIMIT } from "@/lib/constants";
 import type { PostInput, PostUpdateInput } from "@/lib/validations/post";
 import { NotFoundError, ForbiddenError, ConflictError, ValidationError } from "@/lib/errors";
 import { deleteOwnedObjectsByUrl, isOwnedS3Url } from "@/lib/s3";
@@ -93,12 +95,18 @@ export async function getPortalDataService() {
   const [popular, latest, locations, categories] = await Promise.all([
     findPopularPosts(6),
     findLatestPosts(6),
-    findLocationCounts(),
+    findLocationCounts({ limit: PORTAL_AREA_LIMIT }),
     findCategoryCounts(),
   ]);
   const topRated = await findTopRatedByCategory(popular.map((p) => p.id));
 
   return { popular, latest, locations, categories, topRated };
+}
+
+// エリア検索画面用。ポータルと異なりサムネイル不要・全件を返す軽量版。
+export async function getLocationsService() {
+  const locations = await findLocationNameCounts();
+  return { locations };
 }
 
 export async function updatePostService(userId: string, id: string, data: PostUpdateInput) {

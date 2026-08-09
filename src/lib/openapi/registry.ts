@@ -166,7 +166,7 @@ registry.registerPath({
   tags: ["Posts"],
   responses: {
     200: {
-      description: "人気・新着・エリア別・カテゴリ別まとめ",
+      description: "人気・新着・エリア別（人気上位のみ・件数はPORTAL_AREA_LIMIT）・カテゴリ別まとめ",
       content: {
         "application/json": {
           schema: z.object({
@@ -175,6 +175,25 @@ registry.registerPath({
             locations: z.array(z.object({ location: z.string(), count: z.number(), thumbnailUrl: z.string().nullable() })),
             categories: z.array(z.object({ category: z.string(), count: z.number() })),
             topRated: z.array(postResponseSchema),
+          }),
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/posts/locations",
+  summary: "エリア一覧（全件・認証不要）。エリア検索画面用の軽量版",
+  tags: ["Posts"],
+  responses: {
+    200: {
+      description: "投稿がある全エリアの件数",
+      content: {
+        "application/json": {
+          schema: z.object({
+            locations: z.array(z.object({ location: z.string(), count: z.number() })),
           }),
         },
       },

@@ -62,6 +62,11 @@ export const LOCATIONS = [
 
 export type Location = (typeof LOCATIONS)[number];
 
+// トップページ（探索ポータル）のエリアカードに表示する上限件数。
+// 全件はエリア検索（/search?tab=area、GET /api/posts/locations）から辿れるため、
+// トップでは人気上位のみに絞りリンク数・プリフェッチ数を抑える。
+export const PORTAL_AREA_LIMIT = 12;
+
 export const SORT_OPTIONS = [
   { value: "latest", label: "新着順" },
   { value: "popular", label: "人気順" },

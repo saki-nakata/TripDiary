@@ -277,9 +277,14 @@ export async function findLatestPosts(limit = 6) {
   return posts.map((p) => formatPost(p));
 }
 
-export async function findLocationCounts() {
+// ポータル（トップページ）専用。サムネイル付きで上位のみ取得する用途を想定し、
+// limit未指定時は全件を返す（既存動作を維持）。
+export async function findLocationCounts({ limit }: { limit?: number } = {}) {
   // 地域ごとのサムネイル取得をアプリ側で繰り返すと、地域数に比例してSQLが増える。
   // 相関副問い合わせに寄せ、集計と「各地域で最も人気のある画像」を1クエリで返す。
+  // ORDER BY は count DESC のみだと同数エリアが多数あるためLIMIT境界が不定になる。
+  // location ASC をタイブレーカーに加え全順序を保証する（findExplorePostsのGATE-22と同じ方針）。
+  const limitClause = limit != null ? Prisma.sql`LIMIT ${limit}` : Prisma.empty;
   const rows = await prisma.$queryRaw<Array<{ location: string; count: bigint; thumbnailUrl: string | null }>>`
     SELECT
       p.location,
@@ -294,7 +299,8 @@ export async function findLocationCounts() {
       ) AS thumbnailUrl
     FROM posts AS p
     GROUP BY p.location
-    ORDER BY count DESC
+    ORDER BY count DESC, p.location ASC
+    ${limitClause}
   `;
 
   return rows.map((row) => ({
@@ -302,6 +308,18 @@ export async function findLocationCounts() {
     count: Number(row.count),
     thumbnailUrl: row.thumbnailUrl,
   }));
+}
+
+// エリア検索画面用の軽量版。サムネイル取得の相関副問い合わせを含まない単純なGROUP BYで、
+// 都道府県名と件数のみを返す（全件・LIMIT無し）。
+export async function findLocationNameCounts() {
+  const groups = await prisma.post.groupBy({
+    by: ["location"],
+    _count: { _all: true },
+  });
+  return groups
+    .map((g) => ({ location: g.location, count: g._count._all }))
+    .sort((a, b) => b.count - a.count || (a.location < b.location ? -1 : a.location > b.location ? 1 : 0));
 }
 
 export async function findCategoryCounts() {
