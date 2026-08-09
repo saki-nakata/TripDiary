@@ -22,6 +22,7 @@ export function AreaSection({ areas }: { areas: AreaItem[] }) {
           <Link
             key={area.location}
             href={`/search?tab=area&location=${encodeURIComponent(area.location)}`}
+            prefetch={false}
             className="rounded-xl overflow-hidden bg-surface border border-surface-border transition-all hover:-translate-y-1 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-md"
           >
             <div className="relative h-20 bg-zinc-100 dark:bg-zinc-800 overflow-hidden">

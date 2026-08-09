@@ -35,6 +35,7 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
       data-post-id={post.id}
       data-testid="post-card"
       href={`/posts/${post.id}`}
+      prefetch={false}
       className={`${styles.card} group flex flex-col rounded-xl border border-surface-border bg-surface overflow-hidden`}
     >
       <div className="relative aspect-[4/3] bg-zinc-100 dark:bg-zinc-800 overflow-hidden">

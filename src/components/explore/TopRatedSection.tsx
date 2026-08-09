@@ -18,6 +18,7 @@ export function TopRatedSection({ posts }: { posts: Post[] }) {
           <Link
             key={post.id}
             href={`/posts/${post.id}`}
+            prefetch={false}
             className="rounded-xl overflow-hidden border border-surface-border bg-surface transition-all hover:-translate-y-1 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-md"
           >
             <div className="relative aspect-[4/3] bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
