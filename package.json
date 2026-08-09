@@ -32,6 +32,7 @@
     "perf:typecheck": "tsc --noEmit -p performance/k6",
     "seed:fetch-images": "dotenv -e .env.local -- tsx scripts/fetch-seed-images.ts",
     "seed:production": "dotenv -e .env.local -- tsx prisma/seed-production.ts",
+    "audit:images": "dotenv -e .env.local -- tsx scripts/audit-s3-images.ts",
     "demo:record": "dotenv -e .env.demo -- playwright test --project=demo --project=demo-mobile"
   },
   "dependencies": {
