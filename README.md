@@ -50,7 +50,7 @@ API仕様書（Swagger UI）は[本番URL/api-docs](http://54.248.13.248/api-doc
 <details open>
 <summary>① 閲覧・いいね・行きたい・コメント</summary>
 
-https://github.com/user-attachments/assets/871462c5-5680-4b8e-bbdd-27bc3cf723dd
+https://github.com/user-attachments/assets/93a6036f-9230-4333-b65b-c29d352db7fb
 
 未ログインでのトップページ閲覧→ログイン→探索ポータル→投稿詳細（画像ライトボックス）→いいね→「行きたい」登録→コメント投稿。
 
@@ -90,9 +90,9 @@ APIドキュメント（Swagger UI）は動画に含めていないが、[本番
 <details>
 <summary>⑤ モバイル表示</summary>
 
-https://github.com/user-attachments/assets/a0e49ecc-eff0-4749-9e21-e63d0a29e3c3
+https://github.com/user-attachments/assets/92e8dd97-530e-449d-9863-27d6111e7ec9
 
-未ログイン時のモバイル表示（検索→投稿詳細）→ログイン後のモバイル下部ナビ（新規投稿アイコンの長押しでラベルがポップアップ表示される）。
+未ログイン時のモバイル表示→ログイン→モバイル下部ナビ（新規投稿アイコンの長押しでラベルがポップアップ表示される）→表示テーマをライトからダークへ切り替え。
 
 </details>
 

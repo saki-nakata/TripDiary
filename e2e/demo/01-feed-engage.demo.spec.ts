@@ -40,8 +40,9 @@ test("閲覧・いいね・行きたい・コメント", async ({ page }) => {
   await likeButton.click();
   await page.waitForTimeout(1000);
 
-  // 行きたい
-  const wishlistButton = page.getByTitle("行きたいに追加");
+  // 行きたい（トグルボタンのためtitleは現在の状態次第で変わる。前回撮影分の状態が
+  // 残っていても撮り直しできるよう、どちらの状態のtitleにもマッチさせる）
+  const wishlistButton = page.getByTitle(/行きたい(に追加|を解除)/);
   await wishlistButton.hover();
   await wishlistButton.click();
   await page.waitForTimeout(1000);
