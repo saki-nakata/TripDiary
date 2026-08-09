@@ -27,6 +27,12 @@ export async function uploadObject(key: string, body: Buffer, contentType: strin
       Key: key,
       Body: body,
       ContentType: contentType,
+      // ユーザーアップロードはuploads/{userId}/{randomUUID}.{ext}で内容が変わらない。
+      // 本番シード画像（uploads/{userId}/seed/{postId}/{index}.jpg）は決定的キーだが、
+      // 内容を差し替える場合はキー自体をバージョニングする運用（seed/v2/...）とするため、
+      // 同じキーに別内容が乗ることは想定しない。既存オブジェクトへの遡及適用は
+      // scripts/backfill-image-cache-control.ts（別途）で扱う。
+      CacheControl: "public, max-age=31536000, immutable",
     })
   );
 

@@ -69,6 +69,7 @@ describe("s3.ts", () => {
         Key: "uploads/user-1/abc.jpg",
         Body: Buffer.from("x"),
         ContentType: "image/jpeg",
+        CacheControl: "public, max-age=31536000, immutable",
       });
       expect(url).toBe(`https://${HOSTNAME}/uploads/user-1/abc.jpg`);
     });
