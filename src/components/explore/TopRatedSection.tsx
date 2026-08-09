@@ -27,6 +27,7 @@ export function TopRatedSection({ posts }: { posts: Post[] }) {
                   src={post.images[0].url}
                   alt={post.title}
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  fallback={<CategoryIcon category={post.category ?? "その他"} />}
                 />
               )}
               {post.category && (

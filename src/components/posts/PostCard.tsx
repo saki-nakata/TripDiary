@@ -45,6 +45,7 @@ export function PostCard({ post, viewerId, showCost = false, compactMobileMeta =
             alt={post.title}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             imgClassName="group-hover:scale-105 transition-transform duration-300"
+            fallback={<CategoryIcon category={category} />}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-4xl text-zinc-300 dark:text-zinc-600">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { TwemojiIcon } from "@/components/ui/twemoji-icon";
 
 type Props = {
@@ -12,6 +12,11 @@ type Props = {
 };
 
 export function ImageLightbox({ images, currentIndex, onClose, onPrev, onNext }: Props) {
+  // 画像単位（インデックス）で失敗状態を持つ。S3画像を/_next/imageを経由しない<img>で
+  // 直接表示しているため読み込み失敗し得る。1枚の失敗で他の画像・ライトボックス自体は隠さない。
+  const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
+  const currentFailed = failedIndexes.has(currentIndex);
+
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -63,13 +68,24 @@ export function ImageLightbox({ images, currentIndex, onClose, onPrev, onNext }:
       )}
 
       {/* Image */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={images[currentIndex].url}
-        alt={`画像 ${currentIndex + 1}`}
-        className="max-w-[90vw] max-h-[90vh] object-contain select-none"
-        onClick={(e) => e.stopPropagation()}
-      />
+      {currentFailed ? (
+        <div
+          className="flex flex-col items-center justify-center gap-2 text-zinc-300 select-none"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <TwemojiIcon codepoint="1f4f7" alt="" className="h-10 w-10" />
+          <span className="text-sm">画像を読み込めませんでした</span>
+        </div>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={images[currentIndex].url}
+          alt={`画像 ${currentIndex + 1}`}
+          className="max-w-[90vw] max-h-[90vh] object-contain select-none"
+          onClick={(e) => e.stopPropagation()}
+          onError={() => setFailedIndexes((prev) => new Set(prev).add(currentIndex))}
+        />
+      )}
 
       {/* Next */}
       {total > 1 && (

@@ -96,6 +96,7 @@ function FollowFeedCard({ post, now }: { post: Post; now: Date }) {
             sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
             containerRatio={4 / 3}
             imgClassName="group-hover:scale-105 transition-transform duration-300"
+            fallback={<CategoryIcon category={category} />}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-5xl text-zinc-300 dark:text-zinc-600">
