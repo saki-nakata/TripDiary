@@ -210,6 +210,15 @@ async function ensurePost(params: {
   // 元画像ファイルを複数投稿で使い回す場合でも、S3オブジェクトは投稿ごとに個別に
   // アップロードする（phase6.md:160「1つのS3オブジェクトを複数投稿で共有参照しない」）。
   // 既にアップロード済みの同一画像のURLを他の投稿と共有することはしない
+  //
+  // ⚠️ キーは uploads/{authorId}/seed/{postId}/{index}.{ext} という決定的（ランダム性なし）な
+  // 構造で、ユーザーアップロード（uploads/{userId}/{randomUUID}.{ext}）と異なり同一postIdへの
+  // 再実行では常に同じキーになる。uploadObject() はCache-Control: immutableを付与するため、
+  // 同じキーに異なるバイト列を再アップロードすると、既にキャッシュを持つクライアント・
+  // Next.jsの画像最適化キャッシュに古い画像が残り続ける（README.md「画像キャッシュ・S3運用」参照）。
+  // シード画像の内容（getSeedImageBuffer が返す実体）を差し替える場合は、この行のプレフィックスを
+  // uploads/{authorId}/seed/v2/{postId}/{index}.{ext} のようにバージョニングし、URLごと変えること。
+  // 今回のように「消えた実体を同一バイト列で復元する」場合はキーと内容が一致したままなので問題ない。
   const imageUrls: string[] = [];
   for (let k = 0; k < params.imageCount; k++) {
     const { buffer, ext } = getSeedImageBuffer(params.category, params.imageSeed + k);
