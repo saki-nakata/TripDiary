@@ -1,0 +1,6 @@
+---
+# restart ではなく reload（無停止で反映する）。
+- name: nginx をリロードする
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded

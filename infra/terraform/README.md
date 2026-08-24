@@ -2,6 +2,10 @@
 
 EC2（Next.jsアプリ、Nginx＋PM2）・RDS（MySQL）・S3（画像）をTerraformで構築する。詳細な設計判断の背景は `実装計画書/phase6.md` 6-B節（ローカル専用、gitignore対象）を参照。
 
+**役割分担**: TerraformはAWSリソース（EC2・RDS・S3・IAM・Security Group）の作成のみを担当する。
+**EC2内部の構成（swap・Node.js・pnpm・Nginx・PM2）とアプリのデプロイは Ansible（`infra/ansible`）が担当する**。
+user-dataはAnsibleが接続できる最低限だけを行う。詳細は `infra/ansible/README.md` を参照。
+
 ## 前提
 
 - AWSアカウント作成済み・ローカルに `aws configure` 済みであること
@@ -50,8 +54,8 @@ terraform apply
 apply後:
 
 ```bash
-# user-dataの成功確認
-ssh -i tripdiary-prod.pem ec2-user@<ec2_public_ip> 'cat /var/log/user-data.log; ls /opt/tripdiary-bootstrap-complete; node -v'
+# user-dataの成功確認（最小構成なのでPython3導入とマーカーのみ）
+ssh -i tripdiary-prod.pem ec2-user@<ec2_public_ip> 'cat /var/log/user-data.log; ls /opt/tripdiary-userdata-complete'
 
 # ローテーション無効化（必須）: manage_master_user_password = true にすると、AWSが既定で
 # 自動ローテーション（実測7日間隔、OwningService: rds）を有効化することが判明した（Terraformの
@@ -62,86 +66,53 @@ aws secretsmanager describe-secret --secret-id "$(terraform output -raw db_secre
 # → false であることを確認する
 ```
 
-## nginx設定のみを変更する場合（IPを変えたくない場合）
+## EC2内部の構成変更（Nginx設定・ミドルウェア）
 
-`nginx.conf.tpl`・`user-data.sh.tpl`はどちらも`ec2.tf`の`local.user_data`に含まれ、`user_data_replace_on_change = true`のため、**これらを変更してから`terraform apply`を実行するとEC2インスタンスが再作成される**（Elastic IP未使用のため本番IPが変わる）。
+**Terraformでは行わない。Ansible（`infra/ansible`）で行う。**
 
-nginx設定だけを変えたく、かつIPを変えたくない場合は、`terraform apply`を経由せず**SSHで稼働中インスタンスへ直接適用する**（2026-08-09、`proxy_cache`導入時に実施。詳細は`docs/インフラ構成書.md`9.5節運用ログ）。
-
-```bash
-# 1. 変更後のnginx.conf.tplの内容をローカルに用意し、アップロード
-scp -i tripdiary-prod.pem infra/terraform/templates/nginx.conf.tpl \
-  ec2-user@<ec2_public_ip>:/tmp/tripdiary.conf.new
-
-# 2. 既存設定をバックアップしてから置き換え、構文チェック
-ssh -i tripdiary-prod.pem ec2-user@<ec2_public_ip> '
-  sudo cp /etc/nginx/conf.d/tripdiary.conf /etc/nginx/conf.d/tripdiary.conf.bak-$(date +%Y%m%d%H%M%S)
-  sudo cp /tmp/tripdiary.conf.new /etc/nginx/conf.d/tripdiary.conf
-  sudo nginx -t
-'
-
-# 3. 問題なければ無停止で反映（restartではなくreload）
-ssh -i tripdiary-prod.pem ec2-user@<ec2_public_ip> 'sudo systemctl reload nginx'
-```
-
-**注意（ドリフト）**: この方法は`.tpl`ファイル（Terraform管理）と実際の反映経路が一致しない「手動適用」になる。`.tpl`ファイル自体は必ずリポジトリ側も更新しておくこと（内容を一致させ、次回インスタンス再作成時に自動反映されるようにするため）。一度でも`.tpl`を編集すると、**理由を問わず次回の`terraform apply`でEC2インスタンスが再作成される**（今回の手動適用の有無に関わらず）。`user-data.sh.tpl`側で新規ディレクトリ作成等が必要な変更（例: `proxy_cache_path`用のキャッシュディレクトリ）も、次回の自然な再作成時に反映されるよう合わせて更新しておく。
-
-## アプリの手動デプロイ（Terraform管理外・SSH経由）
-
-`git`・`jq`・`mariadb105`（mysqlクライアント）はuser-dataで導入済み（実機デプロイ時に不足が判明し追加した）。
+以前はNginx設定が`user-data.sh.tpl`に埋め込まれていたため、設定を1行変えるだけで
+`user_data_replace_on_change = true`によりEC2が再作成され（Elastic IP未使用のため本番IPが変わる）、
+それを避けるためにSSHで直接差し替えるドリフト前提の手順が必要だった。
+現在はNginx設定は`infra/ansible/roles/nginx/templates/tripdiary.conf.j2`が単一の正であり、
+**インスタンスを維持したまま安全に更新できる**。
 
 ```bash
-ssh -i tripdiary-prod.pem ec2-user@<ec2_public_ip>
-
-git clone <repo-url> tripdiary && cd tripdiary   # 2回目以降は git pull
-
-# --- 初回デプロイのみ: tripdiaryデータベースを作成する ---
-# rds.tf は aws_db_instance に db_name を設定していない（変更するとDB再作成〔force replacement〕に
-# なるため、既存環境では未設定のままにしている）。そのため初回のみ手動で作成する。
-SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "<db_secret_arn>" --query SecretString --output text --region ap-northeast-1)
-DB_USER=$(echo "$SECRET_JSON" | jq -r .username)
-MYSQL_PWD=$(echo "$SECRET_JSON" | jq -r .password) mysql -h "<rds_hostのみ、ポート番号を除く>" -u "$DB_USER" \
-  -e "CREATE DATABASE IF NOT EXISTS tripdiary CHARACTER SET utf8mb4;"
-
-# --- .env.local の組み立て（2回目以降のデプロイでも毎回、最新のDBパスワードを取得し直すこと） ---
-SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "<db_secret_arn>" --query SecretString --output text --region ap-northeast-1)
-DB_USER=$(echo "$SECRET_JSON" | jq -r .username)
-DB_PASS=$(echo "$SECRET_JSON" | jq -r .password)
-RDS_ENDPOINT="<rds_endpoint>"   # terraform output rds_endpoint（host:3306の形式で出力される）
-
-cat > .env.local <<EOF
-DATABASE_URL=mysql://${DB_USER}:${DB_PASS}@${RDS_ENDPOINT}/tripdiary
-AUTH_SECRET=$(openssl rand -base64 32)
-AUTH_URL=http://<ec2_public_ip>
-AWS_REGION=ap-northeast-1
-AWS_S3_BUCKET_NAME=<bucket_name>
-EOF
-chmod 600 .env.local
-unset DB_PASS SECRET_JSON
-
-pnpm install
-# --- max-old-space-sizeの指定が必須（実機で確認済みの必須事項） ---
-# t2.micro（物理RAM 1GB）ではNode/V8がRAM検出に基づき保守的なデフォルトヒープ上限を
-# 設定するため、2GBのswapfileがあっても "JavaScript heap out of memory" でビルドが
-# 落ちることを実機で確認した（TypeScriptチェック工程、ヒープ477MB付近で発生）。
-# NODE_OPTIONSでヒープ上限を明示的に引き上げ、swapfileで実際に賄えるようにする。
-NODE_OPTIONS='--max-old-space-size=1536' pnpm build
-
-# --- Prisma CLIは.env（.env.localではない）しか自動読込しないため、dotenv-cliで明示指定する
-#     （実機で`Environment variable not found: DATABASE_URL`により判明。next build/next startは
-#     .env.localを自動読込するためこの問題は起きない） ---
-pnpm exec dotenv -e .env.local -- pnpm prisma migrate deploy
-
-# --- ループバック限定bind（多層防御）でPM2起動 ---
-# `pm2 start pnpm -- start -- -H 127.0.0.1` は使えない（実機で確認済みの不具合）:
-# PM2→pnpm→next の2段のフラグ転送で `--` の扱いが崩れ、next側に到達する時点で
-# `-H`がホスト名フラグとして認識されず、プロジェクトディレクトリ引数と誤認識されて
-# 起動に失敗する。node_modules/.bin/next（シェルシムでJSではない）を直接pm2から
-# 実行するのも「node解釈でシンタックスエラー」になり不可。
-# next/dist/bin/next（実体のJSエントリポイント）を直接指定し、interpreterを明示するのが確実。
-pm2 start node_modules/next/dist/bin/next --name tripdiary --interpreter node -- start -H 127.0.0.1
-pm2 save
+# WSL2(Ubuntu)から実行する
+cd infra/ansible
+# tripdiary.conf.j2 を編集してから
+ansible-playbook playbooks/bootstrap.yml --tags nginx
 ```
+
+`nginx -t`が成功した場合のみ`reload`する。構文エラー時はバックアップへ自動的に戻し、
+reloadを行わないため稼働中のプロセスは旧設定のまま動き続ける。
+
+`user-data.sh.tpl`は最小構成（Python3導入とマーカーのみ）にしたため変更頻度は低いが、
+**編集すると従来どおり次回の`terraform apply`でEC2インスタンスが再作成される**点は変わらない。
+
+## アプリのデプロイ
+
+**Terraformでは行わない。Ansible（`infra/ansible`）で行う。**
+
+```bash
+cd infra/ansible
+ansible-playbook playbooks/bootstrap.yml   # EC2作成・再作成の直後に一度
+ansible-playbook playbooks/deploy.yml      # アプリのデプロイ（以後はこれだけ）
+```
+
+初回デプロイのみ、データベース作成を有効にする。`rds.tf`は`aws_db_instance`に`db_name`を
+設定していない（変更するとDB再作成〔force replacement〕になるため、既存環境では未設定のままにしている）。
+
+```bash
+ansible-playbook playbooks/deploy.yml -e tripdiary_create_database=true
+```
+
+DBパスワードは従来どおりEC2のIAMロールからSecrets Managerを実行時に取得する
+（Ansible変数・インベントリには保存しない）。`AUTH_SECRET`は既存の`.env.local`から
+引き継ぎ、初回のみ生成する。
+
+実機で判明した必須事項（`NODE_OPTIONS=--max-old-space-size=1536`、Prisma CLIへの
+`dotenv -e .env.local`、PM2は`node_modules/next/dist/bin/next`を`--interpreter node`で起動）は
+すべて`infra/ansible/roles/tripdiary/tasks/main.yml`にコメント付きで実装済み。
 
 ## デプロイ後動作確認（運用者IP限定の状態で実施。まだ一般公開ではない）
 

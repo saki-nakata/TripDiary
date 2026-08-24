@@ -146,6 +146,7 @@ https://github.com/user-attachments/assets/92e8dd97-530e-449d-9863-27d6111e7ec9
 - **S3オブジェクトの所有権・参照整合性**: アップロードキーに所有者IDを含めて誤削除を防止し、削除前に`findStillReferencedUrls`で他レコードからの参照有無を確認してから削除する設計にした（旅行プランへの画像引き継ぎ機能で同一オブジェクトを複数投稿から参照できるため）
 - **構造化ログとダークテーマの全画面対応**: pinoによる構造化ログを整備し、表示テーマはローカルストレージからCookie＋DB方式へ移行して全画面をダークテーマ対応させた（対応漏れを`docs/画面設計書.md`に更新履歴として都度記録）
 - **IaCによる本番構築**: AWSインフラをTerraformでコード管理し、実環境への`apply`を検証済み。`destroy`・復旧手順も[Runbook](infra/terraform/README.md)として整備した（destroy自体の実機検証はまだ実施していない）
+- **構成管理ツールの役割分担**: EC2内部のOS設定・ミドルウェア・アプリのデプロイをAnsibleへ分離した（[infra/ansible/](infra/ansible/README.md)）。Nginx設定をuser-dataに埋め込むと設定変更のたびにEC2が再作成され本番IPが変わるという実運用上の問題を、インスタンスを維持したまま更新できる構成へ作り替えている（コードと静的検証まで完了、本番適用は未実施）
 - **テスト・パフォーマンス計測**: Vitest 740件・カバレッジ92%超、Playwright E2E、k6による負荷試験（Smoke/Load/Stress/Spike）とWeb Vitals計測をCI・ローカルの両方で運用
 
 ---
@@ -366,7 +367,8 @@ TripDiary/
 │   └── seed-production.ts         # 本番シード投入スクリプト（Phase 6-B2）
 ├── scripts/
 │   └── fetch-seed-images.ts       # 本番シード用画像収集（Pexels API、Phase 6-B2）
-├── infra/terraform/               # 本番インフラのコード管理（EC2 + RDS + S3、Phase 6-B）
+├── infra/terraform/               # AWSリソースのコード管理（EC2 + RDS + S3 + IAM、Phase 6-B）
+├── infra/ansible/                 # EC2内部の構成管理とデプロイ（swap/Node/Nginx/PM2、PR #80）
 ├── performance/                   # k6負荷試験・Web Vitals計測
 ├── e2e/                           # Playwright E2Eテスト
 ├── prototype/                     # 実装着手前の静的HTMLプロトタイプ（16画面、UI検討用の参考資料）
@@ -380,7 +382,7 @@ TripDiary/
 
 ## 本番環境へのデプロイ
 
-本番環境は AWS EC2（アプリ）+ AWS RDS（MySQL）+ AWS S3（画像ストレージ）、Terraform（`infra/terraform/`）でコード管理して構築している（Phase 6-B、2026-08-06 構築・デプロイ・実機能検証まで完了）。「公開阻止DoD」（実S3/IAM実機検証・監視実証等）・本番シード投入（6-B2）を経て、**2026-08-07 一般公開済み**: http://54.248.13.248 。インフラの詳細・デプロイ手順は [docs/インフラ構成書.md](docs/インフラ構成書.md)・[infra/terraform/README.md](infra/terraform/README.md) を参照。
+本番環境は AWS EC2（アプリ）+ AWS RDS（MySQL）+ AWS S3（画像ストレージ）、Terraform（`infra/terraform/`）でコード管理して構築している（Phase 6-B、2026-08-06 構築・デプロイ・実機能検証まで完了）。「公開阻止DoD」（実S3/IAM実機検証・監視実証等）・本番シード投入（6-B2）を経て、**2026-08-07 一般公開済み**: http://54.248.13.248 。EC2内部の構成とデプロイはAnsible（`infra/ansible/`）へ分離している。インフラの詳細・デプロイ手順は [docs/インフラ構成書.md](docs/インフラ構成書.md)・[infra/terraform/README.md](infra/terraform/README.md)・[infra/ansible/README.md](infra/ansible/README.md) を参照。
 
 確認用アカウントの認証情報は[公開URL・確認用アカウント](#公開url確認用アカウント)を参照。
 

@@ -1,0 +1,6 @@
+---
+app_user: ec2-user
+app_user_home: /home/ec2-user
+pm2_logrotate_max_size: 10M
+pm2_logrotate_retain: "7"
+pm2_logrotate_compress: "true"

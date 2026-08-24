@@ -1,0 +1,68 @@
+---
+# Nginx の導入とリバースプロキシ設定の配布。
+# この設定はかつて Terraform の user_data に埋め込まれていたため、変更のたびに EC2 が
+# 再作成（＝パブリック IP 変更）されていた。Ansible 側へ移したことでインスタンスを
+# 維持したまま更新できる。
+
+- name: Nginx を導入する
+  ansible.builtin.dnf:
+    name: nginx
+    state: present
+
+- name: 既定の default.conf を取り除く
+  ansible.builtin.file:
+    path: /etc/nginx/conf.d/default.conf
+    state: absent
+
+# nginx は proxy_cache_path のディレクトリを自動作成しないため事前に用意する。
+- name: proxy_cache 用ディレクトリを用意する
+  ansible.builtin.file:
+    path: "{{ nginx_cache_dir }}"
+    state: directory
+    owner: nginx
+    group: nginx
+    mode: "0755"
+
+- name: tripdiary.conf を配置し、構文チェックが通った場合のみ反映する
+  block:
+    - name: tripdiary.conf を配置する
+      ansible.builtin.template:
+        src: tripdiary.conf.j2
+        dest: /etc/nginx/conf.d/tripdiary.conf
+        owner: root
+        group: root
+        mode: "0644"
+        backup: true
+      register: nginx_conf_result
+      notify: nginx をリロードする
+
+    # --check ではテンプレートが書き込まれないため、既存設定を検査しても意味がない。
+    - name: nginx の構文チェック
+      ansible.builtin.command: nginx -t
+      changed_when: false
+      when: not ansible_check_mode
+
+  rescue:
+    # 構文エラー時はバックアップへ戻す。reload はハンドラで行うため、この時点の
+    # 稼働中プロセスは旧設定のまま動いている（無停止で切り戻せる）。
+    - name: 構文エラーのため直前のバックアップへ戻す
+      ansible.builtin.copy:
+        src: "{{ nginx_conf_result.backup_file }}"
+        dest: /etc/nginx/conf.d/tripdiary.conf
+        remote_src: true
+        owner: root
+        group: root
+        mode: "0644"
+      when: nginx_conf_result.backup_file is defined
+
+    - name: 構文エラーを報告して中断する
+      ansible.builtin.fail:
+        msg: >-
+          nginx -t が失敗したため tripdiary.conf を元に戻しました。
+          roles/nginx/templates/tripdiary.conf.j2 を修正してください。
+
+- name: Nginx を有効化・起動する
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: started

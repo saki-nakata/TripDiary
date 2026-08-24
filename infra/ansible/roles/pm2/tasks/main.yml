@@ -1,0 +1,40 @@
+---
+# PM2 の systemd 連携とログローテーション。アプリのプロセス登録は tripdiary ロールが行う。
+
+- name: PM2 の systemd ユニットの有無を確認する
+  ansible.builtin.stat:
+    path: "/etc/systemd/system/pm2-{{ app_user }}.service"
+  register: pm2_unit
+
+# root で実行した場合、pm2 startup はヒントを表示するだけでなく systemd ユニットを
+# その場で作成・有効化する（実機確認済み）。非 root 実行時に表示される
+# "sudo env PATH=..." のヒント行を eval してはならない（pm2 が続けて出力する
+# "$ pm2 unstartup systemd" まで実行してしまう不具合を実機で確認済み）。
+- name: PM2 の自動起動を設定する
+  ansible.builtin.command: "pm2 startup systemd -u {{ app_user }} --hp {{ app_user_home }}"
+  when: not pm2_unit.stat.exists
+  changed_when: true
+
+- name: pm2-logrotate の導入状況を確認する
+  ansible.builtin.stat:
+    path: "{{ app_user_home }}/.pm2/modules/pm2-logrotate"
+  register: pm2_logrotate_stat
+
+# t2.micro のディスク枯渇対策（GATE-35）。
+- name: pm2-logrotate を導入する
+  ansible.builtin.command: pm2 install pm2-logrotate
+  become: true
+  become_user: "{{ app_user }}"
+  when: not pm2_logrotate_stat.stat.exists
+  changed_when: true
+
+- name: pm2-logrotate を設定する
+  ansible.builtin.command: "pm2 set pm2-logrotate:{{ item.key }} {{ item.value }}"
+  become: true
+  become_user: "{{ app_user }}"
+  when: not ansible_check_mode
+  loop:
+    - { key: max_size, value: "{{ pm2_logrotate_max_size }}" }
+    - { key: retain, value: "{{ pm2_logrotate_retain }}" }
+    - { key: compress, value: "{{ pm2_logrotate_compress }}" }
+  changed_when: false

@@ -112,3 +112,8 @@ infra/terraform/.terraform/
 *.tfvars
 !*.tfvars.example
 infra/terraform/tfplan*
+
+# ansible（infra/ansible/inventories/production.yml.example・playbook・roleはコミット対象）
+# 実インベントリはパブリックIP・Secrets Manager ARN等の環境固有値を含むため除外する
+infra/ansible/inventories/production.yml
+infra/ansible/*.retry

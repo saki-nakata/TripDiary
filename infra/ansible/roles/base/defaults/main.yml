@@ -1,0 +1,6 @@
+---
+swap_size: 2G
+base_packages:
+  - git
+  - jq
+  - mariadb105
