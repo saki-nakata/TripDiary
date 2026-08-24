@@ -1,0 +1,24 @@
+---
+# アプリのデプロイ（取得・ビルド・マイグレーション・PM2 起動・ヘルスチェック）。
+# bootstrap.yml が完了済みであることが前提。
+#
+#   ansible-playbook playbooks/deploy.yml
+#   ansible-playbook playbooks/deploy.yml -e tripdiary_create_database=true   # 初回のみ
+- name: TripDiary アプリのデプロイ
+  hosts: tripdiary
+  become: false
+  gather_facts: true
+
+  pre_tasks:
+    - name: bootstrap 済みであることを確認する
+      ansible.builtin.stat:
+        path: /opt/tripdiary-bootstrap-complete
+      register: bootstrap_marker
+
+    - name: bootstrap 未実行なら中断する
+      ansible.builtin.fail:
+        msg: "bootstrap.yml が未実行です。先に `ansible-playbook playbooks/bootstrap.yml` を実行してください。"
+      when: not bootstrap_marker.stat.exists
+
+  roles:
+    - tripdiary

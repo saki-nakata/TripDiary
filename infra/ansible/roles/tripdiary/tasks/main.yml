@@ -1,0 +1,156 @@
+---
+# アプリの配置・ビルド・マイグレーション・PM2 起動。
+# 旧「手動 SSH デプロイ手順」(infra/terraform/README.md) をそのままコード化したもの。
+
+- name: リポジトリを取得・更新する
+  ansible.builtin.git:
+    repo: "{{ app_repo_url }}"
+    dest: "{{ app_dir }}"
+    version: "{{ app_branch }}"
+    force: true
+  register: git_result
+
+# DB パスワードは Ansible 変数として持たない。EC2 の IAM ロールで実行時に取得する。
+- name: Secrets Manager から DB 認証情報を取得する
+  ansible.builtin.command: >-
+    aws secretsmanager get-secret-value
+    --secret-id {{ db_secret_arn }}
+    --query SecretString --output text
+    --region {{ aws_region }}
+  register: db_secret_raw
+  check_mode: false
+  changed_when: false
+  no_log: true
+
+- name: DB 認証情報を変数へ展開する
+  ansible.builtin.set_fact:
+    db_username: "{{ (db_secret_raw.stdout | from_json).username }}"
+    db_password: "{{ (db_secret_raw.stdout | from_json).password }}"
+  no_log: true
+
+- name: 既存の .env.local を読み取る
+  ansible.builtin.slurp:
+    src: "{{ app_dir }}/.env.local"
+  register: env_local_raw
+  failed_when: false
+  no_log: true
+
+# AUTH_SECRET はデプロイのたびに再生成してはならない（既存セッションが全て無効になる）。
+- name: 既存の AUTH_SECRET を引き継ぐ
+  ansible.builtin.set_fact:
+    existing_auth_secret: >-
+      {{ (env_local_raw.content | b64decode | regex_findall('(?m)^AUTH_SECRET=(.+)$') | first | default(''))
+         if (env_local_raw.content is defined) else '' }}
+  no_log: true
+
+- name: AUTH_SECRET を生成する（初回のみ）
+  ansible.builtin.command: openssl rand -base64 32
+  register: generated_auth_secret
+  when: existing_auth_secret | length == 0
+  check_mode: false
+  changed_when: true
+  no_log: true
+
+- name: 使用する AUTH_SECRET を確定する
+  ansible.builtin.set_fact:
+    auth_secret: "{{ existing_auth_secret if (existing_auth_secret | length > 0) else (generated_auth_secret.stdout | default('')) }}"
+  no_log: true
+
+- name: .env.local を配置する
+  ansible.builtin.template:
+    src: env.local.j2
+    dest: "{{ app_dir }}/.env.local"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0600"
+  no_log: true
+  register: env_local_result
+
+# rds.tf は aws_db_instance に db_name を設定していない（設定変更は DB の再作成を招く）。
+# そのため初回のみ、mysql クライアントでデータベースを作成する。
+- name: データベースを作成する（初回デプロイのみ）
+  ansible.builtin.command: >-
+    mysql -h {{ rds_endpoint | regex_replace(':[0-9]+$', '') }}
+    -u {{ db_username }}
+    -e "CREATE DATABASE IF NOT EXISTS {{ db_name }} CHARACTER SET utf8mb4;"
+  environment:
+    MYSQL_PWD: "{{ db_password }}"
+  when: tripdiary_create_database | bool
+  changed_when: true
+  no_log: true
+
+# dotenv-cli・next はいずれも devDependencies に含まれるため --prod は付けない。
+- name: 依存関係を導入する
+  ansible.builtin.command: pnpm install --frozen-lockfile
+  args:
+    chdir: "{{ app_dir }}"
+  register: pnpm_install
+  changed_when: "pnpm_install.stdout is defined and 'Already up to date' not in pnpm_install.stdout"
+
+- name: ビルドする
+  ansible.builtin.command: pnpm build
+  args:
+    chdir: "{{ app_dir }}"
+  environment:
+    NODE_OPTIONS: "--max-old-space-size={{ node_build_heap_mb }}"
+  changed_when: true
+
+# Prisma CLI は .env しか自動読込しないため dotenv-cli で .env.local を明示する
+# （next build / next start は .env.local を自動読込するためこの問題は起きない）。
+- name: マイグレーションを適用する
+  ansible.builtin.command: pnpm exec dotenv -e .env.local -- pnpm prisma migrate deploy
+  args:
+    chdir: "{{ app_dir }}"
+  register: prisma_migrate
+  changed_when: "prisma_migrate.stdout is defined and 'No pending migrations' not in prisma_migrate.stdout"
+
+- name: PM2 にアプリが登録済みか確認する
+  ansible.builtin.command: pm2 describe tripdiary
+  register: pm2_describe
+  check_mode: false
+  changed_when: false
+  failed_when: false
+
+# `pm2 start pnpm -- start -- -H 127.0.0.1` は使えない（実機確認済み）:
+# PM2 → pnpm → next の2段のフラグ転送で `--` の扱いが崩れ、next 側で `-H` が
+# ホスト名フラグとして認識されずプロジェクトディレクトリ引数と誤認識される。
+# node_modules/.bin/next はシェルシムのため node 解釈でシンタックスエラーになる。
+# 実体の JS エントリポイントを指定し interpreter を明示するのが確実。
+# -H 127.0.0.1 はループバック限定 bind（多層防御）。
+- name: PM2 でアプリを起動する（初回）
+  ansible.builtin.command: >-
+    pm2 start node_modules/next/dist/bin/next
+    --name tripdiary --interpreter node -- start -H 127.0.0.1
+  args:
+    chdir: "{{ app_dir }}"
+  when: pm2_describe.rc != 0
+  changed_when: true
+
+- name: PM2 でアプリを再読み込みする（2回目以降）
+  ansible.builtin.command: pm2 reload tripdiary --update-env
+  args:
+    chdir: "{{ app_dir }}"
+  when: pm2_describe.rc == 0
+  changed_when: true
+
+- name: PM2 のプロセスリストを保存する
+  ansible.builtin.command: pm2 save
+  changed_when: true
+
+- name: ヘルスチェック（Nginx 経由）
+  ansible.builtin.uri:
+    url: http://127.0.0.1/api/health
+    status_code: 200
+  register: health
+  retries: 10
+  delay: 6
+  until: health.status is defined and health.status == 200
+  when: not ansible_check_mode
+
+- name: デプロイ結果を表示する
+  when: not ansible_check_mode
+  ansible.builtin.debug:
+    msg:
+      - "revision: {{ git_result.after | default('unknown') }}"
+      - "health: {{ health.status | default('skipped') }}"
+      - "url: http://{{ ansible_host }}/"

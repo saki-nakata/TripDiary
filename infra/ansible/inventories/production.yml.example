@@ -1,0 +1,31 @@
+# 実ファイルは production.yml として作成する（.gitignore 済み。パブリックIP・
+# Secrets Manager ARN 等の環境固有値を含むため）。
+#
+#   cp inventories/production.yml.example inventories/production.yml
+#
+# 各値は infra/terraform で `terraform output` から取得する。
+all:
+  children:
+    tripdiary:
+      hosts:
+        tripdiary-prod:
+          # terraform output -raw ec2_public_ip
+          # Elastic IP 未使用のため、EC2 を再作成するたびに書き換える。
+          ansible_host: 203.0.113.10
+          ansible_user: ec2-user
+          ansible_ssh_private_key_file: ~/tripdiary-prod.pem
+      vars:
+        aws_region: ap-northeast-1
+
+        # terraform output -raw db_secret_arn
+        # パスワードそのものはここに書かない。EC2 の IAM ロールで実行時に取得する。
+        db_secret_arn: arn:aws:secretsmanager:ap-northeast-1:000000000000:secret:rds!db-xxxxxxxx-xxxx
+
+        # terraform output -raw rds_endpoint （host:3306 形式で出力される）
+        rds_endpoint: tripdiary-db.xxxxxxxx.ap-northeast-1.rds.amazonaws.com:3306
+
+        # terraform output -raw s3_bucket_name
+        s3_bucket_name: tripdiary-uploads-example
+
+        app_repo_url: https://github.com/saki-nakata/TripDiary.git
+        app_branch: main

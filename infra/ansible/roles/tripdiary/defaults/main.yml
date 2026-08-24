@@ -1,0 +1,14 @@
+---
+app_user: ec2-user
+app_dir: /home/ec2-user/tripdiary
+app_branch: main
+db_name: tripdiary
+
+# t2.micro（物理 RAM 1GB）では、V8 が RAM 量から保守的な既定ヒープ上限を決めるため、
+# 2GB の swap があっても TypeScript チェック工程で "JavaScript heap out of memory" に
+# なることを実機で確認済み。明示的に引き上げて swap で賄わせる。
+node_build_heap_mb: 1536
+
+# 初回デプロイでのみ true にする（rds.tf は db_name を未設定のため、
+# 変更すると DB が force replacement になる。よって DB は手動作成する運用）。
+tripdiary_create_database: false

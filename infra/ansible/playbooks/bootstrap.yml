@@ -1,0 +1,27 @@
+---
+# EC2 インスタンス内部の初期構成（swap / Node.js / pnpm / Nginx / PM2）。
+# terraform apply で EC2 を作成・再作成した直後に一度実行する。
+# 冪等なので、Nginx 設定などを変更したときに何度でも再実行してよい。
+#
+#   ansible-playbook playbooks/bootstrap.yml
+- name: TripDiary 本番サーバーの初期構成
+  hosts: tripdiary
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: base
+      tags: [base]
+    - role: node
+      tags: [node]
+    - role: nginx
+      tags: [nginx]
+    - role: pm2
+      tags: [pm2]
+
+  post_tasks:
+    - name: 構成完了マーカーを作成する
+      ansible.builtin.file:
+        path: /opt/tripdiary-bootstrap-complete
+        state: touch
+        mode: "0644"

@@ -1,0 +1,4 @@
+---
+# package.json の engines / packageManager および CI の想定バージョンと必ず一致させること。
+node_major_version: 24
+pnpm_version: 11.9.0

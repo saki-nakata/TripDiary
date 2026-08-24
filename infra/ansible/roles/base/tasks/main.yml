@@ -1,0 +1,54 @@
+---
+# OS レベルの前提整備。旧 user-data.sh.tpl の swap / git・jq 導入部に相当する。
+
+- name: swapfile の有無を確認
+  ansible.builtin.stat:
+    path: /swapfile
+  register: swapfile_stat
+
+# t2.micro は物理 RAM 1GB のため、swap なしでは pnpm build が OOM で落ちる（実機確認済み）。
+- name: swapfile を作成する
+  when: not swapfile_stat.stat.exists
+  block:
+    - name: swapfile を確保する
+      ansible.builtin.command: "fallocate -l {{ swap_size }} /swapfile"
+      changed_when: true
+
+    - name: swapfile のパーミッションを 0600 にする
+      ansible.builtin.file:
+        path: /swapfile
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: swap 領域として初期化する
+      ansible.builtin.command: mkswap /swapfile
+      changed_when: true
+
+    - name: swap を有効化する
+      ansible.builtin.command: swapon /swapfile
+      changed_when: true
+
+- name: 再起動後も swap が有効になるよう fstab へ登録する
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "/swapfile none swap sw 0 0"
+    state: present
+
+# --check でも状態を確認したいので check_mode: false（読み取り専用のため安全）。
+# ただし同一実行内で swapfile を作る場合、--check では作成がスキップされ未有効のままなので
+# この検証は飛ばす。
+- name: swap が有効であることを確認する
+  ansible.builtin.command: swapon --show=NAME --noheadings
+  register: swapon_show
+  check_mode: false
+  changed_when: false
+  failed_when: "'/swapfile' not in swapon_show.stdout"
+  when: not (ansible_check_mode and not swapfile_stat.stat.exists)
+
+# git・jq: デプロイ処理で使用。mariadb105: 初回の CREATE DATABASE で使う mysql クライアント。
+# （AL2023 にはいずれも未搭載であることを実機で確認済み）
+- name: 基本パッケージを導入する
+  ansible.builtin.dnf:
+    name: "{{ base_packages }}"
+    state: present

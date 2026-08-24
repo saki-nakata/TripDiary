@@ -3,11 +3,9 @@ data "aws_ssm_parameter" "al2023_ami" {
 }
 
 locals {
-  nginx_conf = file("${path.module}/templates/nginx.conf.tpl")
-
-  user_data = templatefile("${path.module}/templates/user-data.sh.tpl", {
-    nginx_conf = local.nginx_conf
-  })
+  # EC2 内部の構成・デプロイは Ansible（infra/ansible）が担当するため、user-data は
+  # 接続前提を整えるだけの最小構成にしている（変更頻度を下げ、インスタンス再作成を避ける狙い）。
+  user_data = file("${path.module}/templates/user-data.sh.tpl")
 }
 
 resource "aws_instance" "app" {
